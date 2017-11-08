@@ -9,6 +9,7 @@ LT.data.import <- function(res.repo="../results/"){
     print(i)
     i <- i+1
     tmp <- read.delim(paste0(res.repo,file.name))[,-c(2:5,10:23)]
+    tmp$TrialId <- ifelse(tmp$Block==0, tmp$TrialId + 252, tmp$TrialId)
     df <- rbind(df, droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
   }
   df <- df
@@ -29,7 +30,10 @@ raw.to.ET <- function(df){
     df[,AOI] <-  df$CursorX>row$L & df$CursorX<row$R & df$CursorY>row$T & df$CursorY<row$B
   }
   # Set starting time of all trials to 0
+  i <- 1
   for (s in 1:max(df$Subject)){
+    print(i)
+    i <- i+1
     subject <- df[df$Subject==s,]
     for (t in 1:max(subject$TrialId)){
       trial <- subject[subject$TrialId==t,]
