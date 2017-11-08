@@ -27,19 +27,9 @@ raw.to.ET <- function(df){
   # Add AOIs to data frame, one by one
   for (AOI in levels(AOIs$name)){
     row <- AOIs[AOIs$name==AOI,]
-    df[,AOI] <-  df$CursorX>row$L & df$CursorX<row$R & df$CursorY>row$T & df$CursorY<row$B
+    df[,AOI] <- df$CursorX>row$L & df$CursorX<row$R & df$CursorY>row$T & df$CursorY<row$B
   }
   # Set starting time of all trials to 0
-  i <- 1
-  for (s in 1:max(df$Subject)){
-    print(i)
-    i <- i+1
-    subject <- df[df$Subject==s,]
-    for (t in 1:max(subject$TrialId)){
-      trial <- subject[subject$TrialId==t,]
-      start.offset <- min(trial$timestamp)
-      df$timestamp[df$Subject==s & df$TrialId==t] <- df$timestamp[df$Subject==s & df$TrialId==t] - start.offset
-    }
-  }
+  df <- df %>% group_by(Subject, TrialId) %>% mutate(modified_timestamp = timestamp - min(timestamp))
   return(df)
 }
