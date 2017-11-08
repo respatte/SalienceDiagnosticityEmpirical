@@ -1,18 +1,19 @@
+library(doSNOW)
 library(eyetrackingR)
 
 # LOOKING-TIME DATA IMPORT
 # Function importing looking time data from all participants, in the ../results/ repository by default
 LT.data.import <- function(res.repo="../results/"){
-  df = data.frame()
-  i <- 1
-  for (file.name in list.files(path=res.repo, pattern=".gazedata")){
-    print(i)
-    i <- i+1
-    tmp <- read.delim(paste0(res.repo,file.name))[,-c(2:5,10:23)]
+  single.file.import <- function(file){
+    tmp <- read.delim(file)[,-c(2:5,10:23)]
     tmp$TrialId <- ifelse(tmp$Block==0, tmp$TrialId + 252, tmp$TrialId)
-    df <- rbind(df, droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
+    return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
   }
-  df <- df
+  cl <- makeCluster(12)
+  registerDoSNOW(cl)
+  file.names <- list.files(path=res.repo, pattern=".gazedata")
+  df <- foreach(i=1:60,.combine="rbind", .inorder=F) %dopar% single.file.import(paste0(res.repo,file.names[i]))
+  stopCluster(cl)
   df$track_loss <- ifelse(pmin.int(df$CursorX,df$CursorY)<0,T,F)
   df$timestamp <- df$TimestampMicrosec + df$TimestampSec*1e6
   df <- df[,-(4:5)]
