@@ -4,7 +4,7 @@ library(eyetrackingR)
 
 # LOOKING-TIME DATA IMPORT
 # Function importing looking time data from all participants, in the ../results/ repository by default
-LT.data.import <- function(res.repo="../results/"){
+LT.data.import <- function(res.repo="../results/adults/"){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     tmp$TrialId <- ifelse(tmp$Block==0, tmp$TrialId + 252, tmp$TrialId)
@@ -20,8 +20,6 @@ LT.data.import <- function(res.repo="../results/"){
   df <- df[,-(4:5)]
   return(df)
 }
-
-AOIs <- data.frame(name=c("Tail","Head"),L=c(20,400),R=c(220,620),T=c(110,55),B=c(330,255))
 
 # RAW TO EYE-TRACKING
 # Function adding AOIs, defining trial time-windows, and returning eyetrackingR data
