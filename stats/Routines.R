@@ -8,6 +8,7 @@ LT.data.import <- function(res.repo="../results/adults/"){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     tmp$TrialId <- ifelse(tmp$Block==0, tmp$TrialId + 252, tmp$TrialId)
+    tmp$Condition <- factor(ifelse("NoLabelFeedback" %in% tmp$StiLabel,"NoLabel","Label"))
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
   }
   cl <- makeCluster(4)
