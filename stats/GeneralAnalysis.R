@@ -1,3 +1,4 @@
+library(eyetrackingR)
 library(Matrix)
 library(lme4)
 library(ggplot2)
@@ -22,7 +23,7 @@ LT.adults <- LT.data.import() %>% raw.to.ET(AOIs.adults) %>% make_eyetrackingr_d
 trackloss <- trackloss_analysis(LT.adults)
 trackloss.subject.trial <- unique(trackloss[, c('Subject','TrialId','TracklossForTrial')])
 # Plot trackloss per trial per subject
-trackloss.subject.trial.p <- ggplot(trackloss.subject, aes(x=TrialId, y=TracklossForTrial)) +
+trackloss.subject.trial.p <- ggplot(trackloss.subject.trial, aes(x=TrialId, y=TracklossForTrial)) +
   facet_wrap(~Subject, nrow = 10, scales = "free_x") + geom_point()
 ggsave("../results/TracklossSubjectTrial.png", trackloss.subject.trial.p, width=9, height=15)
 # Remove trials with trackloss proportion greater than 0.25
@@ -33,7 +34,7 @@ LT.adults.described <- describe_data(LT.adults.trackloss, 'Block', 'Subject')
 LT.adults.described$ProportionTrials <- LT.adults.described$NumTrials /
                                           (12*(LT.adults.described$Max + 1))
 LT.adults.described$AboveCriteria <- factor(ifelse(LT.adults.described$ProportionTrials >= .5, 1, 0)) # Change .5 to actual inclusion criteria
-print(summary(LT.adults.described))
+#print(summary(LT.adults.described))
 LT.adults.described.p <- ggplot(LT.adults.described,
                                 aes(x=Subject, y=ProportionTrials, colour = AboveCriteria)) +
   scale_colour_manual(values = c("red","green"), guide = F) + geom_point()
@@ -43,4 +44,4 @@ LT.adults.clean <- LT.adults.trackloss[LT.adults.trackloss$Subject %in%
                                          LT.adults.described$Subject[LT.adults.described$AboveCriteria == 1],] %>%
   droplevels()
 # Check how many subjects missing per condition
-print(summary(unique(LT.adults.clean[,c('Subject','Condition')])))
+#print(summary(unique(LT.adults.clean[,c('Subject','Condition')])))
