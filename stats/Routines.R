@@ -3,14 +3,12 @@ library(dplyr)
 
 # LOOKING-TIME DATA IMPORT
 # Function importing looking time data from all participants, in the ../results/ repository by default
-LT.data.import <- function(res.repo="../results/"){
-  df = data.frame()
-  i <- 1
-  for (file.name in list.files(path=res.repo, pattern=".gazedata")){
-    print(i)
-    i <- i+1
-    tmp <- read.delim(paste0(res.repo,file.name))[,-c(2:5,10:23)]
-    df <- rbind(df, droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
+LT.data.import <- function(res.repo="../results/adults/"){
+  single.file.import <- function(file){
+    tmp <- read.delim(file)[,-c(2:5,10:23)]
+    tmp$TrialId <- ifelse(tmp$Block==0, tmp$TrialId + 252, tmp$TrialId)
+    tmp$Condition <- factor(ifelse("NoLabelFeedback" %in% tmp$StiLabel,"NoLabel","Label"))
+    return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
   }
   cl <- makeCluster(4)
   registerDoSNOW(cl)
