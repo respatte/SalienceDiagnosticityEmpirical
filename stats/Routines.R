@@ -15,8 +15,8 @@ LT.data.import <- function(res.repo="../results/adults/"){
   file.names <- list.files(path=res.repo, pattern=".gazedata")
   df <- foreach(i=1:60,.combine="rbind", .inorder=F) %dopar% single.file.import(paste0(res.repo,file.names[i]))
   stopCluster(cl)
-  df$track_loss <- ifelse(pmin.int(df$CursorX,df$CursorY)<0,T,F)
-  df$timestamp <- df$TimestampMicrosec + df$TimestampSec*1e6
+  df$TrackLoss <- ifelse(pmin.int(df$CursorX,df$CursorY)<0,T,F)
+  df$TimeStamp <- df$TimestampMicrosec + df$TimestampSec*1e6
   df <- df[,-(4:5)]
   return(df)
 }
