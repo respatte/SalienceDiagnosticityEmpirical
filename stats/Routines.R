@@ -15,13 +15,13 @@ LT_data.import <- function(res.repo="../results/adults/"){
   stopCluster(cl)
   df$TrialId <- ifelse(df$Block==0, df$TrialId + 252, df$TrialId)
   df <- df %>% group_by(Subject) %>%
-    mutate(Condition = factor(ifelse("NoLabelFeedback" %in% StiLabel,"NoLabel","Label")))
-           # CategoryName = factor(ifelse("NoLabel" %in% Condition,
-           #                              "NoName",
-           #                              ifelse(any(grepl("A",as.character(Stimulus)) &
-           #                                           StiLabel == "Saldie"),
-           #                                     "A_Saldie",
-           #                                     "A_Gatoo"))))
+    mutate(Condition = factor(ifelse("NoLabelFeedback" %in% StiLabel,"NoLabel","Label")),
+           CategoryName = factor(ifelse("NoLabel" %in% Condition,
+                                        "NoName",
+                                        ifelse(any(grepl("A",as.character(Stimulus)) &
+                                                     StiLabel == "Saldie"),
+                                               "A_Saldie",
+                                               "A_Gatoo"))))
   df$TrackLoss <- ifelse(pmin.int(df$CursorX,df$CursorY)<0,T,F)
   df$TimeStamp <- df$TimestampMicrosec + df$TimestampSec*1e6
   df <- df[,-(4:5)]
