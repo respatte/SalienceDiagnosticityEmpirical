@@ -11,17 +11,19 @@ LT_data.import <- function(res.repo="../results/adults/"){
   cl <- makeCluster(4)
   registerDoSNOW(cl)
   file.names <- list.files(path=res.repo, pattern=".gazedata")
-  df <- foreach(i=1:4,.combine="rbind", .inorder=F) %dopar% single.file.import(paste0(res.repo,file.names[i]))
+  df <- foreach(i=1:60,.combine="rbind", .inorder=F) %dopar% single.file.import(paste0(res.repo,file.names[i]))
   stopCluster(cl)
   df$TrialId <- ifelse(df$Block==0, df$TrialId + 252, df$TrialId)
   df <- df %>% group_by(Subject) %>%
-    mutate(Condition = factor(ifelse("NoLabelFeedback" %in% StiLabel,"NoLabel","Label")),
+    mutate(Condition = factor(ifelse("NoLabelFeedback" %in% StiLabel,"NoLabel","Label"),
+                              levels = c("NoLabel","Label")),
            CategoryName = factor(ifelse("NoLabel" %in% Condition,
                                         "NoName",
                                         ifelse(any(grepl("A",as.character(Stimulus)) &
                                                      StiLabel == "Saldie"),
                                                "A_Saldie",
-                                               "A_Gatoo"))))
+                                               "A_Gatoo")),
+                                 levels = c("NoName","A_Saldie","A_Gatoo")))
   df$TrackLoss <- ifelse(pmin.int(df$CursorX,df$CursorY)<0,T,F)
   df$TimeStamp <- df$TimestampMicrosec + df$TimestampSec*1e6
   df <- df[,-(4:5)]
