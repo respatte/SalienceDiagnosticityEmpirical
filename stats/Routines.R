@@ -15,15 +15,16 @@ LT_data.import <- function(res.repo="../results/adults/"){
   stopCluster(cl)
   df$TrialId <- ifelse(df$Block==0, df$TrialId + 252, df$TrialId)
   df <- df %>% group_by(Subject) %>%
-    mutate(Condition = factor(ifelse("NoLabelFeedback" %in% StiLabel,"NoLabel","Label"),
+    mutate(Condition = factor(if(first(StiLabel) == "NoLabelFeedback"){"NoLabel"}else{"Label"},
                               levels = c("NoLabel","Label")),
-           CategoryName = factor(ifelse("NoLabel" %in% Condition,
-                                        "NoName",
-                                        ifelse(any(grepl("A",as.character(Stimulus)) &
-                                                     StiLabel == "Saldie"),
-                                               "A_Saldie",
-                                               "A_Gatoo")),
-                                 levels = c("NoName","A_Saldie","A_Gatoo")))
+           CategoryName = factor(if(first(Condition) == "NoLabel"){"NoName"}else{
+             if((grepl("A",as.character(first(Stimulus))) &
+                 first(StiLabel) == "Saldie")|
+                (grepl("B",as.character(first(Stimulus))) &
+                 first(StiLabel) == "Gatoo")){
+               "A_Saldie"
+             }else{"A_Gatoo"}},
+             levels = c("NoName","A_Saldie","A_Gatoo")))
   df$TrackLoss <- ifelse(pmin.int(df$CursorX,df$CursorY)<0,T,F)
   df$TimeStamp <- df$TimestampMicrosec + df$TimestampSec*1e6
   df <- df[,-(4:5)]
@@ -74,4 +75,5 @@ LT_data.trackloss_clean <- function(df, trial_prop_thresh=.25, incl_crit=.5, ver
     # Check how many subjects missing per condition
     print(summary(unique(df.clean[,c('Subject','Condition')])))
   }
+  return(df.clean)
 }
