@@ -3,7 +3,7 @@ library(dplyr)
 
 # LOOKING-TIME DATA IMPORT
 # Function importing looking time data from all participants, in the ../results/ repository by default
-LT.data.import <- function(res.repo="../results/adults/"){
+LT_data.import <- function(res.repo="../results/adults/"){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
@@ -16,14 +16,12 @@ LT.data.import <- function(res.repo="../results/adults/"){
   df$TrialId <- ifelse(df$Block==0, df$TrialId + 252, df$TrialId)
   df$Condition <- factor(ifelse("NoLabelFeedback" %in% df$StiLabel,"NoLabel","Label"))
   df <- df %>% group_by(Subject) %>%
-    mutate(CategoryName = ifelse(any(df$Condition == "NoLabel"),
-                                 "NoName",
-                                 ifelse(any(grepl("A",LT.adults$Stimulus) &
-                                              LT.adults$StiLabel == "Saldie"),
-                                        "A_Saldie",
-                                        "A_Gatoo")
-                                 )
-           )
+    mutate(CategoryName = factor(ifelse(any(df$Condition == "NoLabel"),
+                                        "NoName",
+                                        ifelse(any(grepl("A",df$Stimulus) &
+                                                     df$StiLabel == "Saldie"),
+                                               "A_Saldie",
+                                               "A_Gatoo"))))
   df$TrackLoss <- ifelse(pmin.int(df$CursorX,df$CursorY)<0,T,F)
   df$TimeStamp <- df$TimestampMicrosec + df$TimestampSec*1e6
   df <- df[,-(4:5)]
@@ -32,7 +30,7 @@ LT.data.import <- function(res.repo="../results/adults/"){
 
 # RAW TO EYE-TRACKING
 # Function adding AOIs, defining trial time-windows, and returning eyetrackingR data
-raw.to.ET <- function(df, AOIs){
+LT_data.to_eyetrackingR <- function(df, AOIs){
   # Add AOIs to data frame, one by one
   for (AOI in levels(AOIs$name)){
     row <- AOIs[AOIs$name==AOI,]
@@ -41,4 +39,37 @@ raw.to.ET <- function(df, AOIs){
   # Set starting time of all trials to 0
   df <- df %>% group_by(Subject, TrialId) %>% mutate(TimeStamp = TimeStamp - min(TimeStamp))
   return(df)
+}
+
+LT_data.trackloss_clean <- function(df, trial_prop_thresh=.25, incl_crit=.5, verbose=F){
+  # Get trackloss information
+  trackloss <- trackloss_analysis(df)
+  trackloss.subject.trial <- unique(trackloss[, c('Subject','TrialId','TracklossForTrial')])
+  # Plot trackloss per trial per subject
+  trackloss.subject.trial.p <- ggplot(trackloss.subject.trial, aes(x=TrialId, y=TracklossForTrial)) +
+    facet_wrap(~Subject, nrow = 10, scales = "free_x") + geom_point()
+  ggsave("../results/TracklossSubjectTrial.png", trackloss.subject.trial.p, width=9, height=15)
+  # Remove trials with trackloss proportion greater than 0.25
+  df.trackloss <- clean_by_trackloss(data = df,
+                                            trial_prop_thresh = trial_prop_thresh)
+  # Compute and plot proportion of valid trials per subject (number of valid trials / number of trials for subject)
+  df.described <- describe_data(df.trackloss, 'Block', 'Subject')
+  df.described$ProportionTrials <- df.described$NumTrials /
+    (12*(df.described$Max + 1))
+  df.described$AboveCriteria <- factor(ifelse(df.described$ProportionTrials >= incl_crit, 1, 0))
+  if(verbose){
+    print(summary(df.described))
+  }
+  df.described.p <- ggplot(df.described,
+                                  aes(x=Subject, y=ProportionTrials, colour = AboveCriteria)) +
+    scale_colour_manual(values = c("red","green"), guide = F) + geom_point()
+  ggsave("../results/ProportionTrialPerSubject.png", df.described.p, width=10, height=3)
+  # Select subjects to keep
+  df.clean <- df.trackloss[df.trackloss$Subject %in%
+                                           df.described$Subject[df.described$AboveCriteria == 1],] %>%
+    droplevels()
+  if(verbose){
+    # Check how many subjects missing per condition
+    print(summary(unique(df.clean[,c('Subject','Condition')])))
+  }
 }
