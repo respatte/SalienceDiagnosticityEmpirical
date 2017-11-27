@@ -26,12 +26,23 @@ LT_data.import <- function(res.repo="../results/adults/"){
              }else{"A_Gatoo"}},
              levels = c("NoName","A_Saldie","A_Gatoo")))
   df$TrackLoss <- ifelse(pmin.int(df$CursorX,df$CursorY)<0,T,F)
-  df$TimeStamp <- df$TimestampMicrosec + df$TimestampSec*1e6
+  # Creating TimeStamp in milliseconds
+  df$TimeStamp <- df$TimestampMicrosec*1e-3 + df$TimestampSec*1e3
   df <- df[,-(4:5)]
   return(df)
 }
 
-# RAW TO EYE-TRACKING
+# LOOKING-TIME DATA TO RESPONSES
+# Function extracting all non-LT data per participant per trial
+LT_data.to_responses <- function(df){
+  df <- df[,-c(2,3,9,12,15,16)] %>%
+    group_by(Subject, TrialId) %>%
+    unique() %>%
+    mutate(NBlocks = max(Block))
+  return(df)
+}
+
+# LOOKING-TIME DATA TO EYETRACKINGR
 # Function adding AOIs, defining trial time-windows, and returning eyetrackingR data
 LT_data.to_eyetrackingR <- function(df, AOIs){
   # Add AOIs to data frame, one by one
@@ -40,7 +51,8 @@ LT_data.to_eyetrackingR <- function(df, AOIs){
     df[,AOI] <- df$CursorX>row$L & df$CursorX<row$R & df$CursorY>row$T & df$CursorY<row$B
   }
   # Set starting time of all trials to 0
-  df <- df %>% group_by(Subject, TrialId) %>% mutate(TimeStamp = TimeStamp - min(TimeStamp))
+  df <- df %>% group_by(Subject, TrialId) %>% mutate(TimeStamp = TimeStamp - min(TimeStamp),
+                                                     NormTimeStamp = TimeStamp/max(TimeStamp))
   return(df)
 }
 

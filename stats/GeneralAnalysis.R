@@ -10,12 +10,16 @@ source("Routines.R")
 # Define AOIs
 AOIs.adults <- data.frame(name=c("Tail","Head"),L=c(20,400),R=c(220,620),T=c(110,55),B=c(330,255))
 
-# Import data, transform into eyetrackingR data, clean for trackloss
-LT.adults <- LT_data.import() %>%
+# Import raw data
+raw_data.adults <- LT_data.import()
+# Turn raw into behavioural data
+behaviour.adults <- LT_data.to_responses(raw_data.adults)
+# Turn raw into clean eyetrackingR data
+LT.adults <- raw_data.adults %>%
   LT_data.to_eyetrackingR(AOIs.adults) %>%
   make_eyetrackingr_data(participant_column = "Subject",
                          trial_column = "TrialId",
-                         time_column = "TimeStamp",
+                         time_column = "NormTimeStamp",
                          trackloss_column = "TrackLoss",
                          aoi_columns = c('Head','Tail'),
                          treat_non_aoi_looks_as_missing = TRUE) %>%
