@@ -25,6 +25,7 @@ LT.adults <- raw_data.adults %>%
                          aoi_columns = c('Head','Tail'),
                          treat_non_aoi_looks_as_missing = TRUE) %>%
   LT_data.trackloss_clean()
+LT.adults$TrialId <- as.numeric(LT.adults$TrialId)
 
 # ANALYSIS - LOOKING TIME
 # Plotting eye-tracking data for all AOIs, averaged across all trials
@@ -34,12 +35,28 @@ LT.adults.time_course <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2
 LT.adults.time_course.plot <- plot(LT.adults.time_course, predictor_column = "Condition") + 
   theme_light() + coord_cartesian(ylim = c(0,1))
 # Analysing and plotting total looking time to each AOI
+# Making data time-window-analysis ready
 LT.adults.total_per_AOI <- make_time_window_data(LT.adults, 
                                                  aois=c("Head","Tail"),
-                                                 predictor_columns=c("Condition"),
-                                                 summarize_by = "Subject")
-LT.adults.total_per_AOI.plot <- plot(LT.adults.total_per_AOI, predictor_columns="Condition", dv = "ArcSin")
+                                                 predictor_columns=c("Condition",
+                                                                     "Stimulus",
+                                                                     "TrialId",
+                                                                     "CategoryName",
+                                                                     "Age","Gender"))
+# Boxplots of total looking time per AOI
+LT.adults.total_per_AOI.plot <- plot(LT.adults.total_per_AOI,
+                                     predictor_columns=c("Condition"),
+                                     dv = "ArcSin")
+# Simple t-test
 LT.adults.total_per_AOI.t_test <- t.test(ArcSin ~ Condition, data=LT.adults.total_per_AOI)
+# Mixed-effect model
+LT.adults.total_per_AOI.lmer <- lmer(ArcSin ~ Condition*TrialId + 
+                                       (1 + Condition | Stimulus) +
+                                       (1 | CategoryName) +
+                                       (1 + Condition | Subject),
+                                     data = LT.adults.total_per_AOI)
+LT.adults.total_per_AOI.comparison <- drop1(LT.adults.total_per_AOI.lmer,
+                                            ~., test = "Chi")
 
 # ANALYSIS -- BEHAVIOURAL DATA -- NUMBER OF BLOCKS TO TRAINING
 # Creating sub-dataframe for NBlocks
