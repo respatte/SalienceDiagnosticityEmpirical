@@ -29,6 +29,9 @@ LT_data.import <- function(res.repo="../results/adults/"){
   # Creating TimeStamp in milliseconds
   df$TimeStamp <- df$TimestampMicrosec*1e-3 + df$TimestampSec*1e3
   df <- df[,-(4:5)]
+  # Adding participant information
+  participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
+  df <- merge(df, participant_info, by="Subject")
   return(df)
 }
 
@@ -36,10 +39,11 @@ LT_data.import <- function(res.repo="../results/adults/"){
 # Function extracting all non-LT data per participant per trial
 LT_data.to_responses <- function(df){
   df <- df[,-c(2,3,9,12,15,16)] %>%
+    unique() %>%
     group_by(Subject) %>%
-    mutate(NBlocks = max(Block)) %>%
-    group_by(Subject,TrialId) %>%
-    unique()
+    mutate(NBlocks = max(Block),
+           LogNBlocks = log(NBlocks),
+           LogRT = log(RT))
   return(df)
 }
 

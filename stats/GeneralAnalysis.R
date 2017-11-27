@@ -25,17 +25,28 @@ LT.adults <- raw_data.adults %>%
                          aoi_columns = c('Head','Tail'),
                          treat_non_aoi_looks_as_missing = TRUE) %>%
   LT_data.trackloss_clean()
+
+# ANALYSIS - LOOKING TIME
 # Plotting eye-tracking data for all AOIs, averaged across all trials
-LT.adults.to_plot <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2,
+LT.adults.time_course <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2,
                                              predictor_columns = c("Condition"),
                                              aois = c("Head","Tail"))
-plot(LT.adults.to_plot, predictor_column = "Condition") + 
-  theme_light() +
-  coord_cartesian(ylim = c(0,1))
+LT.adults.time_course.plot <- plot(LT.adults.time_course, predictor_column = "Condition") + 
+  theme_light() + coord_cartesian(ylim = c(0,1))
 # Analysing and plotting total looking time to each AOI
 LT.adults.total_per_AOI <- make_time_window_data(LT.adults, 
                                                  aois=c("Head","Tail"),
                                                  predictor_columns=c("Condition"),
                                                  summarize_by = "Subject")
-plot(LT.adults.total_per_AOI, predictor_columns="Condition", dv = "ArcSin")
-t.test(ArcSin ~ Condition, data=LT.adults.total_per_AOI)
+LT.adults.total_per_AOI.plot <- plot(LT.adults.total_per_AOI, predictor_columns="Condition", dv = "ArcSin")
+LT.adults.total_per_AOI.t_test <- t.test(ArcSin ~ Condition, data=LT.adults.total_per_AOI)
+
+# ANALYSIS -- BEHAVIOURAL DATA -- NUMBER OF BLOCKS TO TRAINING
+# Creating sub-dataframe for NBlocks
+behaviour.adults.n_blocks <- subset(behaviour.adults, !duplicated(Subject))
+# Plotting and analysing NBlocks by Condition
+behaviour.adults.n_blocks.plot <- ggplot(behaviour.adults.n_blocks, aes(x=Condition,y=LogNBlocks)) + geom_boxplot()
+behaviour.adults.n_blocks.t_test <- t.test(LogNBlocks ~ Condition, data=behaviour.adults.n_blocks)
+behaviour.adults.n_blocks.lm <- lm(LogNBlocks ~ Condition*Gender*Age,
+                                   data = behaviour.adults.n_blocks)
+# ANALYSIS -- BEHAVIOURAL DATA -- REACTION TIME
