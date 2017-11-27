@@ -25,6 +25,17 @@ LT.adults <- raw_data.adults %>%
                          aoi_columns = c('Head','Tail'),
                          treat_non_aoi_looks_as_missing = TRUE) %>%
   LT_data.trackloss_clean()
+# Plotting eye-tracking data for all AOIs, averaged across all trials
 LT.adults.to_plot <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2,
                                              predictor_columns = c("Condition"),
                                              aois = c("Head","Tail"))
+plot(LT.adults.to_plot, predictor_column = "Condition") + 
+  theme_light() +
+  coord_cartesian(ylim = c(0,1))
+# Analysing and plotting total looking time to each AOI
+LT.adults.total_per_AOI <- make_time_window_data(LT.adults, 
+                                                 aois=c("Head","Tail"),
+                                                 predictor_columns=c("Condition"),
+                                                 summarize_by = "Subject")
+plot(LT.adults.total_per_AOI, predictor_columns="Condition", dv = "ArcSin")
+t.test(ArcSin ~ Condition, data=LT.adults.total_per_AOI)
