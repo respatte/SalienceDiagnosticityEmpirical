@@ -12,8 +12,9 @@ AOIs.adults <- data.frame(name=c("Tail","Head"),L=c(20,400),R=c(220,620),T=c(110
 
 # Import raw data
 raw_data.adults <- LT_data.import()
-# Turn raw into behavioural data
+# Turn raw into behavioural data, save it to a csv file
 behaviour.adults <- LT_data.to_responses(raw_data.adults)
+write.csv(behaviour.adults, "../results/BeviouralData.csv")
 # Turn raw into clean eyetrackingR data
 LT.adults <- raw_data.adults %>%
   LT_data.to_eyetrackingR(AOIs.adults) %>%
@@ -24,3 +25,6 @@ LT.adults <- raw_data.adults %>%
                          aoi_columns = c('Head','Tail'),
                          treat_non_aoi_looks_as_missing = TRUE) %>%
   LT_data.trackloss_clean()
+LT.adults.to_plot <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2,
+                                             predictor_columns = c("Condition"),
+                                             aois = c("Head","Tail"))

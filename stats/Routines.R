@@ -36,9 +36,10 @@ LT_data.import <- function(res.repo="../results/adults/"){
 # Function extracting all non-LT data per participant per trial
 LT_data.to_responses <- function(df){
   df <- df[,-c(2,3,9,12,15,16)] %>%
-    group_by(Subject, TrialId) %>%
-    unique() %>%
-    mutate(NBlocks = max(Block))
+    group_by(Subject) %>%
+    mutate(NBlocks = max(Block)) %>%
+    group_by(Subject,TrialId) %>%
+    unique()
   return(df)
 }
 
