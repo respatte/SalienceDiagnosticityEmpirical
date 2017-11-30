@@ -1,8 +1,9 @@
 library(doSNOW)
 library(dplyr)
+library(reshape2)
 
-# LOOKING-TIME DATA IMPORT
-# Function importing looking time data from all participants, in the ../results/ repository by default
+# LOOKING-TIME DATA IMPORT -- ADUTLTS
+# Function importing looking time data from all adult participants, in the ../results/adults repository by default
 LT_data.adults.import <- function(res.repo="../results/adults/"){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
@@ -32,6 +33,15 @@ LT_data.adults.import <- function(res.repo="../results/adults/"){
   # Adding participant information
   participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
   df <- merge(df, participant_info, by="Subject")
+  return(df)
+}
+
+# LOOKING-TIME DATA IMPORT -- ADUTLTS
+# Function importing looking time data from all infant participants, in the ../results/infants.tsv file by default
+LT_data.infants.import <- function(file.name="../results/infants.tsv"){
+  df <- read.csv(file.name, sep = "\t")
+  # TODO - Flip/Reg/Contrast and others for AOI positions
+  # TODO - Add participant information (DOB, DOTest)
   return(df)
 }
 
