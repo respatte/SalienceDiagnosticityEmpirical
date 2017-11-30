@@ -50,3 +50,7 @@ behaviour.adults.n_blocks.t_test <- t.test(LogNBlocks ~ Condition, data=behaviou
 behaviour.adults.n_blocks.lm <- lm(LogNBlocks ~ Condition*Gender*Age,
                                    data = behaviour.adults.n_blocks)
 # ANALYSIS -- BEHAVIOURAL DATA -- REACTION TIME
+behaviour.adults.reaction_time.plot <- ggplot(behaviour.adults, aes(x=Condition,y=LogRT)) + geom_boxplot()
+behaviour.adults.reaction_time.t_test <- t.test(LogRT ~ Condition, data = behaviour.adults)
+behaviour.adults.reaction_time.anova <- aov(LogRT ~ Condition*Block, data = behaviour.adults)
+behaviour.adults.reaction_time.model_comparison <- drop1(behaviour.adults.reaction_time.anova, .~, test = "F")

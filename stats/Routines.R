@@ -43,6 +43,7 @@ LT_data.to_responses <- function(df){
     group_by(Subject) %>%
     mutate(NBlocks = max(Block),
            LogNBlocks = log(NBlocks),
+           RT = ifelse(RT < 200, NA, RT),
            LogRT = log(RT))
   return(df)
 }
