@@ -11,7 +11,7 @@ source("Routines.R")
 AOIs.adults <- data.frame(name=c("Tail","Head"),L=c(20,400),R=c(220,620),T=c(110,55),B=c(330,255))
 
 # Import raw data
-raw_data.adults <- LT_data.import()
+raw_data.adults <- LT_data.adults.import()
 # Turn raw into behavioural data, save it to a csv file
 behaviour.adults <- LT_data.to_responses(raw_data.adults)
 write.csv(behaviour.adults, "../results/BeviouralData.csv")
