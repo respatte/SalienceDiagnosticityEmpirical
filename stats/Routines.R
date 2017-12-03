@@ -4,7 +4,7 @@ library(reshape2)
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all adult participants, in the ../results/adults repository by default
-LT_data.adults.import <- function(res.repo="../results/adults/"){
+LT_data.adults.import <- function(res.repo="../results/adults/", subjects=1:60){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
@@ -12,7 +12,7 @@ LT_data.adults.import <- function(res.repo="../results/adults/"){
   cl <- makeCluster(4)
   registerDoSNOW(cl)
   file.names <- list.files(path=res.repo, pattern=".gazedata")
-  df <- foreach(i=1:60,.combine="rbind", .inorder=F) %dopar% single.file.import(paste0(res.repo,file.names[i]))
+  df <- foreach(i=subjects,.combine="rbind", .inorder=F) %dopar% single.file.import(paste0(res.repo,file.names[i]))
   stopCluster(cl)
   df$TrialId <- ifelse(df$Block==0, df$TrialId + 252, df$TrialId)
   df <- df %>% group_by(Subject) %>%
