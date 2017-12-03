@@ -1,9 +1,10 @@
 library(doSNOW)
 library(dplyr)
+library(reshape2)
 
-# LOOKING-TIME DATA IMPORT
-# Function importing looking time data from all participants, in the ../results/ repository by default
-LT_data.import <- function(res.repo="../results/adults/"){
+# LOOKING-TIME DATA IMPORT -- ADUTLTS
+# Function importing looking time data from all adult participants, in the ../results/adults repository by default
+LT_data.adults.import <- function(res.repo="../results/adults/"){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
@@ -35,6 +36,15 @@ LT_data.import <- function(res.repo="../results/adults/"){
   return(df)
 }
 
+# LOOKING-TIME DATA IMPORT -- ADUTLTS
+# Function importing looking time data from all infant participants, in the ../results/infants.tsv file by default
+LT_data.infants.import <- function(file.name="../results/infants.tsv"){
+  df <- read.csv(file.name, sep = "\t")
+  # TODO - Flip/Reg/Contrast and others for AOI positions
+  # TODO - Add participant information (DOB, DOTest)
+  return(df)
+}
+
 # LOOKING-TIME DATA TO RESPONSES
 # Function extracting all non-LT data per participant per trial
 LT_data.to_responses <- function(df){
@@ -43,21 +53,24 @@ LT_data.to_responses <- function(df){
     group_by(Subject) %>%
     mutate(NBlocks = max(Block),
            LogNBlocks = log(NBlocks),
+           RT = ifelse(RT < 200, NA, RT),
            LogRT = log(RT))
   return(df)
 }
 
 # LOOKING-TIME DATA TO EYETRACKINGR
 # Function adding AOIs, defining trial time-windows, and returning eyetrackingR data
-LT_data.to_eyetrackingR <- function(df, AOIs){
+LT_data.to_eyetrackingR <- function(df, AOIs, set.trial.start = T){
   # Add AOIs to data frame, one by one
   for (AOI in levels(AOIs$name)){
     row <- AOIs[AOIs$name==AOI,]
     df[,AOI] <- df$CursorX>row$L & df$CursorX<row$R & df$CursorY>row$T & df$CursorY<row$B
   }
-  # Set starting time of all trials to 0
-  df <- df %>% group_by(Subject, TrialId) %>% mutate(TimeStamp = TimeStamp - min(TimeStamp),
-                                                     NormTimeStamp = TimeStamp/max(TimeStamp))
+  if(set.trial.start){
+    # Set starting time of all trials to 0
+    df <- df %>% group_by(Subject, TrialId) %>% mutate(TimeStamp = TimeStamp - min(TimeStamp),
+                                                       NormTimeStamp = TimeStamp/max(TimeStamp))
+  }
   return(df)
 }
 
