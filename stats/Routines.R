@@ -1,4 +1,5 @@
 library(doSNOW)
+library(tidyr)
 library(dplyr)
 library(reshape2)
 
@@ -26,7 +27,7 @@ LT_data.adults.import <- function(res.repo="../results/adults/", subjects=1:60){
                "A_Saldie"
              }else{"A_Gatoo"}},
              levels = c("NoName","A_Saldie","A_Gatoo")))
-  df$TrackLoss <- ifelse(pmin.int(df$CursorX,df$CursorY)<0,T,F)
+  df$TrackLoss <- pmin.int(df$CursorX,df$CursorY)<0
   # Creating TimeStamp in milliseconds
   df$TimeStamp <- df$TimestampMicrosec*1e-3 + df$TimestampSec*1e3
   df <- df[,-(4:5)]
@@ -38,10 +39,38 @@ LT_data.adults.import <- function(res.repo="../results/adults/", subjects=1:60){
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all infant participants, in the ../results/infants.tsv file by default
-LT_data.infants.import <- function(file.name="../results/infants.tsv"){
-  df <- read.csv(file.name, sep = "\t")
-  # TODO - Flip/Reg/Contrast and others for AOI positions
-  # TODO - Add participant information (DOB, DOTest)
+LT_data.infants.import <- function(res.repo="../results/infants/", file.name="infants.tsv"){
+  # Read file, drop empty MediaName rows, delete Attention Gatherer (AG) recordings,
+  # as well as unused columns from Tobii output (update with new output)
+  df <- read.csv(paste0(res.repo,file.name), sep = "\t") %>%
+    select(-one_of("X","StudioEventIndex","StudioEvent","StudioEventData")) %>%
+    drop_na(MediaName) %>%
+    subset(!grepl("AG",.$MediaName)) %>%
+    droplevels() %>%
+    mutate(TrackLoss = ValidityLeft + ValidityRight == 8)
+  # Add participant information (Gender, DOB, DOT)
+  participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"),
+                               colClasses = c("factor","factor","Date","Date")) %>%
+    drop_na(DOB) %>%
+    mutate(Age = as.numeric(difftime(DOT, DOB, units = "days")),
+           DiffTo15mo = Age - 15*7*52/12) %>%
+    select(-one_of("DOB","DOT"))
+  # 15months * 7days/week * 52/12weeks/month = 15months in days
+  df <- merge(df, participant_info, by="ParticipantName")
+  # TODO - Add Reg-Flip and others for AOIs
+  df <- df %>% mutate(Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
+                                        grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
+                                        grepl("[HRT]C_", MediaName) ~ "Test - Contrast"),
+                      AOI_type = case_when(grepl("Flip", MediaName) ~ "Flip",
+                                           grepl("Reg", MediaName) ~ "Reg",
+                                           grepl("HC_[AB][12]L", MediaName) ~ "NewHeadR",
+                                           grepl("HC_[AB][12]R", MediaName) ~ "NewHeadL",
+                                           grepl("TC_[AB][12]L", MediaName) ~ "NewTailR",
+                                           grepl("TC_[AB][12]R", MediaName) ~ "NewTailL",
+                                           grepl("RC_[AB]L", MediaName) ~ "NewHeadL_NewTailR",
+                                           grepl("RC_[AB]R", MediaName) ~ "NewHeadR_NewTailL",
+                                           grepl("WL[SG]_A1", MediaName) ~ "HeadsIn",
+                                           grepl("WL[SG]_A2", MediaName) ~ "HeadsOut"))
   return(df)
 }
 
