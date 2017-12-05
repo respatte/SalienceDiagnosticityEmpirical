@@ -43,11 +43,13 @@ LT_data.infants.import <- function(res.repo="../results/infants/", file.name="in
   # Read file, drop empty MediaName rows, delete Attention Gatherer (AG) recordings,
   # as well as unused columns from Tobii output (update with new output)
   df <- read.csv(paste0(res.repo,file.name), sep = "\t") %>%
-    select(-one_of("X","StudioEventIndex","StudioEvent","StudioEventData")) %>%
     drop_na(MediaName) %>%
-    subset(!grepl("AG",.$MediaName)) %>%
+    subset(!(grepl("AG",.$MediaName) | .$MediaName == "")) %>%
     droplevels() %>%
-    mutate(TrackLoss = ValidityLeft + ValidityRight == 8)
+    group_by(ParticipantName, MediaName) %>%
+    mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
+           TrialN = max(StudioEventIndex, na.rm = T)) %>%
+    select(-one_of("X", "ValidityLeft", "ValidityRight", "StudioEventIndex"))
   # Add participant information (Gender, DOB, DOT)
   participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"),
                                colClasses = c("factor","factor","Date","Date")) %>%
@@ -56,21 +58,52 @@ LT_data.infants.import <- function(res.repo="../results/infants/", file.name="in
            DiffTo15mo = Age - 15*7*52/12) %>%
     select(-one_of("DOB","DOT"))
   # 15months * 7days/week * 52/12weeks/month = 15months in days
-  df <- merge(df, participant_info, by="ParticipantName")
+  df <- merge(df, participant_info, by = "ParticipantName")
+  # Add sequence information
+  sequence_info <- read.csv("../scripts/infants/SequenceInfo.csv") %>%
+    mutate(CategoryName = ifelse(Name.first.fam.stim == "NoLabel",
+                                 "NL",
+                                 ifelse(First.fam.stim == "A",
+                                        paste0("A_",substr(Name.first.fam.stim,1,1)),
+                                        ifelse(Name.first.fam.stim == "Saldie",
+                                               "A_G",
+                                               "A_S"))),
+           Condition = ifelse(Name.first.fam.stim == "NoLabel",
+                              "No Label",
+                              "Label")) %>%
+    select(one_of("PresentationSequence","CategoryName","Condition"))
+  df <- merge(df, sequence_info, by = "PresentationSequence")
   # TODO - Add Reg-Flip and others for AOIs
-  df <- df %>% mutate(Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
-                                        grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
-                                        grepl("[HRT]C_", MediaName) ~ "Test - Contrast"),
-                      AOI_type = case_when(grepl("Flip", MediaName) ~ "Flip",
-                                           grepl("Reg", MediaName) ~ "Reg",
-                                           grepl("HC_[AB][12]L", MediaName) ~ "NewHeadR",
-                                           grepl("HC_[AB][12]R", MediaName) ~ "NewHeadL",
-                                           grepl("TC_[AB][12]L", MediaName) ~ "NewTailR",
-                                           grepl("TC_[AB][12]R", MediaName) ~ "NewTailL",
-                                           grepl("RC_[AB]L", MediaName) ~ "NewHeadL_NewTailR",
-                                           grepl("RC_[AB]R", MediaName) ~ "NewHeadR_NewTailL",
-                                           grepl("WL[SG]_A1", MediaName) ~ "HeadsIn",
-                                           grepl("WL[SG]_A2", MediaName) ~ "HeadsOut"))
+  df <- df %>%
+    mutate(Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
+                             grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
+                             grepl("[HRT]C_", MediaName) ~ "Test - Contrast"),
+           TrialId = ifelse(Phase == "Familiarisation",
+                            sapply(strsplit(MediaName, "_"), "[", 2),
+                            sapply(strsplit(MediaName, "_"), "[", 1)))
+           # AOI_type = case_when(grepl("Flip", MediaName) ~ "Flip",
+           #                      grepl("Reg", MediaName) ~ "Reg",
+           #                      grepl("HC_[AB][12]L", MediaName) ~ "NewHeadR",
+           #                      grepl("HC_[AB][12]R", MediaName) ~ "NewHeadL",
+           #                      grepl("TC_[AB][12]L", MediaName) ~ "NewTailR",
+           #                      grepl("TC_[AB][12]R", MediaName) ~ "NewTailL",
+           #                      grepl("RC_[AB]L", MediaName) ~ "NewHeadL_NewTailR",
+           #                      grepl("RC_[AB]R", MediaName) ~ "NewHeadR_NewTailL",
+           #                      grepl("WL[SG]_A1", MediaName) ~ ifelse(CategoryName == "NL",
+           #                                                             "HeadsIn_NoTarget",
+           #                                                             paste0("HeadsIn_Target",
+           #                                                                    ifelse(CategoryName == paste0("A_",
+           #                                                                                                         substr(MediaName,3,3)),
+           #                                                                           substr(MediaName,7,7),
+           #                                                                           substr(MediaName,11,11)))),
+           #                      grepl("WL[SG]_A2", MediaName) ~ ifelse(CategoryName == "NL",
+           #                                                             "HeadsOut_NoTarget",
+           #                                                             paste0("HeadsOut_Target",
+           #                                                                    ifelse(CategoryName == paste0("A_",
+           #                                                                                                         substr(MediaName,3,3)),
+           #                                                                           substr(MediaName,7,7),
+           #                                                                           substr(MediaName,11,11))))
+           #                      ))
   return(df)
 }
 
