@@ -8,13 +8,17 @@ source("Routines.R")
 
 # GATHER DATA
 # Define AOIs
-AOIs.adults <- data.frame(name=c("Tail","Head"),L=c(20,400),R=c(220,620),T=c(110,55),B=c(330,255))
+AOIs.adults <- data.frame(name=c("Tail","Head"),
+                          L=c(20,400),
+                          R=c(220,620),
+                          T=c(110,55),
+                          B=c(330,255))
 # Import raw data
 raw_data.adults <- LT_data.adults.import()
 # Turn raw into behavioural data, save it to a csv file
 behaviour.adults <- LT_data.to_responses(raw_data.adults)
 write.csv(behaviour.adults, "../results/BeviouralData.csv")
-# Turn raw into clean eyetrackingR data
+# Turn raw into eyetrackingR data
 LT.adults <- raw_data.adults %>%
   LT_data.to_eyetrackingR(AOIs.adults) %>%
   make_eyetrackingr_data(participant_column = "Subject",
@@ -22,8 +26,27 @@ LT.adults <- raw_data.adults %>%
                          time_column = "NormTimeStamp",
                          trackloss_column = "TrackLoss",
                          aoi_columns = c('Head','Tail'),
-                         treat_non_aoi_looks_as_missing = TRUE) %>%
-  LT_data.trackloss_clean()
+                         treat_non_aoi_looks_as_missing = F) %>%
+  mutate(NAOI = !TrackLoss & !(Head | Tail))
+# Check for trackloss ratio and NAOI (non-AOI) ratio
+LT.adults.gaze_summary <- LT.adults %>%
+  group_by(Subject,CurrentObject) %>%
+  summarise(TrackLossRatio = sum(TrackLoss)/n(),
+            NAOIRatio = sum(NAOI)/(n()-sum(TrackLoss)))
+LT.adults.gaze_summary.plot.TrackLossRatio <- ggplot(LT.adults.gaze_summary,
+                                                     aes(x = CurrentObject, y = TrackLossRatio)) +
+  geom_violin(aes(fill = CurrentObject)) +
+  geom_boxplot(alpha=0, width=.3, outlier.alpha = 1) +
+  guides(fill = "none")
+ggsave("../results/TrackLossRatio.png")
+LT.adults.gaze_summary.plot.NAOIRatio <- ggplot(LT.adults.gaze_summary,
+                                                aes(x = CurrentObject, y = NAOIRatio)) +
+  geom_violin(aes(fill = CurrentObject)) +
+  geom_boxplot(alpha=0, width=.3, outlier.alpha = 1) +
+  guides(fill = "none")
+ggsave("../results/NonAOIRatio.png")
+# Make clean
+LT.adults.clean <- LT_data.trackloss_clean(LT.adults)
 LT.adults$TrialId <- as.numeric(LT.adults$TrialId)
 
 # ANALYSIS - LOOKING TIME
