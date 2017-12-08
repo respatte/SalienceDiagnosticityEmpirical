@@ -5,7 +5,7 @@ library(reshape2)
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all adult participants, in the ../results/adults repository by default
-LT_data.adults.import <- function(res.repo="../results/adults/", subjects=1:60){
+LT_data.adults.import <- function(res.repo="../results/adults_2f/data/", subjects=1:60){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))

@@ -17,7 +17,7 @@ AOIs.adults <- data.frame(name=c("Tail","Head"),
 raw_data.adults <- LT_data.adults.import()
 # Turn raw into behavioural data, save it to a csv file
 behaviour.adults <- LT_data.to_responses(raw_data.adults)
-write.csv(behaviour.adults, "../results/BeviouralData.csv")
+write.csv(behaviour.adults, "../results/adults_2f/data/BeviouralData.csv")
 # Turn raw into eyetrackingR data
 LT.adults <- raw_data.adults %>%
   LT_data.to_eyetrackingR(AOIs.adults) %>%
