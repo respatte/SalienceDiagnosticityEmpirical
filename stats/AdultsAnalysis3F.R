@@ -9,13 +9,16 @@ source("Routines.R")
 # GATHER DATA
 # Define AOIs
 AOIs.adults <- data.frame(name=c("Tail","Head","Feet"),
-                          L=c(60.8,387.2,195.2 ),
-                          R=c(108,108,433.6),
-                          T=c(74.4,400.8,267.2),
-                          B=c(266.4,266.4,539.2))
+                          L=c(36,363,146),
+                          R=c(260,602,483),
+                          T=c(115,66,364),
+                          B=c(310,295,465))
 AOIs.plot <- ggplot(AOIs.adults, aes(xmin = L, xmax = R, ymin = T, ymax = B)) +
   xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
-  geom_rect(aes(fill = name))
+  geom_rect(aes(fill = name)) +
+  theme(legend.position = "top")
+ggsave("../results/adults_3f/data_cleaning_graphs/AOIs.png",
+       plot = AOIs.plot , width = 3.2, height = 2.95)
 
 # Import raw data
 raw_data.adults <- LT_data.adults.import(res.repo = "../results/adults_3f/data/", subjects = 1:40)
@@ -42,15 +45,15 @@ LT.adults.gaze_summary.plot.TrackLossRatio <- ggplot(LT.adults.gaze_summary,
   geom_violin(aes(fill = CurrentObject)) +
   geom_boxplot(alpha=0, width=.3, outlier.alpha = 1) +
   guides(fill = "none")
-ggsave("../results/TrackLossRatio.png")
+ggsave("../results/adults_3f/data_cleaning_graphs/TrackLossRatio.png", plot = LT.adults.gaze_summary.plot.TrackLossRatio)
 LT.adults.gaze_summary.plot.NAOIRatio <- ggplot(LT.adults.gaze_summary,
                                                 aes(x = CurrentObject, y = NAOIRatio)) +
   geom_violin(aes(fill = CurrentObject)) +
   geom_boxplot(alpha=0, width=.3, outlier.alpha = 1) +
   guides(fill = "none")
-ggsave("../results/NonAOIRatio.png")
+ggsave("../results/adults_3f/data_cleaning_graphs/NonAOIRatio.png", plot = LT.adults.gaze_summary.plot.NAOIRatio)
 # Make clean
-LT.adults.clean <- LT_data.trackloss_clean(LT.adults)
+LT.adults.clean <- LT_data.trackloss_clean(LT.adults, res.repo = "../results/adults_3f/data_cleaning_graphs/", verbose = F)
 LT.adults.clean$TrialId <- as.numeric(LT.adults.clean$TrialId)
 
 # ANALYSIS - LOOKING TIME
@@ -58,7 +61,10 @@ LT.adults.clean$TrialId <- as.numeric(LT.adults.clean$TrialId)
 LT.adults.heatmap <- ggplot(LT.adults.clean, aes(x=CursorX,y=CursorY)) +
   xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
   facet_wrap(~Condition) +
-  geom_bin2d(binwidth = c(20,20))
+  geom_bin2d(binwidth = c(20,20)) +
+  guides(fill = "none")
+ggsave("../results/adults_3f/data_cleaning_graphs/LT_heatmaps.png",
+       plot = LT.adults.heatmap, width = 6.4, height = 2.9)
 # Plotting eye-tracking data for all AOIs, averaged across all trials
 LT.adults.time_course <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2,
                                              predictor_columns = c("Condition"),

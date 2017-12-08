@@ -42,15 +42,15 @@ LT.adults.gaze_summary.plot.TrackLossRatio <- ggplot(LT.adults.gaze_summary,
   geom_violin(aes(fill = CurrentObject)) +
   geom_boxplot(alpha=0, width=.3, outlier.alpha = 1) +
   guides(fill = "none")
-ggsave("../results/TrackLossRatio.png")
+ggsave("../results/adults_2f/data_cleaning_graphs/TrackLossRatio.png")
 LT.adults.gaze_summary.plot.NAOIRatio <- ggplot(LT.adults.gaze_summary,
                                                 aes(x = CurrentObject, y = NAOIRatio)) +
   geom_violin(aes(fill = CurrentObject)) +
   geom_boxplot(alpha=0, width=.3, outlier.alpha = 1) +
   guides(fill = "none")
-ggsave("../results/NonAOIRatio.png")
+ggsave("../results/adults_2f/data_cleaning_graphs/NonAOIRatio.png")
 # Make clean
-LT.adults.clean <- LT_data.trackloss_clean(LT.adults)
+LT.adults.clean <- LT_data.trackloss_clean(LT.adults, trial_prop_thresh = .3, incl_crit = .5, verbose = T)
 LT.adults.clean$TrialId <- as.numeric(LT.adults.clean$TrialId)
 
 # ANALYSIS - LOOKING TIME

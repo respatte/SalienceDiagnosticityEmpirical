@@ -32,8 +32,8 @@ LT_data.adults.import <- function(res.repo="../results/adults_2f/data/", subject
   df$TimeStamp <- df$TimestampMicrosec*1e-3 + df$TimestampSec*1e3
   df <- df[,-(4:5)]
   # Adding participant information
-  participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
-  df <- merge(df, participant_info, by="Subject")
+  #participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
+  #df <- merge(df, participant_info, by="Subject")
   return(df)
 }
 
@@ -93,17 +93,17 @@ LT_data.infants.import <- function(res.repo="../results/infants/", file.name="in
                                                                        "HeadsIn_NoTarget",
                                                                        paste0("HeadsIn_Target",
                                                                               ifelse(CategoryName == paste0("A_",
-                                                                                                                   substr(MediaName,3,3)),
+                                                                                                            substr(MediaName,3,3)),
                                                                                      substr(MediaName,7,7),
                                                                                      substr(MediaName,11,11)))),
                                 grepl("WL[SG]_A2", MediaName) ~ ifelse(CategoryName == "NL",
                                                                        "HeadsOut_NoTarget",
                                                                        paste0("HeadsOut_Target",
                                                                               ifelse(CategoryName == paste0("A_",
-                                                                                                                   substr(MediaName,3,3)),
+                                                                                                            substr(MediaName,3,3)),
                                                                                      substr(MediaName,7,7),
                                                                                      substr(MediaName,11,11))))
-                                ))
+           ))
   return(df)
 }
 
@@ -136,33 +136,31 @@ LT_data.to_eyetrackingR <- function(df, AOIs, set.trial.start = T){
   return(df)
 }
 
-LT_data.trackloss_clean <- function(df, trial_prop_thresh=.25, incl_crit=.5, verbose=F){
+LT_data.trackloss_clean <- function(df, res.repo = "../results/adults_2f/data_cleaning_graphs/", trial_prop_thresh=.25, incl_crit=.5, verbose=F){
   # Get trackloss information
-  trackloss <- trackloss_analysis(df)
-  trackloss.subject.trial <- unique(trackloss[, c('Subject','TrialId','TracklossForTrial')])
+  trackloss.subject.trial <- trackloss_analysis(df)
   # Plot trackloss per trial per subject
   trackloss.subject.trial.p <- ggplot(trackloss.subject.trial, aes(x=TrialId, y=TracklossForTrial)) +
     facet_wrap(~Subject, nrow = 10, scales = "free_x") + geom_point()
-  ggsave("../results/TracklossSubjectTrial.png", trackloss.subject.trial.p, width=9, height=15)
+  ggsave(paste0(res.repo,"TracklossSubjectTrial.png"), trackloss.subject.trial.p, width=9, height=15)
   # Remove trials with trackloss proportion greater than 0.25
   df.trackloss <- clean_by_trackloss(data = df,
-                                            trial_prop_thresh = trial_prop_thresh)
+                                     trial_prop_thresh = trial_prop_thresh)
   # Compute and plot proportion of valid trials per subject (number of valid trials / number of trials for subject)
   df.described <- describe_data(df.trackloss, 'Block', 'Subject')
   df.described$ProportionTrials <- df.described$NumTrials /
     (12*(df.described$Max + 1))
-  df.described$AboveCriteria <- factor(ifelse(df.described$ProportionTrials >= incl_crit, 1, 0))
+  df.described$AboveCriteria <- factor(df.described$ProportionTrials >= incl_crit)
   if(verbose){
     print(summary(df.described))
   }
   df.described.p <- ggplot(df.described,
-                                  aes(x=Subject, y=ProportionTrials, colour = AboveCriteria)) +
+                           aes(x=Subject, y=ProportionTrials, colour = AboveCriteria)) +
     scale_colour_manual(values = c("red","green"), guide = F) + geom_point()
-  ggsave("../results/ProportionTrialPerSubject.png", df.described.p, width=10, height=3)
+  ggsave(paste0(res.repo,"ProportionTrialPerSubject.png"), df.described.p, width=10, height=3)
   # Select subjects to keep
-  df.clean <- df.trackloss[df.trackloss$Subject %in%
-                                           df.described$Subject[df.described$AboveCriteria == 1],] %>%
-    droplevels()
+  df.trackloss <- merge(df.trackloss, select(df.described, one_of("Subject", "AboveCriteria")), by = "Subject")
+  df.clean <- subset(df.trackloss, AboveCriteria == T) %>% droplevels()
   if(verbose){
     # Check how many subjects missing per condition
     print(summary(unique(df.clean[,c('Subject','Condition')])))
