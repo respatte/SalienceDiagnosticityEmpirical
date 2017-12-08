@@ -5,7 +5,7 @@ library(reshape2)
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all adult participants, in the ../results/adults repository by default
-LT_data.adults.import <- function(res.repo="../results/adults_2f/data/", subjects=1:60){
+LT_data.adults.import <- function(res.repo="../results/adults_2f/data/", subjects=1:60, pinfo = T){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
@@ -31,9 +31,11 @@ LT_data.adults.import <- function(res.repo="../results/adults_2f/data/", subject
   # Creating TimeStamp in milliseconds
   df$TimeStamp <- df$TimestampMicrosec*1e-3 + df$TimestampSec*1e3
   df <- df[,-(4:5)]
-  # Adding participant information
-  #participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
-  #df <- merge(df, participant_info, by="Subject")
+  if(pinfo){
+    # Adding participant information
+    participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
+    df <- merge(df, participant_info, by="Subject")
+  }
   return(df)
 }
 

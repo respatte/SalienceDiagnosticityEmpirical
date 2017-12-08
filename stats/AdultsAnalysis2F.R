@@ -50,7 +50,7 @@ LT.adults.gaze_summary.plot.NAOIRatio <- ggplot(LT.adults.gaze_summary,
   guides(fill = "none")
 ggsave("../results/adults_2f/data_cleaning_graphs/NonAOIRatio.png")
 # Make clean
-LT.adults.clean <- LT_data.trackloss_clean(LT.adults, trial_prop_thresh = .3, incl_crit = .5, verbose = T)
+LT.adults.clean <- LT_data.trackloss_clean(LT.adults, trial_prop_thresh = .3, incl_crit = .5)
 LT.adults.clean$TrialId <- as.numeric(LT.adults.clean$TrialId)
 
 # ANALYSIS - LOOKING TIME
@@ -64,10 +64,11 @@ LT.adults.time_course <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2
                                              predictor_columns = c("Condition"),
                                              aois = c("Head","Tail"))
 LT.adults.time_course.plot <- plot(LT.adults.time_course, predictor_column = "Condition") + 
-  theme_light() + coord_cartesian(ylim = c(0,1))
+  theme_light()
+ggsave("../results/adults_2f/LookingTimeCourseNorm.pdf", plot = LT.adults.time_course.plot)
 # Analysing and plotting total looking time to each AOI
 # Making data time-window-analysis ready
-LT.adults.total_per_AOI <- make_time_window_data(LT.adults, 
+LT.adults.total_per_AOI <- make_time_window_data(LT.adults,
                                                  aois=c("Head","Tail"),
                                                  predictor_columns=c("Condition",
                                                                      "Stimulus",
@@ -78,6 +79,7 @@ LT.adults.total_per_AOI <- make_time_window_data(LT.adults,
 LT.adults.total_per_AOI.plot <- plot(LT.adults.total_per_AOI,
                                      predictor_columns=c("Condition"),
                                      dv = "ArcSin")
+ggsave("../results/adults_2f/TotalPerAOI.png", plot = LT.adults.total_per_AOI.plot)
 # Simple t-test
 LT.adults.total_per_AOI.t_test <- t.test(ArcSin ~ Condition, data=LT.adults.total_per_AOI)
 # Mixed-effect model
@@ -94,11 +96,13 @@ LT.adults.total_per_AOI.comparison <- drop1(LT.adults.total_per_AOI.lmer,
 behaviour.adults.n_blocks <- subset(behaviour.adults, !duplicated(Subject))
 # Plotting and analysing NBlocks by Condition
 behaviour.adults.n_blocks.plot <- ggplot(behaviour.adults.n_blocks, aes(x=Condition,y=LogNBlocks)) + geom_boxplot()
+ggsave("../results/adults_2f/BlocksToLearning.png", plot = behaviour.adults.n_blocks.plot)
 behaviour.adults.n_blocks.t_test <- t.test(LogNBlocks ~ Condition, data=behaviour.adults.n_blocks)
 behaviour.adults.n_blocks.lm <- lm(LogNBlocks ~ Condition*Gender*Age,
                                    data = behaviour.adults.n_blocks)
 # ANALYSIS -- BEHAVIOURAL DATA -- REACTION TIME
 behaviour.adults.reaction_time.plot <- ggplot(behaviour.adults, aes(x=Condition,y=LogRT)) + geom_boxplot()
+ggsave("../results/adults_2f/ReactionTime.png", plot = behaviour.adults.reaction_time.plot)
 behaviour.adults.reaction_time.t_test <- t.test(LogRT ~ Condition, data = behaviour.adults)
 behaviour.adults.reaction_time.anova <- aov(LogRT ~ Condition*Block, data = behaviour.adults)
 behaviour.adults.reaction_time.model_comparison <- drop1(behaviour.adults.reaction_time.anova, ~., test = "F")
