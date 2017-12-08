@@ -13,6 +13,10 @@ AOIs.adults <- data.frame(name=c("Tail","Head"),
                           R=c(220,620),
                           T=c(110,55),
                           B=c(330,255))
+AOIs.plot <- ggplot(AOIs.adults, aes(xmin = L, xmax = R, ymin = T, ymax = B)) +
+  xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
+  geom_rect(aes(fill = name))
+
 # Import raw data
 raw_data.adults <- LT_data.adults.import()
 # Turn raw into behavioural data, save it to a csv file
@@ -26,8 +30,8 @@ LT.adults <- raw_data.adults %>%
                          time_column = "NormTimeStamp",
                          trackloss_column = "TrackLoss",
                          aoi_columns = c('Head','Tail'),
-                         treat_non_aoi_looks_as_missing = F) %>%
-  mutate(NAOI = !TrackLoss & !(Head | Tail))
+                         treat_non_aoi_looks_as_missing = F)
+LT.adults$NAOI = !LT.adults$TrackLoss & !(LT.adults$Head | LT.adults$Tail)
 # Check for trackloss ratio and NAOI (non-AOI) ratio
 LT.adults.gaze_summary <- LT.adults %>%
   group_by(Subject,CurrentObject) %>%
@@ -47,9 +51,14 @@ LT.adults.gaze_summary.plot.NAOIRatio <- ggplot(LT.adults.gaze_summary,
 ggsave("../results/NonAOIRatio.png")
 # Make clean
 LT.adults.clean <- LT_data.trackloss_clean(LT.adults)
-LT.adults$TrialId <- as.numeric(LT.adults$TrialId)
+LT.adults.clean$TrialId <- as.numeric(LT.adults.clean$TrialId)
 
 # ANALYSIS - LOOKING TIME
+# Plotting heatmap for label and no-label participants
+LT.adults.heatmap <- ggplot(LT.adults.clean, aes(x=CursorX,y=CursorY)) +
+  xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
+  facet_wrap(~Condition) +
+  geom_bin2d(binwidth = c(20,20))
 # Plotting eye-tracking data for all AOIs, averaged across all trials
 LT.adults.time_course <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2,
                                              predictor_columns = c("Condition"),
