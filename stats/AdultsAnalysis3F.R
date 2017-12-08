@@ -21,7 +21,7 @@ ggsave("../results/adults_3f/data_cleaning_graphs/AOIs.png",
        plot = AOIs.plot , width = 3.2, height = 2.95)
 
 # Import raw data
-raw_data.adults <- LT_data.adults.import(res.repo = "../results/adults_3f/data/", subjects = 1:40, pinfo = F)
+raw_data.adults <- LT_data.adults.import(participants = "adults_3f", subjects = 1:40, pinfo = F)
 # Turn raw into behavioural data, save it to a csv file
 behaviour.adults <- LT_data.to_responses(raw_data.adults)
 write.csv(behaviour.adults, "../results/adults_3f/data/BeviouralData.csv")
@@ -53,7 +53,8 @@ LT.adults.gaze_summary.plot.NAOIRatio <- ggplot(LT.adults.gaze_summary,
   guides(fill = "none")
 ggsave("../results/adults_3f/data_cleaning_graphs/NonAOIRatio.png")
 # Make clean
-LT.adults.clean <- LT_data.trackloss_clean(LT.adults, trial_prop_thresh = .3, incl_crit = .5, res.repo = "../results/adults_3f/data_cleaning_graphs/")
+LT.adults.clean <- LT_data.trackloss_clean(LT.adults, trial_prop_thresh = .3, incl_crit = .5,
+                                           participants = "adults_3f")
 LT.adults.clean$TrialId <- as.numeric(LT.adults.clean$TrialId)
 
 # ANALYSIS - LOOKING TIME

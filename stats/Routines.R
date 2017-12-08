@@ -5,13 +5,14 @@ library(reshape2)
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all adult participants, in the ../results/adults repository by default
-LT_data.adults.import <- function(res.repo="../results/adults_2f/data/", subjects=1:60, pinfo = T){
+LT_data.adults.import <- function(participants="adults_2f", subjects=1:60, pinfo = T){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
   }
   cl <- makeCluster(4)
   registerDoSNOW(cl)
+  res.repo <- paste0("../results/",participants,"/data/")
   file.names <- list.files(path=res.repo, pattern=".gazedata")
   df <- foreach(i=subjects,.combine="rbind", .inorder=F) %dopar% single.file.import(paste0(res.repo,file.names[i]))
   stopCluster(cl)
@@ -45,12 +46,14 @@ LT_data.infants.import <- function(res.repo="../results/infants/data/", file.nam
   # Read file, drop empty MediaName rows, delete Attention Gatherer (AG) recordings,
   # as well as unused columns from Tobii output (update with new output)
   df <- read.csv(paste0(res.repo,file.name), sep = "\t") %>%
-    drop_na(MediaName) %>%
+    rename(TimeStamp=RecordingTimestamp) %>%
     subset(!(grepl("AG",.$MediaName) | .$MediaName == "")) %>%
     droplevels() %>%
     group_by(ParticipantName, MediaName) %>%
     mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
            TrialN = max(StudioEventIndex, na.rm = T)/2) %>%
+    drop_na(MediaName, TrackLoss) %>%
+    subset(!duplicated(TimeStamp)) %>%
     select(-one_of("X", "ValidityLeft", "ValidityRight", "StudioEventIndex"))
   # Add participant information (Gender, DOB, DOT)
   participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"),
@@ -124,7 +127,7 @@ LT_data.to_responses <- function(df){
 
 # LOOKING-TIME DATA TO EYETRACKINGR
 # Function adding AOIs, defining trial time-windows, and returning eyetrackingR data
-LT_data.to_eyetrackingR <- function(df, AOIs, set.trial.start = T){
+LT_data.to_eyetrackingR <- function(df, AOIs, participants="adults_2f", set.trial.start = T){
   # Add AOIs to data frame, one by one
   for (AOI in levels(AOIs$name)){
     row <- AOIs[AOIs$name==AOI,]
@@ -132,13 +135,16 @@ LT_data.to_eyetrackingR <- function(df, AOIs, set.trial.start = T){
   }
   if(set.trial.start){
     # Set starting time of all trials to 0
-    df <- df %>% group_by(Subject, TrialId) %>% mutate(TimeStamp = TimeStamp - min(TimeStamp),
-                                                       NormTimeStamp = TimeStamp/max(TimeStamp))
+    df <- df %>%
+      {if(pgrepl("adults_[23]f", participants)) group_by(., Subject, TrialId) else if(participants == "infants") group_by(., ParticipantName, TrialN)} %>%
+      mutate(TimeStamp = TimeStamp - min(TimeStamp),
+             NormTimeStamp = TimeStamp/max(TimeStamp))
   }
   return(df)
 }
 
-LT_data.trackloss_clean <- function(df, res.repo = "../results/adults_2f/data_cleaning_graphs/", trial_prop_thresh=.25, incl_crit=.5, verbose=F){
+LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thresh=.25, incl_crit=.5, verbose=F){
+  res.repo <- paste0("../results/", participants, "/cleaning/")
   # Get trackloss information
   trackloss.subject.trial <- trackloss_analysis(df)
   # Plot trackloss per trial per subject

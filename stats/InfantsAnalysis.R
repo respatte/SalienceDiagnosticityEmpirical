@@ -38,4 +38,4 @@ LT.infants <- raw_data.infants %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c('Head','Tail'),
                          treat_non_aoi_looks_as_missing = F) %>%
-  LT_data.trackloss_clean(res.repo = "../results/infants/data_cleaning_graphs/")
+  LT_data.trackloss_clean(participants = "infants")
