@@ -16,6 +16,8 @@ AOIs.adults <- data.frame(name=c("Tail","Head"),
 AOIs.plot <- ggplot(AOIs.adults, aes(xmin = L, xmax = R, ymin = T, ymax = B)) +
   xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
   geom_rect(aes(fill = name))
+ggsave("../results/adults_2f/data_cleaning_graphs/AOIs.png",
+       plot = AOIs.plot , width = 3.2, height = 2.95)
 
 # Import raw data
 raw_data.adults <- LT_data.adults.import()

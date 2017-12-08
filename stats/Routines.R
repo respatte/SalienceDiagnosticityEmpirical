@@ -41,7 +41,7 @@ LT_data.adults.import <- function(res.repo="../results/adults_2f/data/", subject
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all infant participants, in the ../results/infants.tsv file by default
-LT_data.infants.import <- function(res.repo="../results/infants/", file.name="infants.tsv"){
+LT_data.infants.import <- function(res.repo="../results/infants/data/", file.name="infants.tsv"){
   # Read file, drop empty MediaName rows, delete Attention Gatherer (AG) recordings,
   # as well as unused columns from Tobii output (update with new output)
   df <- read.csv(paste0(res.repo,file.name), sep = "\t") %>%
@@ -50,7 +50,7 @@ LT_data.infants.import <- function(res.repo="../results/infants/", file.name="in
     droplevels() %>%
     group_by(ParticipantName, MediaName) %>%
     mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
-           TrialN = max(StudioEventIndex, na.rm = T)) %>%
+           TrialN = max(StudioEventIndex, na.rm = T)/2) %>%
     select(-one_of("X", "ValidityLeft", "ValidityRight", "StudioEventIndex"))
   # Add participant information (Gender, DOB, DOT)
   participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"),
