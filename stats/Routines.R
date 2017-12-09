@@ -1,11 +1,10 @@
 library(doSNOW)
-library(tidyr)
-library(dplyr)
 library(reshape2)
+library(tidyverse)
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all adult participants, in the ../results/adults repository by default
-LT_data.adults.import <- function(participants="adults_2f", subjects=1:60, pinfo = T){
+LT_data.adults.import <- function(participants="adults_2f", pinfo = T){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
@@ -14,10 +13,16 @@ LT_data.adults.import <- function(participants="adults_2f", subjects=1:60, pinfo
   registerDoSNOW(cl)
   res.repo <- paste0("../results/",participants,"/data/")
   file.names <- list.files(path=res.repo, pattern=".gazedata")
-  df <- foreach(i=subjects,.combine="rbind", .inorder=F) %dopar% single.file.import(paste0(res.repo,file.names[i]))
+  df <- foreach(i=1:length(file.names),.combine="rbind", .inorder=F) %dopar%
+    single.file.import(paste0(res.repo,file.names[i]))
   stopCluster(cl)
-  df$TrialId <- ifelse(df$Block==0, df$TrialId + 252, df$TrialId)
-  df <- df %>% group_by(Subject) %>%
+  df <- df %>%
+    rename(Participant = Subject) %>%
+    mutate(TrialId = ifelse(Block==0, TrialId + 252, TrialId),
+           TrackLoss = pmin.int(CursorX,CursorY)<0,
+           TimeStamp = TimestampMicrosec*1e-3 + TimestampSec*1e3,
+           AOI_type = 1) %>%
+    group_by(Participant) %>%
     mutate(Condition = factor(if(first(StiLabel) == "NoLabelFeedback"){"NoLabel"}else{"Label"},
                               levels = c("NoLabel","Label")),
            CategoryName = factor(if(first(Condition) == "NoLabel"){"NoName"}else{
@@ -27,15 +32,12 @@ LT_data.adults.import <- function(participants="adults_2f", subjects=1:60, pinfo
                  first(StiLabel) == "Gatoo")){
                "A_Saldie"
              }else{"A_Gatoo"}},
-             levels = c("NoName","A_Saldie","A_Gatoo")))
-  df$TrackLoss <- pmin.int(df$CursorX,df$CursorY)<0
-  # Creating TimeStamp in milliseconds
-  df$TimeStamp <- df$TimestampMicrosec*1e-3 + df$TimestampSec*1e3
-  df <- df[,-(4:5)]
+             levels = c("NoName","A_Saldie","A_Gatoo"))) %>%
+    select(-one_of("TimestampMicrosec","TimestampSec"))
   if(pinfo){
     # Adding participant information
     participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
-    df <- merge(df, participant_info, by="Subject")
+    df <- df %>% inner_join(participant_info)
   }
   return(df)
 }
@@ -46,12 +48,13 @@ LT_data.infants.import <- function(res.repo="../results/infants/data/", file.nam
   # Read file, drop empty MediaName rows, delete Attention Gatherer (AG) recordings,
   # as well as unused columns from Tobii output (update with new output)
   df <- read.csv(paste0(res.repo,file.name), sep = "\t") %>%
-    rename(TimeStamp=RecordingTimestamp) %>%
+    rename(TimeStamp = RecordingTimestamp,
+           Participant = ParticipantName) %>%
     subset(!(grepl("AG",.$MediaName) | .$MediaName == "")) %>%
     droplevels() %>%
     group_by(ParticipantName, MediaName) %>%
     mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
-           TrialN = max(StudioEventIndex, na.rm = T)/2) %>%
+           TrialId = max(StudioEventIndex, na.rm = T)/2) %>%
     drop_na(MediaName, TrackLoss) %>%
     subset(!duplicated(TimeStamp)) %>%
     select(-one_of("X", "ValidityLeft", "ValidityRight", "StudioEventIndex"))
@@ -83,9 +86,9 @@ LT_data.infants.import <- function(res.repo="../results/infants/data/", file.nam
     mutate(Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
                              grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
                              grepl("[HRT]C_", MediaName) ~ "Test - Contrast"),
-           TrialId = ifelse(Phase == "Familiarisation",
-                            sapply(strsplit(as.character(MediaName), "_"), "[", 2),
-                            sapply(strsplit(as.character(MediaName), "_"), "[", 1)),
+           Stimulus = ifelse(Phase == "Familiarisation",
+                             sapply(strsplit(as.character(MediaName), "_"), "[", 2),
+                             sapply(strsplit(as.character(MediaName), "_"), "[", 1)),
            AOI_type = case_when(grepl("Flip", MediaName) ~ "Flip",
                                 grepl("Reg", MediaName) ~ "Reg",
                                 grepl("HC_[AB][12]L", MediaName) ~ "NewHeadR",
@@ -127,19 +130,21 @@ LT_data.to_responses <- function(df){
 
 # LOOKING-TIME DATA TO EYETRACKINGR
 # Function adding AOIs, defining trial time-windows, and returning eyetrackingR data
-LT_data.to_eyetrackingR <- function(df, AOIs, participants="adults_2f", set.trial.start = T){
+LT_data.to_eyetrackingR <- function(df, AOIs){
+  # TODO/GOAL - Get list of AOIs (one df per AOI),
+  # all possibly defined with AOI_type specific values
+  # Transform dfname into string with deparse(substitute(dfname))
   # Add AOIs to data frame, one by one
-  for (AOI in levels(AOIs$name)){
-    row <- AOIs[AOIs$name==AOI,]
-    df[,AOI] <- df$CursorX>row$L & df$CursorX<row$R & df$CursorY>row$T & df$CursorY<row$B
-  }
-  if(set.trial.start){
-    # Set starting time of all trials to 0
+  for (AOI.name in names(AOIs)){
     df <- df %>%
-      {if(pgrepl("adults_[23]f", participants)) group_by(., Subject, TrialId) else if(participants == "infants") group_by(., ParticipantName, TrialN)} %>%
-      mutate(TimeStamp = TimeStamp - min(TimeStamp),
-             NormTimeStamp = TimeStamp/max(TimeStamp))
+      left_join(AOIs[[AOI.name]]) %>%
+      mutate(!!sub("infants\\.|adults_[23]f\\.", "", AOI.name) := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom) %>%
+      select(-one_of("Left", "Right", "Top", "Bottom"))
   }
+  # Set starting time of all trials to 0
+  df <- df %>%
+    group_by(Participant, TrialId) %>%
+    mutate(TimeStamp = TimeStamp - min(TimeStamp))
   return(df)
 }
 
