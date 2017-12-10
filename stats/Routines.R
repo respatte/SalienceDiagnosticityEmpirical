@@ -1,10 +1,11 @@
 library(doSNOW)
 library(reshape2)
+library(eyetrackingR)
 library(tidyverse)
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all adult participants, in the ../results/adults repository by default
-LT_data.adults.import <- function(participants="adults_2f", pinfo = T){
+LT_data.import.adults <- function(participants="adults_2f", pinfo = T){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
@@ -19,6 +20,7 @@ LT_data.adults.import <- function(participants="adults_2f", pinfo = T){
   df <- df %>%
     rename(Participant = Subject) %>%
     mutate(TrialId = ifelse(Block==0, TrialId + 252, TrialId),
+           Phase = ifelse(TrialId < 252, "Familiarisation", "Test"),
            TrackLoss = pmin.int(CursorX,CursorY)<0,
            TimeStamp = TimestampMicrosec*1e-3 + TimestampSec*1e3,
            AOI_type = 1) %>%
@@ -44,30 +46,16 @@ LT_data.adults.import <- function(participants="adults_2f", pinfo = T){
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all infant participants, in the ../results/infants.tsv file by default
-LT_data.infants.import <- function(res.repo="../results/infants/data/", file.name="infants.tsv"){
-  # Read file, drop empty MediaName rows, delete Attention Gatherer (AG) recordings,
-  # as well as unused columns from Tobii output (update with new output)
-  df <- read.csv(paste0(res.repo,file.name), sep = "\t") %>%
-    rename(TimeStamp = RecordingTimestamp,
-           Participant = ParticipantName) %>%
-    subset(!(grepl("AG",.$MediaName) | .$MediaName == "")) %>%
-    droplevels() %>%
-    group_by(ParticipantName, MediaName) %>%
-    mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
-           TrialId = max(StudioEventIndex, na.rm = T)/2) %>%
-    drop_na(MediaName, TrackLoss) %>%
-    subset(!duplicated(TimeStamp)) %>%
-    select(-one_of("X", "ValidityLeft", "ValidityRight", "StudioEventIndex"))
-  # Add participant information (Gender, DOB, DOT)
+LT_data.import.infants <- function(res.repo="../results/infants/data/", file.name="infants.tsv", participants="infants"){
+  # Get participant information (Gender, DOB, DOT)
   participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"),
                                colClasses = c("factor","factor","Date","Date")) %>%
     drop_na(DOB) %>%
     mutate(Age = as.numeric(difftime(DOT, DOB, units = "days")),
            DiffTo15mo = Age - 15*7*52/12) %>%
+    # 15months * 7days/week * 52/12weeks/month = 15months in days
     select(-one_of("DOB","DOT"))
-  # 15months * 7days/week * 52/12weeks/month = 15months in days
-  df <- merge(df, participant_info, by = "ParticipantName")
-  # Add sequence information
+  # Get sequence information
   sequence_info <- read.csv("../scripts/infants/SequenceInfo.csv") %>%
     mutate(CategoryName = ifelse(Name.first.fam.stim == "NoLabel",
                                  "NL",
@@ -80,9 +68,23 @@ LT_data.infants.import <- function(res.repo="../results/infants/data/", file.nam
                               "No Label",
                               "Label")) %>%
     select(one_of("PresentationSequence","CategoryName","Condition"))
-  df <- merge(df, sequence_info, by = "PresentationSequence")
-  # TODO - Add Reg-Flip and others for AOIs
-  df <- df %>%
+  # Read file, do all transformations
+  df <- read.csv(paste0(res.repo,file.name), sep = "\t") %>%
+    rename(TimeStamp = RecordingTimestamp,
+           Participant = ParticipantName,
+           CursorX = GazePointX..ADCSpx.,
+           CursorY = GazePointY..ADCSpx.) %>%
+    subset(!(grepl("AG",.$MediaName) | .$MediaName == "")) %>%
+    droplevels() %>%
+    group_by(Participant, MediaName) %>%
+    mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
+           TrialId = max(StudioEventIndex, na.rm = T)/2) %>%
+    subset(!duplicated(TimeStamp)) %>%
+    ungroup() %>%
+    drop_na(MediaName, TrackLoss) %>%
+    select(-one_of("X", "ValidityLeft", "ValidityRight", "StudioEventIndex")) %>%
+    inner_join(participant_info) %>%
+    inner_join(sequence_info) %>%
     mutate(Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
                              grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
                              grepl("[HRT]C_", MediaName) ~ "Test - Contrast"),
@@ -115,12 +117,12 @@ LT_data.infants.import <- function(res.repo="../results/infants/data/", file.nam
   return(df)
 }
 
-# LOOKING-TIME DATA TO RESPONSES
+# LOOKING-TIME DATA TO BEHAVIOUR
 # Function extracting all non-LT data per participant per trial
-LT_data.to_responses <- function(df){
+LT_data.to_behaviour <- function(df){
   df <- df[,-c(2,3,9,12,15,16)] %>%
     unique() %>%
-    group_by(Subject) %>%
+    group_by(Participant) %>%
     mutate(NBlocks = max(Block),
            LogNBlocks = log(NBlocks),
            RT = ifelse(RT < 200, NA, RT),
@@ -135,10 +137,14 @@ LT_data.to_eyetrackingR <- function(df, AOIs){
   # all possibly defined with AOI_type specific values
   # Transform dfname into string with deparse(substitute(dfname))
   # Add AOIs to data frame, one by one
-  for (AOI.name in names(AOIs)){
+  df <- df %>%
+    mutate(NonAOI = !TrackLoss)
+  for (AOI in names(AOIs)){
+    AOI.name <- sub("infants\\.|adults_[23]f\\.", "", AOI)
     df <- df %>%
-      left_join(AOIs[[AOI.name]]) %>%
-      mutate(!!sub("infants\\.|adults_[23]f\\.", "", AOI.name) := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom) %>%
+      left_join(AOIs[[AOI]]) %>%
+      mutate(!!AOI.name := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom,
+             NonAOI = xor(NonAOI, CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom)) %>%
       select(-one_of("Left", "Right", "Top", "Bottom"))
   }
   # Set starting time of all trials to 0
@@ -148,35 +154,139 @@ LT_data.to_eyetrackingR <- function(df, AOIs){
   return(df)
 }
 
-LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thresh=.25, incl_crit=.5, verbose=F){
-  res.repo <- paste0("../results/", participants, "/cleaning/")
-  # Get trackloss information
+# LOOKING-TIME DATA TRACKLOSS CLEAN
+# Cleans the data by trackloss with specified thresholds, saving diagnostic plots
+LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thresh=.3, incl_crit=.7, verbose=F){
+  # Get trackloss information for plotting (inlc. test)
   trackloss.subject.trial <- trackloss_analysis(df)
   # Plot trackloss per trial per subject
   trackloss.subject.trial.p <- ggplot(trackloss.subject.trial, aes(x=TrialId, y=TracklossForTrial)) +
-    facet_wrap(~Subject, nrow = 10, scales = "free_x") + geom_point()
-  ggsave(paste0(res.repo,"TracklossSubjectTrial.png"), trackloss.subject.trial.p, width=9, height=15)
+    facet_wrap(~Participant, nrow = 10, scales = "free_x") + geom_point()
+  ggsave(paste0("../results/", participants, "/cleaning/TracklossSubjectTrial.png"), trackloss.subject.trial.p, width=9, height=15)
   # Remove trials with trackloss proportion greater than 0.25
   df.trackloss <- clean_by_trackloss(data = df,
                                      trial_prop_thresh = trial_prop_thresh)
   # Compute and plot proportion of valid trials per subject (number of valid trials / number of trials for subject)
-  df.described <- describe_data(df.trackloss, 'Block', 'Subject')
-  df.described$ProportionTrials <- df.described$NumTrials /
-    (12*(df.described$Max + 1))
+  # (looking only at familiarisation phase)
+  df.trackloss$TrialId <- as.numeric(df.trackloss$TrialId)
+  df.described <- describe_data(df.trackloss[which(df.trackloss$Phase == "Familiarisation"),], 'TrialId', 'Participant')
+  if(grepl("adults_[23]f", participants)){
+    df.described$ProportionTrials <- df.described$NumTrials / df.described$Max
+  }else{
+    df.described$ProportionTrials <- df.described$NumTrials / 24
+  }
   df.described$AboveCriteria <- factor(df.described$ProportionTrials >= incl_crit)
   if(verbose){
     print(summary(df.described))
   }
   df.described.p <- ggplot(df.described,
-                           aes(x=Subject, y=ProportionTrials, colour = AboveCriteria)) +
+                           aes(x=Participant, y=ProportionTrials, colour = AboveCriteria)) +
     scale_colour_manual(values = c("red","green"), guide = F) + geom_point()
-  ggsave(paste0(res.repo,"ProportionTrialPerSubject.png"), df.described.p, width=10, height=3)
+  ggsave(paste0("../results/", participants, "/cleaning/ProportionTrialsPerSubject.png"),
+         plot = df.described.p, width = 10, height = 3)
   # Select subjects to keep
-  df.trackloss <- merge(df.trackloss, select(df.described, one_of("Subject", "AboveCriteria")), by = "Subject")
+  df.trackloss <- inner_join(df.trackloss, select(df.described, one_of("Participant", "AboveCriteria")))
   df.clean <- subset(df.trackloss, AboveCriteria == T) %>% droplevels()
-  if(verbose){
-    # Check how many subjects missing per condition
-    print(summary(unique(df.clean[,c('Subject','Condition')])))
-  }
+  # Print how many subjects remain per condition
+  print(df.clean %>% group_by(Condition) %>% summarise(n_distinct(Participant)))
   return(df.clean)
+}
+
+# LOOKING-TIME DATA GATHER
+# General function for importing, transforming into eyetrackingR, and cleaning data,
+# as well as giving general plots for general information on the data
+LT_data.gather <- function(participants){
+  # Define a list of AOI dataframes for all experiments
+  AOIs <- list()
+  AOIs[["adults_2f.Head"]] <- data.frame(AOI_type=1,
+                                         Left=c(400), Right=c(620),
+                                         Top=c(55), Bottom=c(255))
+  AOIs[["adults_2f.Tail"]] <- data.frame(AOI_type=1,
+                                         Left=c(20), Right=c(220),
+                                         Top=c(110), Bottom=c(330))
+  AOIs[["adults_3f.Head"]] <- data.frame(AOI_type=1,
+                                         Left=c(363), Right=c(602),
+                                         Top=c(66), Bottom=c(295))
+  AOIs[["adults_3f.Feet"]] <- data.frame(AOI_type=1,
+                                         Left=c(146), Right=c(483),
+                                         Top=c(364), Bottom=c(465))
+  AOIs[["adults_3f.Tail"]] <- data.frame(AOI_type=1,
+                                         Left=c(36), Right=c(260),
+                                         Top=c(115), Bottom=c(310))
+  AOIs[["infants.Head"]] <- data.frame(AOI_type=c("Reg","Flip"),
+                                  Left=c(1031,1920-1031-450),
+                                  Right=c(1031+450,1920-1031),
+                                  Top=c(197,197),
+                                  Bottom=c(197+450,197+450))
+  AOIs[["infants.Tail"]] <- data.frame(AOI_type=c("Reg","Flip"),
+                                  Left=c(390,1920-390-450),
+                                  Right=c(390+450,1920-390),
+                                  Top=c(299,299),
+                                  Bottom=c(299+450,299+450))
+  # Import raw data
+  raw_data <- match.fun(paste0("LT_data.import.", sub("_[23]f", "", participants)))(participants = participants)
+  # Extract behavioural data for adults
+  if(grepl("adults_[23]f", participants)){
+    behaviour <- LT_data.to_behaviour(raw_data)
+  }
+  else{
+    behaviour <- NULL
+  }
+  # Create raw (not clean) eyetrackingR data
+  current.AOIs <- grep(participants, names(AOIs)) # First get the indexes of AOIs to use
+  LT.raw_data <-raw_data %>%
+    LT_data.to_eyetrackingR(AOIs[current.AOIs]) %>%
+    make_eyetrackingr_data(participant_column = "Participant",
+                           trial_column = "TrialId",
+                           time_column = "TimeStamp",
+                           trackloss_column = "TrackLoss",
+                           aoi_columns = sub(paste0(participants,"\\."), "",
+                                             names(AOIs)[current.AOIs]),
+                           treat_non_aoi_looks_as_missing = F)
+  # Analyse trackloss, clean data, and save diagnostic plots
+  LT.AOI_summary <- LT.raw_data %>%
+    {if(grepl("adults_[23]f", participants)){
+      group_by(., Participant, CurrentObject)
+      }else{group_by(., Participant, Condition)}}%>%
+    summarise(TrackLossRatio = sum(TrackLoss)/n(),
+              NonAOIRatio = sum(NonAOI)/(n()-sum(TrackLoss)))
+  # Select aesthetics for plot depending on available variables
+  if(grepl("adults_[23]f", participants)){
+    LT.AOI_summary.plot.TrackLossRatio <- ggplot(LT.AOI_summary,
+                                                 aes(x = CurrentObject, y = TrackLossRatio,
+                                                     fill = CurrentObject))
+    LT.AOI_summary.plot.NonAOIRatio <- ggplot(LT.AOI_summary,
+                                              aes(x = CurrentObject, y = NonAOIRatio,
+                                                  fill = CurrentObject))
+  }else{
+    LT.AOI_summary.plot.TrackLossRatio <- ggplot(LT.AOI_summary,
+                                                 aes(x = Condition, y = TrackLossRatio,
+                                                     fill = Condition))
+    LT.AOI_summary.plot.NonAOIRatio <- ggplot(LT.AOI_summary,
+                                              aes(x = Condition, y = NonAOIRatio,
+                                                  fill = Condition))
+  }
+  # Finishing plots with layers
+  LT.AOI_summary.plot.TrackLossRatio <- LT.AOI_summary.plot.TrackLossRatio +
+    geom_violin() +
+    geom_boxplot(alpha=0, width=.2, outlier.alpha = 1) +
+    guides(fill = "none")
+  LT.AOI_summary.plot.NonAOIRatio <- LT.AOI_summary.plot.NonAOIRatio +
+    geom_violin() +
+    geom_boxplot(alpha=0, width=.2, outlier.alpha = 1) +
+    guides(fill = "none")
+  # Saving plots
+  ggsave(paste0("../results/", participants, "/cleaning/TrackLossRatio.png"),
+         plot = LT.AOI_summary.plot.TrackLossRatio)
+  ggsave(paste0("../results/", participants, "/cleaning/NonAOIRatio.png"),
+         plot = LT.AOI_summary.plot.NonAOIRatio)
+  # Make clean, with inclusion criteria dependent on participants tested
+  if(grepl("adults_[23]f", participants)){
+    LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants, trial_prop_thresh = .3, incl_crit = .7)
+  }else{
+    LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants, trial_prop_thresh = .5, incl_crit = .5)
+  }
+  LT.clean$TrialId <- as.numeric(LT.clean$TrialId)
+  # Return all datasets for analysis and checks
+  return(list(raw_data, behaviour, LT.raw_data, LT.clean))
 }

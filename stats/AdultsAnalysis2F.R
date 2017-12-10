@@ -1,59 +1,20 @@
 library(eyetrackingR)
 library(Matrix)
 library(lme4)
-library(ggplot2)
-library(dplyr)
+library(tidyverse)
 
 source("Routines.R")
 
 # GATHER DATA
 # Define AOIs
-AOIs.adults <- data.frame(name=c("Tail","Head"),
-                          L=c(20,400),
-                          R=c(220,620),
-                          T=c(110,55),
-                          B=c(330,255))
-AOIs.plot <- ggplot(AOIs.adults, aes(xmin = L, xmax = R, ymin = T, ymax = B)) +
-  xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
-  geom_rect(aes(fill = name))
-ggsave("../results/adults_2f/data_cleaning_graphs/AOIs.png",
-       plot = AOIs.plot , width = 3.2, height = 2.95)
+# TODO - AOIs plot needs updating
+# AOIs.plot <- ggplot(AOIs.adults, aes(xmin = L, xmax = R, ymin = T, ymax = B)) +
+#   xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
+#   geom_rect(aes(fill = name))
+# ggsave("../results/adults_2f/data_cleaning_graphs/AOIs.png",
+#        plot = AOIs.plot , width = 3.2, height = 2.95)
 
-# Import raw data
-raw_data.adults <- LT_data.adults.import()
-# Turn raw into behavioural data, save it to a csv file
-behaviour.adults <- LT_data.to_responses(raw_data.adults)
-write.csv(behaviour.adults, "../results/adults_2f/data/BeviouralData.csv")
-# Turn raw into eyetrackingR data
-LT.adults <- raw_data.adults %>%
-  LT_data.to_eyetrackingR(AOIs.adults) %>%
-  make_eyetrackingr_data(participant_column = "Subject",
-                         trial_column = "TrialId",
-                         time_column = "NormTimeStamp",
-                         trackloss_column = "TrackLoss",
-                         aoi_columns = c('Head','Tail'),
-                         treat_non_aoi_looks_as_missing = F)
-LT.adults$NAOI = !LT.adults$TrackLoss & !(LT.adults$Head | LT.adults$Tail)
-# Check for trackloss ratio and NAOI (non-AOI) ratio
-LT.adults.gaze_summary <- LT.adults %>%
-  group_by(Subject,CurrentObject) %>%
-  summarise(TrackLossRatio = sum(TrackLoss)/n(),
-            NAOIRatio = sum(NAOI)/(n()-sum(TrackLoss)))
-LT.adults.gaze_summary.plot.TrackLossRatio <- ggplot(LT.adults.gaze_summary,
-                                                     aes(x = CurrentObject, y = TrackLossRatio)) +
-  geom_violin(aes(fill = CurrentObject)) +
-  geom_boxplot(alpha=0, width=.3, outlier.alpha = 1) +
-  guides(fill = "none")
-ggsave("../results/adults_2f/data_cleaning_graphs/TrackLossRatio.png")
-LT.adults.gaze_summary.plot.NAOIRatio <- ggplot(LT.adults.gaze_summary,
-                                                aes(x = CurrentObject, y = NAOIRatio)) +
-  geom_violin(aes(fill = CurrentObject)) +
-  geom_boxplot(alpha=0, width=.3, outlier.alpha = 1) +
-  guides(fill = "none")
-ggsave("../results/adults_2f/data_cleaning_graphs/NonAOIRatio.png")
-# Make clean
-LT.adults.clean <- LT_data.trackloss_clean(LT.adults, trial_prop_thresh = .3, incl_crit = .5)
-LT.adults.clean$TrialId <- as.numeric(LT.adults.clean$TrialId)
+LT.clean <- LT_data.gather("adults_2f")
 
 # ANALYSIS - LOOKING TIME
 # Plotting heatmap for label and no-label participants
@@ -65,7 +26,7 @@ LT.adults.heatmap <- ggplot(LT.adults.clean, aes(x=CursorX,y=CursorY)) +
 LT.adults.time_course <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2,
                                              predictor_columns = c("Condition"),
                                              aois = c("Head","Tail"))
-LT.adults.time_course.plot <- plot(LT.adults.time_course, predictor_column = "Condition") + 
+LT.adults.time_course.plot <- plot(LT.adults.time_course, predictor_column = "Condition") +
   theme_light()
 ggsave("../results/adults_2f/LookingTimeCourseNorm.pdf", plot = LT.adults.time_course.plot)
 # Analysing and plotting total looking time to each AOI
@@ -85,7 +46,7 @@ ggsave("../results/adults_2f/TotalPerAOI.png", plot = LT.adults.total_per_AOI.pl
 # Simple t-test
 LT.adults.total_per_AOI.t_test <- t.test(ArcSin ~ Condition, data=LT.adults.total_per_AOI)
 # Mixed-effect model
-LT.adults.total_per_AOI.lmer <- lmer(ArcSin ~ Condition*TrialId + 
+LT.adults.total_per_AOI.lmer <- lmer(ArcSin ~ Condition*TrialId +
                                        (1 + Condition | Stimulus) +
                                        (1 | CategoryName) +
                                        (1 + Condition | Subject),
