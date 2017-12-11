@@ -287,6 +287,15 @@ LT_data.gather <- function(participants){
     LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants, trial_prop_thresh = .5, incl_crit = .5)
   }
   LT.clean$TrialId <- as.numeric(LT.clean$TrialId)
+  # Plot heatmaps of remaining participants and trials by condition by phase
+  LT.heatmap <- ggplot(LT.clean, aes(x=CursorX,y=CursorY)) +
+    scale_y_reverse() +
+    facet_wrap(Phase~Condition) +
+    geom_bin2d(binwidth = c(20,20))
+  ggsave("../results/", participants, "/cleaning/Heatmaps.png",
+         plot = LT.heatmap,
+         width = 8,
+         height = 2.25*length(levels(LT.clean$Phase)))
   # Return all datasets for analysis and checks
   return(list(raw_data, behaviour, LT.raw_data, LT.clean))
 }

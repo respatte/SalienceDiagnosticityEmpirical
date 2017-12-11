@@ -17,11 +17,6 @@ source("Routines.R")
 LT.clean <- LT_data.gather("adults_2f")
 
 # ANALYSIS - LOOKING TIME
-# Plotting heatmap for label and no-label participants
-LT.adults.heatmap <- ggplot(LT.adults.clean, aes(x=CursorX,y=CursorY)) +
-  xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
-  facet_wrap(~Condition) +
-  geom_bin2d(binwidth = c(20,20))
 # Plotting eye-tracking data for all AOIs, averaged across all trials
 LT.adults.time_course <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2,
                                              predictor_columns = c("Condition"),
