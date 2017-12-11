@@ -14,16 +14,23 @@ source("Routines.R")
 # ggsave("../results/adults_2f/data_cleaning_graphs/AOIs.png",
 #        plot = AOIs.plot , width = 3.2, height = 2.95)
 
-LT.clean <- LT_data.gather("adults_2f")
+d <- LT_data.gather("adults_2f")
+LT.clean <- d[[4]] %>%
+  make_eyetrackingr_data(participant_column = "Participant",
+                         trial_column = "TrialId",
+                         time_column = "TimeStamp",
+                         trackloss_column = "TrackLoss",
+                         aoi_columns = c("Head","Tail"),
+                         treat_non_aoi_looks_as_missing = F)
 
 # ANALYSIS - LOOKING TIME
 # Plotting eye-tracking data for all AOIs, averaged across all trials
-LT.adults.time_course <- make_time_sequence_data(LT.adults, time_bin_size = 1e-2,
-                                             predictor_columns = c("Condition"),
+LT.time_course.block <- make_time_sequence_data(LT.clean, time_bin_size = 1e-2,
+                                             predictor_columns = c("Condition","Block"),
                                              aois = c("Head","Tail"))
-LT.adults.time_course.plot <- plot(LT.adults.time_course, predictor_column = "Condition") +
+LT.time_course.block.plot <- plot(LT.time_course.block, predictor_column = "Condition") +
   theme_light()
-ggsave("../results/adults_2f/LookingTimeCourseNorm.pdf", plot = LT.adults.time_course.plot)
+ggsave("../results/adults_2f/LookingTimeCourse.pdf", plot = LT.time_course.block.plot)
 # Analysing and plotting total looking time to each AOI
 # Making data time-window-analysis ready
 LT.adults.total_per_AOI <- make_time_window_data(LT.adults,

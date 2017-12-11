@@ -5,20 +5,27 @@ library(tidyverse)
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all adult participants, in the ../results/adults repository by default
-LT_data.import.adults <- function(participants="adults_2f", pinfo = T){
+LT_data.import.adults <- function(participants="adults_2f"){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
     return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
   }
+  res.repo <- paste0("../results/",participants,"/data/")
+  # Getting participant info
+  participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
+  # Reading all participant files
   cl <- makeCluster(4)
   registerDoSNOW(cl)
-  res.repo <- paste0("../results/",participants,"/data/")
   file.names <- list.files(path=res.repo, pattern=".gazedata")
   df <- foreach(i=1:length(file.names),.combine="rbind", .inorder=F) %dopar%
     single.file.import(paste0(res.repo,file.names[i]))
   stopCluster(cl)
-  df <- df %>%
-    rename(Participant = Subject) %>%
+  # Transforming data
+  # TODO -- Check what happens when no answer in time: RT == 0 or RT == 10000? ACC? CRESP?
+  df %<>% rename(Participant = Subject) %>%
+    inner_join(participant_info) %>%
+    drop_na(RT, CursorX, CursorY) %>%
+    subset(RT > 200) %>%
     mutate(TrialId = ifelse(Block==0, TrialId + 252, TrialId),
            Phase = ifelse(TrialId < 252, "Familiarisation", "Test"),
            TrackLoss = pmin.int(CursorX,CursorY)<0,
@@ -36,11 +43,6 @@ LT_data.import.adults <- function(participants="adults_2f", pinfo = T){
              }else{"A_Gatoo"}},
              levels = c("NoName","A_Saldie","A_Gatoo"))) %>%
     select(-one_of("TimestampMicrosec","TimestampSec"))
-  if(pinfo){
-    # Adding participant information
-    participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
-    df <- df %>% inner_join(participant_info)
-  }
   return(df)
 }
 
@@ -132,25 +134,29 @@ LT_data.to_behaviour <- function(df){
 
 # LOOKING-TIME DATA TO EYETRACKINGR
 # Function adding AOIs, defining trial time-windows, and returning eyetrackingR data
-LT_data.to_eyetrackingR <- function(df, AOIs){
-  # TODO/GOAL - Get list of AOIs (one df per AOI),
-  # all possibly defined with AOI_type specific values
+LT_data.to_eyetrackingR <- function(df, participants, AOIs){
+  # TODO/GOAL - Get list of AOIs (one df per AOI), all defined with AOI_type specific values
   # Transform dfname into string with deparse(substitute(dfname))
   # Add AOIs to data frame, one by one
-  df <- df %>%
-    mutate(NonAOI = !TrackLoss)
+  df %<>% mutate(NonAOI = !TrackLoss)
   for (AOI in names(AOIs)){
     AOI.name <- sub("infants\\.|adults_[23]f\\.", "", AOI)
-    df <- df %>%
-      left_join(AOIs[[AOI]]) %>%
+    df %<>% left_join(AOIs[[AOI]]) %>%
       mutate(!!AOI.name := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom,
              NonAOI = xor(NonAOI, CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom)) %>%
       select(-one_of("Left", "Right", "Top", "Bottom"))
   }
   # Set starting time of all trials to 0
-  df <- df %>%
-    group_by(Participant, TrialId) %>%
+  df %<>% group_by(Participant, TrialId) %>%
     mutate(TimeStamp = TimeStamp - min(TimeStamp))
+  # Additional useful variable depending on participants
+  if(grepl("adults_[23]f", participants)){
+    df %<>% subset(CurrentObject == "Stimulus") %>%
+      group_by(Participant, TrialId) %>%
+      summarise(FeedbackOnset = max(TimeStamp)) %>%
+      inner_join(df, .) %>%
+      mutate(TimeStamp = TimeStamp - FeedbackOnset)
+  }
   return(df)
 }
 
@@ -185,8 +191,10 @@ LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thr
   ggsave(paste0("../results/", participants, "/cleaning/ProportionTrialsPerSubject.png"),
          plot = df.described.p, width = 10, height = 3)
   # Select subjects to keep
-  df.trackloss <- inner_join(df.trackloss, select(df.described, one_of("Participant", "AboveCriteria")))
-  df.clean <- subset(df.trackloss, AboveCriteria == T) %>% droplevels()
+  df.trackloss %<>% inner_join(select(df.described, one_of("Participant", "AboveCriteria")))
+  df.clean <- df.trackloss %>%
+    subset(AboveCriteria == T) %>%
+    droplevels()
   # Print how many subjects remain per condition
   print(df.clean %>% group_by(Condition) %>% summarise(n_distinct(Participant)))
   return(df.clean)
@@ -197,28 +205,28 @@ LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thr
 # as well as giving general plots for general information on the data
 LT_data.gather <- function(participants){
   # Define a list of AOI dataframes for all experiments
-  AOIs <- list()
-  AOIs[["adults_2f.Head"]] <- data.frame(AOI_type=1,
+  AOIs <<- list()
+  AOIs[["adults_2f.Head"]] <<- data.frame(AOI_type=1,
                                          Left=c(400), Right=c(620),
                                          Top=c(55), Bottom=c(255))
-  AOIs[["adults_2f.Tail"]] <- data.frame(AOI_type=1,
+  AOIs[["adults_2f.Tail"]] <<- data.frame(AOI_type=1,
                                          Left=c(20), Right=c(220),
                                          Top=c(110), Bottom=c(330))
-  AOIs[["adults_3f.Head"]] <- data.frame(AOI_type=1,
+  AOIs[["adults_3f.Head"]] <<- data.frame(AOI_type=1,
                                          Left=c(363), Right=c(602),
                                          Top=c(66), Bottom=c(295))
-  AOIs[["adults_3f.Feet"]] <- data.frame(AOI_type=1,
+  AOIs[["adults_3f.Feet"]] <<- data.frame(AOI_type=1,
                                          Left=c(146), Right=c(483),
                                          Top=c(364), Bottom=c(465))
-  AOIs[["adults_3f.Tail"]] <- data.frame(AOI_type=1,
+  AOIs[["adults_3f.Tail"]] <<- data.frame(AOI_type=1,
                                          Left=c(36), Right=c(260),
                                          Top=c(115), Bottom=c(310))
-  AOIs[["infants.Head"]] <- data.frame(AOI_type=c("Reg","Flip"),
+  AOIs[["infants.Head"]] <<- data.frame(AOI_type=c("Reg","Flip"),
                                   Left=c(1031,1920-1031-450),
                                   Right=c(1031+450,1920-1031),
                                   Top=c(197,197),
                                   Bottom=c(197+450,197+450))
-  AOIs[["infants.Tail"]] <- data.frame(AOI_type=c("Reg","Flip"),
+  AOIs[["infants.Tail"]] <<- data.frame(AOI_type=c("Reg","Flip"),
                                   Left=c(390,1920-390-450),
                                   Right=c(390+450,1920-390),
                                   Top=c(299,299),
@@ -235,7 +243,7 @@ LT_data.gather <- function(participants){
   # Create raw (not clean) eyetrackingR data
   current.AOIs <- grep(participants, names(AOIs)) # First get the indexes of AOIs to use
   LT.raw_data <-raw_data %>%
-    LT_data.to_eyetrackingR(AOIs[current.AOIs]) %>%
+    LT_data.to_eyetrackingR(participants, AOIs[current.AOIs]) %>%
     make_eyetrackingr_data(participant_column = "Participant",
                            trial_column = "TrialId",
                            time_column = "TimeStamp",
@@ -250,8 +258,6 @@ LT_data.gather <- function(participants){
       }else{group_by(., Participant, Condition)}}%>%
     summarise(TrackLossRatio = sum(TrackLoss)/n(),
               NonAOIRatio = sum(NonAOI, na.rm = T)/(n()-sum(TrackLoss)))
-  print(summary(LT.AOI_summary))
-  print(LT.AOI_summary)
   # Select aesthetics for plot depending on available variables
   if(grepl("adults_[23]f", participants)){
     LT.AOI_summary.plot.TrackLossRatio <- ggplot(LT.AOI_summary,
@@ -288,11 +294,9 @@ LT_data.gather <- function(participants){
   }else{
     LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants, trial_prop_thresh = .5, incl_crit = .5)
   }
-  LT.clean$TrialId <- as.numeric(LT.clean$TrialId)
   # Plot heatmaps of remaining participants and trials by condition by phase
   x_max = min(max(LT.clean$CursorX, na.rm = T), 1920)
   y_max = min(max(LT.clean$CursorY, na.rm = T), 1080)
-  print(c(x_max, y_max))
   LT.heatmap <- ggplot(LT.clean, aes(x=CursorX,y=CursorY)) +
     xlim(c(0, x_max)) + scale_y_reverse(limits = c(y_max, 0)) +
     theme(aspect.ratio = y_max/x_max) +
