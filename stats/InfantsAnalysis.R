@@ -14,4 +14,4 @@ source("Routines.R")
 # ggsave("../results/infants/data_cleaning_graphs/AOIs.png",
 #        plot = AOIs.plot , width = 6.05, height = 2.95)
 
-LT.clean <- LT_data.gather("infants")
+d <- LT_data.gather("infants")

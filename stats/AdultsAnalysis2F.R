@@ -1,7 +1,6 @@
-library(eyetrackingR)
-library(Matrix)
 library(lme4)
 library(tidyverse)
+library(eyetrackingR)
 
 source("Routines.R")
 
@@ -25,17 +24,25 @@ LT.clean <- d[[4]] %>%
                          aoi_columns = c("Head","Tail"),
                          treat_non_aoi_looks_as_missing = F)
 
-behaviour.part_per_block <- behaviour %>%
+# ==================================================================================================
+# BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS
+# ==================================================================================================
+# Get how many participants for each block, and make a bar plot
+behaviour.parts_per_block <- behaviour %>%
   subset(Block > 0) %>%
   group_by(Block, Condition) %>%
   summarise(N_Participants = n_distinct(Participant))
-behaviour.part_per_block.plot <- ggplot(behaviour.part_per_block,
-                                        aes(x = Block, y = N_Participants, fill = Condition)) +
+behaviour.parts_per_block.plot <- ggplot(behaviour.parts_per_block,
+                                         aes(x = Block, y = N_Participants, fill = Condition)) +
   geom_col(position = "dodge")
-
-behaviour.block_per_part <- behaviour %>%
+ggsave("../results/adults_2f/ParticipantsPerBlock.png",
+       plot = behaviour.parts_per_block.plot)
+# Get number of blocks to learning per participant, plot a violin
+behaviour.blocks_per_part <- behaviour %>%
   group_by(Participant, Condition) %>%
   summarise(N_Blocks = max(Block))
-behaviour.block_per_part.plot <- ggplot(behaviour.block_per_part,
+behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
                                         aes(x = Condition, y = N_Blocks, fill = Condition)) +
   geom_violin()
+ggsave("../results/adults_2f/BlocksPerParticipant.png",
+       plot = behaviour.blocks_per_part.plot)

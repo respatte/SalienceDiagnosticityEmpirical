@@ -1,7 +1,6 @@
 library(doSNOW)
-library(reshape2)
-library(eyetrackingR)
 library(tidyverse)
+library(eyetrackingR)
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
 # Function importing looking time data from all adult participants, in the ../results/adults repository by default
