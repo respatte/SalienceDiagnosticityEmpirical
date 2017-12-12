@@ -43,6 +43,7 @@ behaviour.blocks_per_part <- behaviour %>%
   summarise(N_Blocks = max(Block))
 behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
                                         aes(x = Condition, y = N_Blocks, fill = Condition)) +
-  geom_violin()
+  geom_violin() +
+  geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15)
 ggsave("../results/adults_2f/BlocksPerParticipant.png",
        plot = behaviour.blocks_per_part.plot)
