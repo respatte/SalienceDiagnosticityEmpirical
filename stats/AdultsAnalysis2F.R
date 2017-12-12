@@ -22,7 +22,24 @@ LT.clean <- d[[4]] %>%
                          time_column = "TimeStamp",
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail"),
-                         treat_non_aoi_looks_as_missing = F)
+                         treat_non_aoi_looks_as_missing = T)
+
+# ==================================================================================================
+# LOOKING TIME ANALYSIS: PROP TAIL LOOKING BY PARTICIPANT BY BLOCK
+# ==================================================================================================
+# Plot proportion looking to tail for each participant, across time (trials or blocks?)
+LT.prop_tail_per_block <- make_time_window_data(LT.clean,
+                                                aois="Tail",
+                                                predictor_columns=c("Condition",
+                                                                    "Block"),
+                                                summarize_by = "Participant") %>%
+  subset(Block > 0)
+LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_block,
+                                      aes(x = Block, y = Prop,
+                                          colour = Participant,
+                                          group = Participant)) +
+  geom_line() +
+  geom_hline(yintercept = .5)
 
 # ==================================================================================================
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS
