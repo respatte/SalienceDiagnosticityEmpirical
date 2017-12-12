@@ -32,3 +32,10 @@ behaviour.part_per_block <- behaviour %>%
 behaviour.part_per_block.plot <- ggplot(behaviour.part_per_block,
                                         aes(x = Block, y = N_Participants, fill = Condition)) +
   geom_col(position = "dodge")
+
+behaviour.block_per_part <- behaviour %>%
+  group_by(Participant, Condition) %>%
+  summarise(N_Blocks = max(Block))
+behaviour.block_per_part.plot <- ggplot(behaviour.block_per_part,
+                                        aes(x = Condition, y = N_Blocks, fill = Condition)) +
+  geom_violin()
