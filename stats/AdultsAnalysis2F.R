@@ -14,7 +14,9 @@ source("Routines.R")
 # ggsave("../results/adults_2f/data_cleaning_graphs/AOIs.png",
 #        plot = AOIs.plot , width = 3.2, height = 2.95)
 
+# Data import and storage into variables
 d <- LT_data.gather("adults_2f")
+behaviour <- d[[2]]
 LT.clean <- d[[4]] %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
@@ -23,51 +25,10 @@ LT.clean <- d[[4]] %>%
                          aoi_columns = c("Head","Tail"),
                          treat_non_aoi_looks_as_missing = F)
 
-# ANALYSIS - LOOKING TIME
-# Plotting eye-tracking data for all AOIs, averaged across all trials
-LT.time_course.block <- make_time_sequence_data(LT.clean, time_bin_size = 1e-2,
-                                             predictor_columns = c("Condition","Block"),
-                                             aois = c("Head","Tail"))
-LT.time_course.block.plot <- plot(LT.time_course.block, predictor_column = "Condition") +
-  theme_light()
-ggsave("../results/adults_2f/LookingTimeCourse.pdf", plot = LT.time_course.block.plot)
-# Analysing and plotting total looking time to each AOI
-# Making data time-window-analysis ready
-LT.adults.total_per_AOI <- make_time_window_data(LT.adults,
-                                                 aois=c("Head","Tail"),
-                                                 predictor_columns=c("Condition",
-                                                                     "Stimulus",
-                                                                     "TrialId",
-                                                                     "CategoryName",
-                                                                     "Age","Gender"))
-# Boxplots of total looking time per AOI
-LT.adults.total_per_AOI.plot <- plot(LT.adults.total_per_AOI,
-                                     predictor_columns=c("Condition"),
-                                     dv = "ArcSin")
-ggsave("../results/adults_2f/TotalPerAOI.png", plot = LT.adults.total_per_AOI.plot)
-# Simple t-test
-LT.adults.total_per_AOI.t_test <- t.test(ArcSin ~ Condition, data=LT.adults.total_per_AOI)
-# Mixed-effect model
-LT.adults.total_per_AOI.lmer <- lmer(ArcSin ~ Condition*TrialId +
-                                       (1 + Condition | Stimulus) +
-                                       (1 | CategoryName) +
-                                       (1 + Condition | Subject),
-                                     data = LT.adults.total_per_AOI)
-LT.adults.total_per_AOI.comparison <- drop1(LT.adults.total_per_AOI.lmer,
-                                            ~., test = "Chi")
-
-# ANALYSIS -- BEHAVIOURAL DATA -- NUMBER OF BLOCKS TO TRAINING
-# Creating sub-dataframe for NBlocks
-behaviour.adults.n_blocks <- subset(behaviour.adults, !duplicated(Subject))
-# Plotting and analysing NBlocks by Condition
-behaviour.adults.n_blocks.plot <- ggplot(behaviour.adults.n_blocks, aes(x=Condition,y=LogNBlocks)) + geom_boxplot()
-ggsave("../results/adults_2f/BlocksToLearning.png", plot = behaviour.adults.n_blocks.plot)
-behaviour.adults.n_blocks.t_test <- t.test(LogNBlocks ~ Condition, data=behaviour.adults.n_blocks)
-behaviour.adults.n_blocks.lm <- lm(LogNBlocks ~ Condition*Gender*Age,
-                                   data = behaviour.adults.n_blocks)
-# ANALYSIS -- BEHAVIOURAL DATA -- REACTION TIME
-behaviour.adults.reaction_time.plot <- ggplot(behaviour.adults, aes(x=Condition,y=LogRT)) + geom_boxplot()
-ggsave("../results/adults_2f/ReactionTime.png", plot = behaviour.adults.reaction_time.plot)
-behaviour.adults.reaction_time.t_test <- t.test(LogRT ~ Condition, data = behaviour.adults)
-behaviour.adults.reaction_time.anova <- aov(LogRT ~ Condition*Block, data = behaviour.adults)
-behaviour.adults.reaction_time.model_comparison <- drop1(behaviour.adults.reaction_time.anova, ~., test = "F")
+behaviour.part_per_block <- behaviour %>%
+  subset(Block > 0) %>%
+  group_by(Block, Condition) %>%
+  summarise(N_Participants = n_distinct(Participant))
+behaviour.part_per_block.plot <- ggplot(behaviour.part_per_block,
+                                        aes(x = Block, y = N_Participants, fill = Condition)) +
+  geom_col(position = "dodge")

@@ -138,7 +138,7 @@ LT_data.to_eyetrackingR <- function(df, participants, AOIs){
   # TODO/GOAL - Get list of AOIs (one df per AOI), all defined with AOI_type specific values
   # Transform dfname into string with deparse(substitute(dfname))
   # Add AOIs to data frame, one by one
-  df %<>% mutate(NonAOI = !TrackLoss)
+  df <- mutate(df, NonAOI = !TrackLoss)
   for (AOI in names(AOIs)){
     AOI.name <- sub("infants\\.|adults_[23]f\\.", "", AOI)
     df %<>% left_join(AOIs[[AOI]]) %>%
@@ -191,7 +191,7 @@ LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thr
   ggsave(paste0("../results/", participants, "/cleaning/ProportionTrialsPerSubject.png"),
          plot = df.described.p, width = 10, height = 3)
   # Select subjects to keep
-  df.trackloss %<>% inner_join(select(df.described, one_of("Participant", "AboveCriteria")))
+  df.trackloss <- inner_join(df.trackloss, select(df.described, one_of("Participant", "AboveCriteria")))
   df.clean <- df.trackloss %>%
     subset(AboveCriteria == T) %>%
     droplevels()
