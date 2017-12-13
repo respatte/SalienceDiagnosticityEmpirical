@@ -31,15 +31,23 @@ LT.clean <- d[[4]] %>%
 LT.prop_tail_per_block <- make_time_window_data(LT.clean,
                                                 aois="Tail",
                                                 predictor_columns=c("Condition",
-                                                                    "Block"),
-                                                summarize_by = "Participant") %>%
-  subset(Block > 0)
+                                                                    "Block")) %>%
+  subset(Block > 0) %>%
+  group_by(Participant) %>%
+  mutate(N_Blocks = max(Block),
+         OppBlock = Block - N_Blocks,
+         NormBlock = Block/N_Blocks) %>%
+  gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
 LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_block,
-                                      aes(x = Block, y = Prop,
-                                          colour = Participant,
-                                          group = Participant)) +
-  geom_line() +
-  geom_hline(yintercept = .5)
+                                      aes(x = Block, y = ArcSin,
+                                          colour = Condition)) +
+  facet_wrap(~BlockTransformation, scales = "free_x") +
+  theme(aspect.ratio = 1.618/1, legend.position = "top") +
+  geom_smooth() +
+  geom_hline(yintercept = asin(sqrt(.5)))
+ggsave("../results/adults_2f/TailLookingEvolution.png",
+       plot = LT.prop_tail_per_block.plot,
+       width = 7, height = 5)
 
 # ==================================================================================================
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS
