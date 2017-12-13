@@ -17,12 +17,14 @@ source("Routines.R")
 d <- LT_data.gather("adults_2f")
 behaviour <- d[[2]]
 LT.clean <- d[[4]] %>%
+  subset(Block <= 8) %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail"),
-                         treat_non_aoi_looks_as_missing = T)
+                         treat_non_aoi_looks_as_missing = T) %>%
+  subset_by_window(window_start_time = -1000, rezero = F)
 
 # ==================================================================================================
 # LOOKING TIME ANALYSIS: PROP TAIL LOOKING BY PARTICIPANT BY BLOCK
@@ -31,7 +33,8 @@ LT.clean <- d[[4]] %>%
 LT.prop_tail_per_block <- make_time_window_data(LT.clean,
                                                 aois="Tail",
                                                 predictor_columns=c("Condition",
-                                                                    "Block")) %>%
+                                                                    "Block",
+                                                                    "ACC")) %>%
   subset(Block > 0) %>%
   group_by(Participant) %>%
   mutate(N_Blocks = max(Block),
@@ -48,7 +51,40 @@ LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_block,
 ggsave("../results/adults_2f/TailLookingEvolution.png",
        plot = LT.prop_tail_per_block.plot,
        width = 7, height = 5)
-
+# lmer of the plot above
+LT.prop_tail_per_block.lmer.0 <- lmer(ArcSin ~ Block*Condition*ACC +
+                                        (1 + Block + ACC | Participant),
+                                      data = subset(LT.prop_tail_per_block,
+                                                    BlockTransformation == "NormBlock"))
+LT.prop_tail_per_block.lmer.1 <- update(LT.prop_tail_per_block.lmer.0,
+                                        . ~ . - Block:Condition:ACC)
+LT.prop_tail_per_block.lmer.2 <- update(LT.prop_tail_per_block.lmer.1,
+                                        . ~ . - Condition:ACC)
+LT.prop_tail_per_block.lmer.3 <- update(LT.prop_tail_per_block.lmer.2,
+                                        . ~ . - Block:ACC)
+LT.prop_tail_per_block.lmer.4 <- update(LT.prop_tail_per_block.lmer.3,
+                                        . ~ . - Block:Condition)
+LT.prop_tail_per_block.lmer.5 <- update(LT.prop_tail_per_block.lmer.4,
+                                        . ~ . - Condition)
+LT.prop_tail_per_block.lmer.6 <- update(LT.prop_tail_per_block.lmer.5,
+                                        . ~ . - Block)
+LT.prop_tail_per_block.lmer.comp <- anova(LT.prop_tail_per_block.lmer.6,
+                                          LT.prop_tail_per_block.lmer.5,
+                                          LT.prop_tail_per_block.lmer.4,
+                                          LT.prop_tail_per_block.lmer.3,
+                                          LT.prop_tail_per_block.lmer.2,
+                                          LT.prop_tail_per_block.lmer.1,
+                                          LT.prop_tail_per_block.lmer.0)
+# ==================================================================================================
+# LOOKING TIME ANALYSIS: TIME COURSE
+# ==================================================================================================
+LT.time_course_tail <- make_time_sequence_data(LT.clean, time_bin_size = 100,
+                                                aois="Tail",
+                                                predictor_columns=c("Condition",
+                                                                    "Block"))
+LT.time_course_tail.plot <- plot(LT.time_course_tail, predictor_column = "Condition") +
+  facet_wrap(~Participant) +
+  ylim(c(0,1))
 # ==================================================================================================
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS
 # ==================================================================================================
