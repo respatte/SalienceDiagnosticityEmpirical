@@ -1,10 +1,13 @@
 library(lme4)
+library(nortest)
 library(tidyverse)
 library(eyetrackingR)
 
 source("Routines.R")
 
+# ==================================================================================================
 # GATHER DATA
+# ==================================================================================================
 # Define AOIs
 # TODO - AOIs plot needs updating
 # AOIs.plot <- ggplot(AOIs.adults, aes(xmin = L, xmax = R, ymin = T, ymax = B)) +
@@ -82,8 +85,33 @@ LT.time_course_tail <- make_time_sequence_data(LT.clean, time_bin_size = 100,
                                                 aois="Tail",
                                                 predictor_columns=c("Condition",
                                                                     "Block"))
-LT.time_course_tail.plot <- plot(LT.time_course_tail, predictor_column = "Condition") +
-  facet_wrap(~Participant) +
+
+LT.time_course_tail.plot.t <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 0),],
+                                      predictor_column = "Condition") +
+  ylim(c(0,1))
+LT.time_course_tail.plot.1 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 1),],
+                                   predictor_column = "Condition") +
+  ylim(c(0,1))
+LT.time_course_tail.plot.2 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 2),],
+                                   predictor_column = "Condition") +
+  ylim(c(0,1))
+LT.time_course_tail.plot.3 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 3),],
+                                   predictor_column = "Condition") +
+  ylim(c(0,1))
+LT.time_course_tail.plot.4 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 4),],
+                                   predictor_column = "Condition") +
+  ylim(c(0,1))
+LT.time_course_tail.plot.5 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 5),],
+                                   predictor_column = "Condition") +
+  ylim(c(0,1))
+LT.time_course_tail.plot.6 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 6),],
+                                   predictor_column = "Condition") +
+  ylim(c(0,1))
+LT.time_course_tail.plot.7 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 7),],
+                                   predictor_column = "Condition") +
+  ylim(c(0,1))
+LT.time_course_tail.plot.8 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 8),],
+                                   predictor_column = "Condition") +
   ylim(c(0,1))
 # ==================================================================================================
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS
