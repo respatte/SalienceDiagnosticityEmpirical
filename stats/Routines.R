@@ -3,7 +3,8 @@ library(tidyverse)
 library(eyetrackingR)
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
-# Function importing looking time data from all adult participants, in the ../results/adults repository by default
+# Function importing looking time data from all adult participants,
+# in the ../results/adults repository by default
 LT_data.import.adults <- function(participants="adults_2f"){
   single.file.import <- function(file){
     tmp <- read.delim(file)[,-c(2:5,10:23)]
@@ -46,8 +47,10 @@ LT_data.import.adults <- function(participants="adults_2f"){
 }
 
 # LOOKING-TIME DATA IMPORT -- ADUTLTS
-# Function importing looking time data from all infant participants, in the ../results/infants.tsv file by default
-LT_data.import.infants <- function(res.repo="../results/infants/data/", file.name="infants.tsv", participants="infants"){
+# Function importing looking time data from all infant participants,
+# in the ../results/infants/data/infants.tsv file by default
+LT_data.import.infants <- function(res.repo="../results/infants/data/", file.name="infants.tsv",
+                                   participants="infants"){
   # Get participant information (Gender, DOB, DOT)
   participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"),
                                colClasses = c("factor","factor","Date","Date")) %>%
@@ -161,7 +164,8 @@ LT_data.to_eyetrackingR <- function(df, participants, AOIs){
 
 # LOOKING-TIME DATA TRACKLOSS CLEAN
 # Cleans the data by trackloss with specified thresholds, saving diagnostic plots
-LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thresh=.3, incl_crit=.7, verbose=F){
+LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thresh=.3,
+                                    incl_crit=.7, verbose=F){
   # Get trackloss information for plotting (inlc. test)
   trackloss.subject.trial <- trackloss_analysis(df)
   # Plot trackloss per trial per subject
