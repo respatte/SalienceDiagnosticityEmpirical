@@ -8,7 +8,6 @@ source("Routines.R")
 # ==================================================================================================
 # GATHER DATA
 # ==================================================================================================
-# Define AOIs
 # TODO - AOIs plot needs updating
 # AOIs.plot <- ggplot(AOIs.adults, aes(xmin = L, xmax = R, ymin = T, ymax = B)) +
 #   xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
@@ -85,34 +84,17 @@ LT.time_course_tail <- make_time_sequence_data(LT.clean, time_bin_size = 100,
                                                 aois="Tail",
                                                 predictor_columns=c("Condition",
                                                                     "Block"))
-
-LT.time_course_tail.plot.t <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 0),],
-                                      predictor_column = "Condition") +
-  ylim(c(0,1))
-LT.time_course_tail.plot.1 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 1),],
-                                   predictor_column = "Condition") +
-  ylim(c(0,1))
-LT.time_course_tail.plot.2 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 2),],
-                                   predictor_column = "Condition") +
-  ylim(c(0,1))
-LT.time_course_tail.plot.3 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 3),],
-                                   predictor_column = "Condition") +
-  ylim(c(0,1))
-LT.time_course_tail.plot.4 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 4),],
-                                   predictor_column = "Condition") +
-  ylim(c(0,1))
-LT.time_course_tail.plot.5 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 5),],
-                                   predictor_column = "Condition") +
-  ylim(c(0,1))
-LT.time_course_tail.plot.6 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 6),],
-                                   predictor_column = "Condition") +
-  ylim(c(0,1))
-LT.time_course_tail.plot.7 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 7),],
-                                   predictor_column = "Condition") +
-  ylim(c(0,1))
-LT.time_course_tail.plot.8 <- plot(LT.time_course_tail[which(LT.time_course_tail$Block == 8),],
-                                   predictor_column = "Condition") +
-  ylim(c(0,1))
+LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_tail,
+                                           aes(x = Time, y=Prop,
+                                               colour=Condition,
+                                               fill=Condition)) +
+  xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
+  facet_wrap(~Block) + theme(legend.position = "top") + ylim(0,1) +
+  stat_summary(fun.y='mean', geom='line', linetype = 'F1') +
+  stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+  geom_hline(yintercept = .5)
+ggsave("../results/adults_2f/LookingTimeCoursePerBlock.pdf",
+       plot = LT.clean.time_course.plot.blocks)
 # ==================================================================================================
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS
 # ==================================================================================================
