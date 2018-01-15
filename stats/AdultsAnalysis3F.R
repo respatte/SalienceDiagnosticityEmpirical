@@ -1,38 +1,45 @@
-library(eyetrackingR)
-library(Matrix)
 library(lme4)
+library(nortest)
 library(tidyverse)
+library(eyetrackingR)
 
 source("Routines.R")
 
+# ==================================================================================================
 # GATHER DATA
-# Define AOIs
-# AOIs.plot <- ggplot(AOIs.adults, aes(xmin = L, xmax = R, ymin = T, ymax = B)) +
-#   xlim(c(0,640)) + scale_y_reverse(limits = c(480,0)) +
-#   geom_rect(aes(fill = name)) +
-#   theme(legend.position = "top")
-# ggsave("../results/adults_3f/data_cleaning_graphs/AOIs.png",
-#        plot = AOIs.plot , width = 3.2, height = 2.95)
-
+# ==================================================================================================
 d <- LT_data.gather("adults_3f")
 behaviour <- d[[2]]
 LT.clean <- d[[4]] %>%
+  subset(Block <= 17) %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail"),
-                         treat_non_aoi_looks_as_missing = F)
+                         treat_non_aoi_looks_as_missing = T) %>%
+  subset_by_window(window_start_time = -1000, rezero = F)
 
-# ANALYSIS - LOOKING TIME
+# ==================================================================================================
+# LOOKING TIME ANALYSIS: TIME COURSE
+# ==================================================================================================
 # Plotting eye-tracking data for all AOIs, averaged across all trials
-LT.clean.time_course <- make_time_sequence_data(LT.clean, time_bin_size = 1e-2,
-                                                 predictor_columns = c("Condition"),
-                                                 aois = c("Head","Tail","Feet"))
-LT.clean.time_course.plot <- plot(LT.clean.time_course, predictor_column = "Condition") +
-  theme_light()
-ggsave("../results/adults_3f/LookingTimeCourseNorm.pdf", plot = LT.clean.time_course.plot)
-# Analysing and plotting total looking time to each AOI
+LT.time_course_aois <- make_time_sequence_data(LT.clean, time_bin_size = 100,
+                                               aois = c("Head","Tail","Feet"),
+                                               predictor_columns=c("Condition",
+                                                                   "Block"))
+LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_aois,
+                                           aes(x = Time, y=Prop,
+                                               colour=Condition,
+                                               fill=Condition)) +
+  xlab('Time in Trial') + ylab("Looking to AOI (Prop)") +
+  facet_grid(Block~AOI) + theme(legend.position = "top") + ylim(0,1) +
+  stat_summary(fun.y='mean', geom='line', linetype = 'F1') +
+  stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+  geom_hline(yintercept = 1/3)
+ggsave("../results/adults_3f/LookingTimeCoursePerBlock.pdf",
+       plot = LT.clean.time_course.plot.blocks,
+       width = 7, height = 30)
 # Making data time-window-analysis ready
 LT.clean.total_per_AOI <- make_time_window_data(LT.clean,
                                                  aois=c("Head","Tail","Feet"),
@@ -40,24 +47,51 @@ LT.clean.total_per_AOI <- make_time_window_data(LT.clean,
                                                                      "Stimulus",
                                                                      "TrialId",
                                                                      "CategoryName"))
-# Boxplots of total looking time per AOI
-LT.clean.total_per_AOI.plot <- plot(LT.clean.total_per_AOI,
-                                     predictor_columns=c("Condition"),
-                                     dv = "ArcSin")
-ggsave("../results/adults_3f/TotalPerAOI.png", plot = LT.clean.total_per_AOI.plot)
-# Simple t-test
-LT.clean.total_per_AOI.t_test <- t.test(ArcSin ~ Condition, data=LT.clean.total_per_AOI)
+# ==================================================================================================
+# LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY BLOCK
+# ==================================================================================================
+LT.prop_tail_per_block <- make_time_window_data(LT.clean,
+                                                aois=c("Tail","Feet","Head"),
+                                                predictor_columns=c("Condition",
+                                                                    "Block",
+                                                                    "ACC")) %>%
+  subset(Block > 0) %>%
+  group_by(Participant) %>%
+  mutate(N_Blocks = max(Block),
+         OppBlock = Block - N_Blocks,
+         NormBlock = Block/N_Blocks) %>%
+  gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
+LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_block,
+                                      aes(x = Block, y = ArcSin,
+                                          colour = Condition)) +
+  facet_grid(AOI~BlockTransformation, scales = "free_x") +
+  theme(aspect.ratio = 1.618/1, legend.position = "top") +
+  geom_smooth() +
+  geom_hline(yintercept = asin(sqrt(1/3)))
+ggsave("../results/adults_3f/AOILookingEvolution.png",
+       plot = LT.prop_tail_per_block.plot,
+       width = 7, height = 13)
 
-# ANALYSIS -- BEHAVIOURAL DATA -- NUMBER OF BLOCKS TO TRAINING
-# Creating sub-dataframe for NBlocks
-behaviour.adults.n_blocks <- subset(behaviour.adults, !duplicated(Subject))
-# Plotting and analysing NBlocks by Condition
-behaviour.adults.n_blocks.plot <- ggplot(behaviour.adults.n_blocks, aes(x=Condition,y=LogNBlocks)) + geom_boxplot()
-ggsave("../results/adults_3f/BlocksToLearning.png", plot = behaviour.adults.n_blocks.plot)
-behaviour.adults.n_blocks.t_test <- t.test(LogNBlocks ~ Condition, data=behaviour.adults.n_blocks)
-# ANALYSIS -- BEHAVIOURAL DATA -- REACTION TIME
-behaviour.adults.reaction_time.plot <- ggplot(behaviour.adults, aes(x=Condition,y=LogRT)) + geom_boxplot()
-ggsave("../results/adults_3f/ReactionTime.png", plot = behaviour.adults.reaction_time.plot)
-behaviour.adults.reaction_time.t_test <- t.test(LogRT ~ Condition, data = behaviour.adults)
-behaviour.adults.reaction_time.anova <- aov(LogRT ~ Condition*Block, data = behaviour.adults)
-behaviour.adults.reaction_time.model_comparison <- drop1(behaviour.adults.reaction_time.anova, ~., test = "F")
+# ==================================================================================================
+# BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS
+# ==================================================================================================
+# Get how many participants for each block, and make a bar plot
+behaviour.parts_per_block <- behaviour %>%
+  subset(Block > 0) %>%
+  group_by(Block, Condition) %>%
+  summarise(N_Participants = n_distinct(Participant))
+behaviour.parts_per_block.plot <- ggplot(behaviour.parts_per_block,
+                                         aes(x = Block, y = N_Participants, fill = Condition)) +
+  geom_col(position = "dodge")
+ggsave("../results/adults_3f/ParticipantsPerBlock.png",
+       plot = behaviour.parts_per_block.plot)
+# Get number of blocks to learning per participant, plot a violin
+behaviour.blocks_per_part <- behaviour %>%
+  group_by(Participant, Condition) %>%
+  summarise(N_Blocks = max(Block))
+behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
+                                         aes(x = Condition, y = N_Blocks, fill = Condition)) +
+  geom_violin() +
+  geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15)
+ggsave("../results/adults_3f/BlocksPerParticipant.png",
+       plot = behaviour.blocks_per_part.plot)
