@@ -48,7 +48,7 @@ LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_block,
                                           colour = Condition)) +
   facet_wrap(~BlockTransformation, scales = "free_x") +
   theme(aspect.ratio = 1.618/1, legend.position = "top") +
-  geom_smooth() +
+  stat_smooth(linetype = "61", level = 0.87) +
   geom_hline(yintercept = asin(sqrt(.5)))
 ggsave("../results/adults_2f/TailLookingEvolution.png",
        plot = LT.prop_tail_per_block.plot,

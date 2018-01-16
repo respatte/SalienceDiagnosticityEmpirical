@@ -63,10 +63,11 @@ LT.prop_tail_per_block <- make_time_window_data(LT.clean,
   gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
 LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_block,
                                       aes(x = Block, y = ArcSin,
-                                          colour = Condition)) +
+                                          colour = Condition,
+                                          fill = Condition)) +
   facet_grid(AOI~BlockTransformation, scales = "free_x") +
   theme(aspect.ratio = 1.618/1, legend.position = "top") +
-  geom_smooth(linetype = "61") +
+  stat_smooth(linetype = "61", level = 0.87) +
   geom_hline(yintercept = asin(sqrt(1/3)))
 ggsave("../results/adults_3f/AOILookingEvolution.png",
        plot = LT.prop_tail_per_block.plot,
