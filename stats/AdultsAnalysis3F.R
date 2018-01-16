@@ -66,7 +66,7 @@ LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_block,
                                           colour = Condition)) +
   facet_grid(AOI~BlockTransformation, scales = "free_x") +
   theme(aspect.ratio = 1.618/1, legend.position = "top") +
-  geom_smooth() +
+  geom_smooth(linetype = "61") +
   geom_hline(yintercept = asin(sqrt(1/3)))
 ggsave("../results/adults_3f/AOILookingEvolution.png",
        plot = LT.prop_tail_per_block.plot,
