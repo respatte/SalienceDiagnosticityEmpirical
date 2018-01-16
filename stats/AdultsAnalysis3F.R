@@ -50,7 +50,8 @@ LT.clean.total_per_AOI <- make_time_window_data(LT.clean,
 # ==================================================================================================
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY BLOCK
 # ==================================================================================================
-LT.prop_tail_per_block <- make_time_window_data(LT.clean,
+# Prepare dataset with BlockTransformation
+LT.prop_aois_per_block <- make_time_window_data(LT.clean,
                                                 aois=c("Tail","Feet","Head"),
                                                 predictor_columns=c("Condition",
                                                                     "Block",
@@ -61,7 +62,40 @@ LT.prop_tail_per_block <- make_time_window_data(LT.clean,
          OppBlock = Block - N_Blocks,
          NormBlock = Block/N_Blocks) %>%
   gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
-LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_block,
+# Growth Curve Analysis (GCA) for each AOI for each BlockTransformation
+# -- Set orthogonal polynomials for GCA
+blocks <- LT.prop_aois_per_block %>%
+  subset(BlockTransformation == "OppBlock") %>%
+  {sort(as.vector(unique(.$Block)))}
+orth_poly <- poly(blocks, 7) %>%
+  as.tibble() %>%
+  mutate(Block = blocks)
+colnames(orth_poly) <- c(paste0("ot", 1:7), "Block")
+LT.prop_aois_per_block <- left_join(LT.prop_aois_per_block, orth_poly)
+# -- Run lmer model for GCA, for each AOI: create subset, run model, drop effects and test sig.
+LT.prop_feet_per_block <- LT.prop_aois_per_block %>%
+  subset(AOI == "Feet")
+LT.prop_feet_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                     (1 | TrialId) +
+                                     (1 | Participant),
+                                   data = LT.prop_feet_per_block, REML = FALSE)
+LT.prop_feet_per_block.comp <- drop1(LT.prop_feet_per_block.GCA, ~., test = "Chi")
+LT.prop_tail_per_block <- LT.prop_aois_per_block %>%
+  subset(AOI == "Tail")
+LT.prop_tail_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                     (1 | TrialId) +
+                                     (1 | Participant),
+                                   data = LT.prop_tail_per_block, REML = FALSE)
+LT.prop_tail_per_block.comp <- drop1(LT.prop_tail_per_block.GCA, ~., test = "Chi")
+LT.prop_head_per_block <- LT.prop_aois_per_block %>%
+  subset(AOI == "Head")
+LT.prop_head_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                     (1 | TrialId) +
+                                     (1 | Participant),
+                                   data = LT.prop_head_per_block, REML = FALSE)
+LT.prop_head_per_block.comp <- drop1(LT.prop_head_per_block.GCA, ~., test = "Chi")
+# Plot all AOIs and all BlockTransformation
+LT.prop_aois_per_block.plot <- ggplot(LT.prop_aois_per_block,
                                       aes(x = Block, y = ArcSin,
                                           colour = Condition,
                                           fill = Condition)) +
