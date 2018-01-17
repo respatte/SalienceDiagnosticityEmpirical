@@ -42,7 +42,7 @@ LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_aois,
                                                fill=Condition)) +
   xlab('Time in Trial') + ylab("Looking to AOI (Prop)") +
   facet_grid(Block~AOI) + theme(legend.position = "top") + ylim(0,1) +
-  stat_summary(fun.y='mean', geom='line', linetype = 'F1') +
+  stat_summary(fun.y='mean', geom='line', linetype = '61') +
   stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
   geom_hline(yintercept = 1/3)
 ggsave("../results/adults_3f/LookingTimeCoursePerBlock.pdf",
@@ -55,11 +55,24 @@ LT.clean.time_course.plot.parts <- ggplot(LT.time_course_aois,
                                                fill=Condition)) +
   xlab('Time in Trial') + ylab("Looking to AOI (Prop)") +
   facet_grid(AOI~Part, scales = "free_x") + theme(legend.position = "top") + ylim(0,1) +
-  stat_summary(fun.y='mean', geom='line', linetype = 'F1') +
+  stat_summary(fun.y='mean', geom='line', linetype = '61') +
   stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
   geom_hline(yintercept = 1/3)
 ggsave("../results/adults_3f/LookingTimeCoursePerPart.pdf",
        plot = LT.clean.time_course.plot.parts,
+       width = 7, height = 10)
+## Global plot
+LT.clean.time_course.plot <- ggplot(subset(LT.time_course_aois, Part != "Test"),
+                                    aes(x = Time, y=Prop,
+                                        colour=Condition,
+                                        fill=Condition)) +
+  xlab('Time in Trial') + ylab("Looking to AOI (Prop)") +
+  facet_wrap(~AOI) + theme(legend.position = "top") + ylim(0,1) +
+  stat_summary(fun.y='mean', geom='line', linetype = '61') +
+  stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+  geom_hline(yintercept = 1/3)
+ggsave("../results/adults_3f/LookingTimeCourse.pdf",
+       plot = LT.clean.time_course.plot,
        width = 7, height = 10)
 # ==================================================================================================
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY BLOCK
