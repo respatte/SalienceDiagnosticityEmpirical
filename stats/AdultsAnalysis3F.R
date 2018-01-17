@@ -61,11 +61,11 @@ LT.prop_aois_per_block <- make_time_window_data(LT.clean,
   mutate(N_Blocks = max(Block),
          OppBlock = Block - N_Blocks,
          NormBlock = Block/N_Blocks) %>%
-  gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
+  gather("BlockTransformation","Block", Block, OppBlock, NormBlock) %>%
+  subset(BlockTransformation == "OppBlock") # Keeping only OppBlock transformation
 # Growth Curve Analysis (GCA) for each AOI for each BlockTransformation
 # -- Set orthogonal polynomials for GCA
 blocks <- LT.prop_aois_per_block %>%
-  subset(BlockTransformation == "OppBlock") %>%
   {sort(as.vector(unique(.$Block)))}
 orth_poly <- poly(blocks, 7) %>%
   as.tibble() %>%
@@ -94,18 +94,19 @@ LT.prop_head_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 +
                                      (1 | Participant),
                                    data = LT.prop_head_per_block, REML = FALSE)
 LT.prop_head_per_block.comp <- drop1(LT.prop_head_per_block.GCA, ~., test = "Chi")
-# Plot all AOIs and all BlockTransformation
+# Plot all AOIs and all BlockTransformations
 LT.prop_aois_per_block.plot <- ggplot(LT.prop_aois_per_block,
                                       aes(x = Block, y = ArcSin,
                                           colour = Condition,
                                           fill = Condition)) +
-  facet_grid(AOI~BlockTransformation, scales = "free_x") +
-  theme(aspect.ratio = 1.618/1, legend.position = "top") +
-  stat_smooth(linetype = "61", level = 0.87) +
+  facet_wrap(~AOI) + theme(aspect.ratio = 1.618/1, legend.position = "top") +
+  #stat_smooth(linetype = "61", level = 0.87) +
+  stat_summary(fun.y = 'mean', geom = 'line', linetype = '61') +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', alpha = .25, colour = NA) +
   geom_hline(yintercept = asin(sqrt(1/3)))
 ggsave("../results/adults_3f/AOILookingEvolution.png",
-       plot = LT.prop_tail_per_block.plot,
-       width = 7, height = 13)
+       plot = LT.prop_aois_per_block.plot,
+       width = 7, height = 5)
 
 # ==================================================================================================
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS
