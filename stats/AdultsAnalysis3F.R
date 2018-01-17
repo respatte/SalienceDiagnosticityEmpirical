@@ -24,10 +24,18 @@ LT.clean <- d[[4]] %>%
 # LOOKING TIME ANALYSIS: TIME COURSE
 # ==================================================================================================
 # Plotting eye-tracking data for all AOIs, averaged across all trials
-LT.time_course_aois <- make_time_sequence_data(LT.clean, time_bin_size = 100,
-                                               aois = c("Head","Tail","Feet"),
-                                               predictor_columns=c("Condition",
-                                                                   "Block"))
+LT.time_course_aois <- LT.clean %>%
+  make_time_sequence_data(time_bin_size = 50,
+                          aois = c("Head","Tail","Feet"),
+                          predictor_columns=c("Condition",
+                                              "Block")) %>%
+  group_by(Participant) %>%
+  mutate(NBlocks = max(Block)) %>%
+  group_by(Participant, Block) %>%
+  mutate(Part = case_when(Block == 0 ~ "Test",
+                          Block <= NBlocks/2 ~ "First half",
+                          T ~ "Second half"))
+## Individual plot for each block
 LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_aois,
                                            aes(x = Time, y=Prop,
                                                colour=Condition,
@@ -40,13 +48,19 @@ LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_aois,
 ggsave("../results/adults_3f/LookingTimeCoursePerBlock.pdf",
        plot = LT.clean.time_course.plot.blocks,
        width = 7, height = 30)
-# Making data time-window-analysis ready
-LT.clean.total_per_AOI <- make_time_window_data(LT.clean,
-                                                 aois=c("Head","Tail","Feet"),
-                                                 predictor_columns=c("Condition",
-                                                                     "Stimulus",
-                                                                     "TrialId",
-                                                                     "CategoryName"))
+## Plot for first half, second half, and test
+LT.clean.time_course.plot.parts <- ggplot(LT.time_course_aois,
+                                           aes(x = Time, y=Prop,
+                                               colour=Condition,
+                                               fill=Condition)) +
+  xlab('Time in Trial') + ylab("Looking to AOI (Prop)") +
+  facet_grid(AOI~Part, scales = "free_x") + theme(legend.position = "top") + ylim(0,1) +
+  stat_summary(fun.y='mean', geom='line', linetype = 'F1') +
+  stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+  geom_hline(yintercept = 1/3)
+ggsave("../results/adults_3f/LookingTimeCoursePerPart.pdf",
+       plot = LT.clean.time_course.plot.parts,
+       width = 7, height = 10)
 # ==================================================================================================
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY BLOCK
 # ==================================================================================================
