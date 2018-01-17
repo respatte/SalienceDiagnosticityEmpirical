@@ -72,7 +72,8 @@ orth_poly <- poly(blocks, 7) %>%
   mutate(Block = blocks)
 colnames(orth_poly) <- c(paste0("ot", 1:7), "Block")
 LT.prop_aois_per_block <- left_join(LT.prop_aois_per_block, orth_poly)
-# -- Run lmer model for GCA, for each AOI: create subset, run model, drop effects and test sig.
+## Run lmer model for GCA, for each AOI: create subset, run model, drop effects and test sig.
+### Feet
 LT.prop_feet_per_block <- LT.prop_aois_per_block %>%
   subset(AOI == "Feet")
 LT.prop_feet_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
@@ -80,6 +81,11 @@ LT.prop_feet_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 +
                                      (1 | Participant),
                                    data = LT.prop_feet_per_block, REML = FALSE)
 LT.prop_feet_per_block.comp <- drop1(LT.prop_feet_per_block.GCA, ~., test = "Chi")
+LT.prop_feet_per_block.GCA <- lmer(ArcSin ~ Condition:ot5 +
+                                     (1 | TrialId) +
+                                     (1 | Participant),
+                                   data = LT.prop_feet_per_block, REML = FALSE)
+### Tail
 LT.prop_tail_per_block <- LT.prop_aois_per_block %>%
   subset(AOI == "Tail")
 LT.prop_tail_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
@@ -87,6 +93,11 @@ LT.prop_tail_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 +
                                      (1 | Participant),
                                    data = LT.prop_tail_per_block, REML = FALSE)
 LT.prop_tail_per_block.comp <- drop1(LT.prop_tail_per_block.GCA, ~., test = "Chi")
+LT.prop_tail_per_block.GCA <- lmer(ArcSin ~ Condition:(ot1 + ot2 + ot7) +
+                                     (1 | TrialId) +
+                                     (1 | Participant),
+                                   data = LT.prop_tail_per_block, REML = FALSE)
+### Head
 LT.prop_head_per_block <- LT.prop_aois_per_block %>%
   subset(AOI == "Head")
 LT.prop_head_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
@@ -94,7 +105,25 @@ LT.prop_head_per_block.GCA <- lmer(ArcSin ~ Condition * (ot1 + ot2 + ot3 + ot4 +
                                      (1 | Participant),
                                    data = LT.prop_head_per_block, REML = FALSE)
 LT.prop_head_per_block.comp <- drop1(LT.prop_head_per_block.GCA, ~., test = "Chi")
+LT.prop_head_per_block.GCA <- lmer(ArcSin ~ Condition:(ot1 + ot2 + ot7) +
+                                     (1 | TrialId) +
+                                     (1 | Participant),
+                                   data = LT.prop_head_per_block, REML = FALSE)
 # Plot all AOIs and all BlockTransformations
+# -- Get predicted values from model, add to initial data frame
+LT.prop_feet_per_block$Predicted <- predict(LT.prop_feet_per_block.GCA,
+                                            LT.prop_feet_per_block,
+                                            re.form = NA)
+LT.prop_head_per_block$Predicted <- predict(LT.prop_head_per_block.GCA,
+                                            LT.prop_head_per_block,
+                                            re.form = NA)
+LT.prop_tail_per_block$Predicted <- predict(LT.prop_tail_per_block.GCA,
+                                            LT.prop_tail_per_block,
+                                            re.form = NA)
+LT.prop_aois_per_block <- rbind(LT.prop_feet_per_block,
+                                LT.prop_head_per_block,
+                                LT.prop_tail_per_block)
+# -- Plot raw data and predicte values from model
 LT.prop_aois_per_block.plot <- ggplot(LT.prop_aois_per_block,
                                       aes(x = Block, y = ArcSin,
                                           colour = Condition,
@@ -103,6 +132,7 @@ LT.prop_aois_per_block.plot <- ggplot(LT.prop_aois_per_block,
   #stat_smooth(linetype = "61", level = 0.87) +
   stat_summary(fun.y = 'mean', geom = 'line', linetype = '61') +
   stat_summary(fun.data = 'mean_se', geom = 'ribbon', alpha = .25, colour = NA) +
+  stat_summary(aes(y = Predicted), fun.y = 'mean', geom = "line", size = 1.2) +
   geom_hline(yintercept = asin(sqrt(1/3)))
 ggsave("../results/adults_3f/AOILookingEvolution.png",
        plot = LT.prop_aois_per_block.plot,
