@@ -165,20 +165,26 @@ LT_data.to_eyetrackingR <- function(df, participants, AOIs){
 # LOOKING-TIME DATA TRACKLOSS CLEAN
 # Cleans the data by trackloss with specified thresholds, saving diagnostic plots
 LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thresh=.3,
-                                    incl_crit=.7, verbose=F){
+                                    incl_crit=.7, verbose = F, graphs = F){
   # Get trackloss information for plotting (inlc. test)
   trackloss.subject.trial <- trackloss_analysis(df)
-  # Plot trackloss per trial per subject
-  trackloss.subject.trial.p <- ggplot(trackloss.subject.trial, aes(x=TrialId, y=TracklossForTrial)) +
-    facet_wrap(~Participant, nrow = 10, scales = "free_x") + geom_point()
-  ggsave(paste0("../results/", participants, "/cleaning/TracklossSubjectTrial.png"), trackloss.subject.trial.p, width=9, height=15)
+  if(graphs){
+    # Plot trackloss per trial per subject
+    trackloss.subject.trial.p <- ggplot(trackloss.subject.trial,
+                                        aes(x=TrialId, y=TracklossForTrial)) +
+      facet_wrap(~Participant, nrow = 10, scales = "free_x") + geom_point()
+    ggsave(paste0("../results/", participants, "/cleaning/TracklossSubjectTrial.png"),
+           trackloss.subject.trial.p, width=9, height=15)
+  }
   # Remove trials with trackloss proportion greater than 0.25
   df.trackloss <- clean_by_trackloss(data = df,
                                      trial_prop_thresh = trial_prop_thresh)
-  # Compute and plot proportion of valid trials per subject (number of valid trials / number of trials for subject)
+  # Compute and plot proportion of valid trials per subject
+  # (number of valid trials / number of trials for subject)
   # (looking only at familiarisation phase)
   df.trackloss$TrialId <- as.numeric(df.trackloss$TrialId)
-  df.described <- describe_data(df.trackloss[which(df.trackloss$Phase == "Familiarisation"),], 'TrialId', 'Participant')
+  df.described <- describe_data(df.trackloss[which(df.trackloss$Phase == "Familiarisation"),],
+                                'TrialId', 'Participant')
   if(grepl("adults_[23]f", participants)){
     df.described$ProportionTrials <- df.described$NumTrials / df.described$Max
   }else{
@@ -188,13 +194,17 @@ LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thr
   if(verbose){
     print(summary(df.described))
   }
-  df.described.p <- ggplot(df.described,
-                           aes(x=Participant, y=ProportionTrials, colour = AboveCriteria)) +
-    scale_colour_manual(values = c("red","green"), guide = F) + geom_point()
-  ggsave(paste0("../results/", participants, "/cleaning/ProportionTrialsPerSubject.png"),
-         plot = df.described.p, width = 10, height = 3)
+  if(graphs){
+    df.described.p <- ggplot(df.described,
+                             aes(x=Participant, y=ProportionTrials, colour = AboveCriteria)) +
+      scale_colour_manual(values = c("red","green"), guide = F) + geom_point()
+    ggsave(paste0("../results/", participants, "/cleaning/ProportionTrialsPerSubject.png"),
+           plot = df.described.p, width = 10, height = 3)
+  }
   # Select subjects to keep
-  df.trackloss <- inner_join(df.trackloss, select(df.described, one_of("Participant", "AboveCriteria")))
+  df.trackloss <- inner_join(df.trackloss, select(df.described,
+                                                  one_of("Participant",
+                                                         "AboveCriteria")))
   df.clean <- df.trackloss %>%
     subset(AboveCriteria == T) %>%
     droplevels()
@@ -206,7 +216,7 @@ LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thr
 # LOOKING-TIME DATA GATHER
 # General function for importing, transforming into eyetrackingR, and cleaning data,
 # as well as giving general plots for general information on the data
-LT_data.gather <- function(participants){
+LT_data.gather <- function(participants, verbose = F, graphs = F){
   # Define a list of AOI dataframes for all experiments
   AOIs <<- list()
   AOIs[["adults_2f.Head"]] <<- data.frame(AOI_type=1,
@@ -235,7 +245,9 @@ LT_data.gather <- function(participants){
                                   Top=c(299,299),
                                   Bottom=c(299+450,299+450))
   # Import raw data
-  raw_data <- match.fun(paste0("LT_data.import.", sub("_[23]f", "", participants)))(participants = participants)
+  fun_name <- paste0("LT_data.import.",
+                     sub("_[23]f", "", participants))
+  raw_data <- match.fun(fun_name)(participants = participants)
   # Extract behavioural data for adults
   if(grepl("adults_[23]f", participants)){
     behaviour <- LT_data.to_behaviour(raw_data)
@@ -254,60 +266,69 @@ LT_data.gather <- function(participants){
                            aoi_columns = sub(paste0(participants,"\\."), "",
                                              names(AOIs)[current.AOIs]),
                            treat_non_aoi_looks_as_missing = F)
-  # Analyse trackloss, clean data, and save diagnostic plots
+  # Analyse trackloss, clean data
   LT.AOI_summary <- LT.raw_data %>%
     {if(grepl("adults_[23]f", participants)){
       group_by(., Participant, CurrentObject)
       }else{group_by(., Participant, Condition)}}%>%
     summarise(TrackLossRatio = sum(TrackLoss)/n(),
               NonAOIRatio = sum(NonAOI, na.rm = T)/(n()-sum(TrackLoss)))
-  # Select aesthetics for plot depending on available variables
-  if(grepl("adults_[23]f", participants)){
-    LT.AOI_summary.plot.TrackLossRatio <- ggplot(LT.AOI_summary,
-                                                 aes(x = CurrentObject, y = TrackLossRatio,
-                                                     fill = CurrentObject))
-    LT.AOI_summary.plot.NonAOIRatio <- ggplot(LT.AOI_summary,
-                                              aes(x = CurrentObject, y = NonAOIRatio,
-                                                  fill = CurrentObject))
-  }else{
-    LT.AOI_summary.plot.TrackLossRatio <- ggplot(LT.AOI_summary,
-                                                 aes(x = Condition, y = TrackLossRatio,
-                                                     fill = Condition))
-    LT.AOI_summary.plot.NonAOIRatio <- ggplot(LT.AOI_summary,
-                                              aes(x = Condition, y = NonAOIRatio,
-                                                  fill = Condition))
+  # Save diagnostic plot if necessary
+  if(graphs){
+    # Select aesthetics for plot depending on available variables
+    if(grepl("adults_[23]f", participants)){
+      LT.AOI_summary.plot.TrackLossRatio <- ggplot(LT.AOI_summary,
+                                                   aes(x = CurrentObject, y = TrackLossRatio,
+                                                       fill = CurrentObject))
+      LT.AOI_summary.plot.NonAOIRatio <- ggplot(LT.AOI_summary,
+                                                aes(x = CurrentObject, y = NonAOIRatio,
+                                                    fill = CurrentObject))
+    }else{
+      LT.AOI_summary.plot.TrackLossRatio <- ggplot(LT.AOI_summary,
+                                                   aes(x = Condition, y = TrackLossRatio,
+                                                       fill = Condition))
+      LT.AOI_summary.plot.NonAOIRatio <- ggplot(LT.AOI_summary,
+                                                aes(x = Condition, y = NonAOIRatio,
+                                                    fill = Condition))
+    }
+    # Finishing plots with layers
+    LT.AOI_summary.plot.TrackLossRatio <- LT.AOI_summary.plot.TrackLossRatio +
+      geom_violin() +
+      geom_boxplot(alpha=0, width=.2, outlier.alpha = 1) +
+      guides(fill = "none")
+    LT.AOI_summary.plot.NonAOIRatio <- LT.AOI_summary.plot.NonAOIRatio +
+      geom_violin() +
+      geom_boxplot(alpha=0, width=.2, outlier.alpha = 1) +
+      guides(fill = "none")
+    # Saving plots
+    ggsave(paste0("../results/", participants, "/cleaning/TrackLossRatio.png"),
+           plot = LT.AOI_summary.plot.TrackLossRatio)
+    ggsave(paste0("../results/", participants, "/cleaning/NonAOIRatio.png"),
+           plot = LT.AOI_summary.plot.NonAOIRatio)
   }
-  # Finishing plots with layers
-  LT.AOI_summary.plot.TrackLossRatio <- LT.AOI_summary.plot.TrackLossRatio +
-    geom_violin() +
-    geom_boxplot(alpha=0, width=.2, outlier.alpha = 1) +
-    guides(fill = "none")
-  LT.AOI_summary.plot.NonAOIRatio <- LT.AOI_summary.plot.NonAOIRatio +
-    geom_violin() +
-    geom_boxplot(alpha=0, width=.2, outlier.alpha = 1) +
-    guides(fill = "none")
-  # Saving plots
-  ggsave(paste0("../results/", participants, "/cleaning/TrackLossRatio.png"),
-         plot = LT.AOI_summary.plot.TrackLossRatio)
-  ggsave(paste0("../results/", participants, "/cleaning/NonAOIRatio.png"),
-         plot = LT.AOI_summary.plot.NonAOIRatio)
   # Make clean, with inclusion criteria dependent on participants tested
   if(grepl("adults_[23]f", participants)){
-    LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants, trial_prop_thresh = .3, incl_crit = .7)
+    LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants,
+                                        trial_prop_thresh = .3, incl_crit = .7,
+                                        verbose = verbose, graphs = graphs)
   }else{
-    LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants, trial_prop_thresh = .5, incl_crit = .5)
+    LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants,
+                                        trial_prop_thresh = .5, incl_crit = .5,
+                                        verbose = verbose, graphs = graphs)
   }
   # Plot heatmaps of remaining participants and trials by condition by phase
-  x_max = min(max(LT.clean$CursorX, na.rm = T), 1920)
-  y_max = min(max(LT.clean$CursorY, na.rm = T), 1080)
-  LT.heatmap <- ggplot(LT.clean, aes(x=CursorX,y=CursorY)) +
-    xlim(c(0, x_max)) + scale_y_reverse(limits = c(y_max, 0)) +
-    theme(aspect.ratio = y_max/x_max) +
-    facet_grid(Phase~Condition) +
-    geom_bin2d(binwidth = c(20,20))
-  ggsave(paste0("../results/", participants, "/cleaning/Heatmaps.png"),
-         plot = LT.heatmap,
-         width = 8)
+  if(graphs){
+    x_max = min(max(LT.clean$CursorX, na.rm = T), 1920)
+    y_max = min(max(LT.clean$CursorY, na.rm = T), 1080)
+    LT.heatmap <- ggplot(LT.clean, aes(x=CursorX,y=CursorY)) +
+      xlim(c(0, x_max)) + scale_y_reverse(limits = c(y_max, 0)) +
+      theme(aspect.ratio = y_max/x_max) +
+      facet_grid(Phase~Condition) +
+      geom_bin2d(binwidth = c(20,20))
+    ggsave(paste0("../results/", participants, "/cleaning/Heatmaps.png"),
+           plot = LT.heatmap,
+           width = 8)
+  }
   # Return all datasets for analysis and checks
   return(list(raw_data, behaviour, LT.raw_data, LT.clean))
 }
