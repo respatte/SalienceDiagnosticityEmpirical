@@ -23,18 +23,30 @@ LT.clean <- d[[4]] %>%
 # ==================================================================================================
 # LOOKING TIME ANALYSIS: TIME COURSE
 # ==================================================================================================
-# Plotting eye-tracking data for all AOIs, averaged across all trials
+# Preparing data for analysis and plot
 LT.time_course_aois <- LT.clean %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = c("Head","Tail","Feet"),
                           predictor_columns=c("Condition",
-                                              "Block")) %>%
+                                              "Block",
+                                              "ACC",
+                                              "Stimulus",
+                                              "StiLabel")) %>%
   group_by(Participant) %>%
   mutate(NBlocks = max(Block)) %>%
   group_by(Participant, Block) %>%
   mutate(Part = case_when(Block == 0 ~ "Test",
                           Block <= NBlocks/2 ~ "First half",
                           T ~ "Second half"))
+# Growth Curve Analysis of the data
+LT.time_course_aois.GCA <- lmer(Prop ~ AOI:(ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                  Condition:AOI:(ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                  (1 + ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Block) +
+                                  (1 + ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Stimulus) +
+                                  (1 + ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant),
+                                data = LT.time_course_aois, REML = F,
+                                verbose = 2)
+# Plotting eye-tracking data for all AOIs, averaged across trials
 ## Individual plot for each block
 LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_aois,
                                            aes(x = Time, y=Prop,
