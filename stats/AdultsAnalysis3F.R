@@ -5,9 +5,7 @@ library(eyetrackingR)
 
 source("Routines.R")
 
-# ==================================================================================================
-# GATHER DATA
-# ==================================================================================================
+# GATHER DATA ======================================================================================
 d <- LT_data.gather("adults_3f")
 behaviour <- d[[2]]
 LT.clean <- d[[4]] %>%
@@ -20,9 +18,7 @@ LT.clean <- d[[4]] %>%
                          treat_non_aoi_looks_as_missing = T) %>%
   subset_by_window(window_start_time = -1000, rezero = F)
 
-# ==================================================================================================
-# LOOKING TIME ANALYSIS: TIME COURSE
-# ==================================================================================================
+# LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # Preparing data for analysis and plot
 LT.time_course_aois <- LT.clean %>%
   make_time_sequence_data(time_bin_size = 50,
@@ -41,8 +37,8 @@ LT.time_course_aois <- LT.clean %>%
 # Growth Curve Analysis of the data
 LT.time_course_aois.GCA <- lmer(Prop ~ AOI:(ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
                                   Condition:AOI:(ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
-                                  (1 + ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Block) +
-                                  (1 + ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Stimulus) +
+                                  (1 | Block) +
+                                  (1 | Stimulus) +
                                   (1 + ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant),
                                 data = LT.time_course_aois, REML = F,
                                 verbose = 2)
@@ -86,9 +82,7 @@ LT.clean.time_course.plot <- ggplot(subset(LT.time_course_aois, Part != "Test"),
 ggsave("../results/adults_3f/LookingTimeCourse.pdf",
        plot = LT.clean.time_course.plot,
        width = 7, height = 10)
-# ==================================================================================================
-# LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY BLOCK
-# ==================================================================================================
+# LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY BLOCK ==================================
 # Prepare dataset with BlockTransformation
 LT.prop_aois_per_block <- make_time_window_data(LT.clean,
                                                 aois=c("Tail","Feet","Head"),
@@ -177,9 +171,7 @@ ggsave("../results/adults_3f/AOILookingEvolution.png",
        plot = LT.prop_aois_per_block.plot,
        width = 7, height = 5)
 
-# ==================================================================================================
-# BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS
-# ==================================================================================================
+# BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS ====================================================
 # Get how many participants for each block, and make a bar plot
 behaviour.parts_per_block <- behaviour %>%
   subset(Block > 0) %>%
