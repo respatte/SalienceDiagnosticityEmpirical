@@ -193,15 +193,45 @@ behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
 ggsave("../results/adults_3f/BlocksPerParticipant.png",
        plot = behaviour.blocks_per_part.plot)
 # Accuracy by condition and diagnostic feature
+## Get datasets for training and test
 behaviour.training <- behaviour %>%
-  subset(Block > 0)
+  subset(Phase == "Familiarisation")
 behaviour.test <- behaviour %>%
-  subset(Block == 0)
-behaviour.training.ACC.diag.lmer <- lm(ACC ~ Condition*Diag,
-                                       data = behaviour.training)
-behaviour.training.ACC.diag.plot <- ggplot(behaviour.training,
-                                           aes(x = Condition,
-                                               y = ACC,
-                                               colour = Diag)) +
-  stat_summary(fun.y = 'mean', geom = 'point') +
-  stat_summary(fun.data = 'mean_se', geom = 'errorbar')
+  subset(Phase == "Test")
+## Run binomial glmer
+### During training
+ACC_by_diag.training.glmer <- glmer(ACC ~ Condition*Diagnostic +
+                                      (1 + Diagnostic | Participant),
+                                    family = binomial,
+                                    control = glmerControl(optimizer = "bobyqa"),
+                                    data = behaviour.training)
+### At test !!! NOT CONVERGING !!! ==> All participants at ceiling
+###ACC_by_diag.test.glmer <- glm(ACC ~ Condition*Diagnostic +
+###                                  (1 | Participant),
+###                                family = binomial,
+###                                data = behaviour.test)
+## Prepare and plot data
+### During training
+ACC_by_diag.training <- behaviour.training %>%
+  group_by(Participant, Diagnostic, Condition) %>%
+  summarise(Accuracy = sum(ACC)/n())
+ACC_by_diag.training.plot <- ggplot(ACC_by_diag.training,
+                                    aes(x = Condition,
+                                        y = Accuracy,
+                                        fill = Diagnostic)) +
+  ylim(0,1) +
+  geom_violin() +
+  geom_boxplot(alpha = 0, outlier.alpha = 1,
+               width = .15, position = position_dodge(.9))
+### At test
+ACC_by_diag.test <- behaviour.test %>%
+  group_by(Participant, Diagnostic, Condition) %>%
+  summarise(Accuracy = sum(ACC)/n())
+ACC_by_diag.test.plot <- ggplot(ACC_by_diag.test,
+                                aes(x = Condition,
+                                    y = Accuracy,
+                                    fill = Diagnostic)) +
+  ylim(0,1) +
+  geom_violin() +
+  geom_boxplot(alpha = 0, outlier.alpha = 1,
+               width = .15, position = position_dodge(.9))
