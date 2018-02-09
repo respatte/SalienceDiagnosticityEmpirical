@@ -7,18 +7,23 @@ library(eyetrackingR)
 # in the ../results/adults repository by default
 LT_data.import.adults <- function(participants="adults_2f"){
   single.file.import <- function(file){
-    tmp <- read.delim(file)[,-c(2:5,10:23)]
-    return(droplevels(tmp[tmp$CurrentObject %in% c("Feedback","Label","Stimulus"),]))
+    tmp <- read_tsv(file)
+    return(subset(tmp,
+                  CurrentObject %in% c("Feedback","Label","Stimulus"),
+                  select = -c(2:5,10:23)))
   }
   res.repo <- paste0("../results/",participants,"/data/")
   # Getting participant info
-  participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"))
+  participant_info <- read_csv(paste0(res.repo,"ParticipantInformation.csv"))
   # Reading all participant files
   cl <- makeCluster(4)
   registerDoSNOW(cl)
   file.names <- list.files(path=res.repo, pattern=".gazedata")
-  df <- foreach(i=1:length(file.names),.combine="rbind", .inorder=F) %dopar%
-    single.file.import(paste0(res.repo,file.names[i]))
+  df <- foreach(i=1:length(file.names),
+                .combine = "rbind",
+                .inorder = F,
+                .export = "read_tsv") %dopar%
+    single.file.import(paste0(res.repo, file.names[i]))
   stopCluster(cl)
   # Transforming data
   # TODO -- Check what happens when no answer in time: RT == 0 or RT == 10000? ACC? CRESP?
@@ -124,7 +129,12 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
 # LOOKING-TIME DATA TO BEHAVIOUR
 # Function extracting all non-LT data per participant per trial
 LT_data.to_behaviour <- function(df){
-  df <- df[,-c(2,3,9,12,15,16)] %>%
+  df %<>% select(-one_of("CursorX",
+                         "CursorY",
+                         "CurrentObject",
+                         "TrackLoss",
+                         "TimeStamp",
+                         "AOI_type")) %>%
     unique() %>%
     group_by(Participant) %>%
     mutate(NBlocks = max(Block),
