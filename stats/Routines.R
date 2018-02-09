@@ -39,16 +39,14 @@ LT_data.import.adults <- function(participants="adults_2f"){
            TimeStamp = TimestampMicrosec*1e-3 + TimestampSec*1e3,
            AOI_type = 1) %>%
     group_by(Participant) %>%
-    mutate(Condition = factor(if(first(StiLabel) == "NoLabelFeedback"){"NoLabel"}else{"Label"},
-                              levels = c("NoLabel","Label")),
-           CategoryName = factor(if(first(Condition) == "NoLabel"){"NoName"}else{
+    mutate(Condition = if(first(StiLabel) == "NoLabelFeedback"){"NoLabel"}else{"Label"},
+           CategoryName = if(first(Condition) == "NoLabel"){"NoName"}else{
              if((grepl("A",as.character(first(Stimulus))) &
                  first(StiLabel) == "Saldie")|
                 (grepl("B",as.character(first(Stimulus))) &
                  first(StiLabel) == "Gatoo")){
                "A_Saldie"
              }else{"A_Gatoo"}},
-             levels = c("NoName","A_Saldie","A_Gatoo"))
            NBlocks = max(Block),
            LogNBlocks = log(NBlocks),
            RT = ifelse(RT < 200, NA, RT),
