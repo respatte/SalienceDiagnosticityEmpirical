@@ -200,8 +200,8 @@ behaviour.test <- behaviour %>%
   subset(Phase == "Test")
 # Run binomial glmer
 ## During training
-ACC_by_diag.training.glmer <- glmer(ACC ~ Condition*Diagnostic +
-                                      (1 + Diagnostic | Participant),
+ACC_by_diag.training.glmer <- glmer(ACC ~ Condition*Diagnostic*zLogRT +
+                                      (1 + Diagnostic + zLogRT | Participant),
                                     family = binomial,
                                     control = glmerControl(optimizer = "bobyqa"),
                                     data = behaviour.training)
