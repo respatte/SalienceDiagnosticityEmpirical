@@ -48,6 +48,12 @@ LT_data.import.adults <- function(participants="adults_2f"){
              }else{"A_Gatoo"}},
              levels = c("NoName","A_Saldie","A_Gatoo"))) %>%
     select(-one_of("TimestampMicrosec","TimestampSec"))
+  if(participants == "adults_3f"){
+    df <- df %>%
+    mutate(Diagnostic = case_when(grepl("[12]", Stimulus) ~ "Feet",
+                                  grepl("[34]", Stimulus) ~ "Both",
+                                  grepl("[56]", Stimulus) ~ "Tail"))
+  }
   return(df)
 }
 

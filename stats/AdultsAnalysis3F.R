@@ -7,10 +7,7 @@ source("Routines.R")
 
 # GATHER DATA ======================================================================================
 d <- LT_data.gather("adults_3f")
-behaviour <- d[[2]] %>%
-  mutate(Diag = case_when(grepl("1|2", Stimulus) ~ "Feet",
-                          grepl("3|4", Stimulus) ~ "Both",
-                          grepl("5|6", Stimulus) ~ "Tail"))
+behaviour <- d[[2]]
 LT.clean <- d[[4]] %>%
   subset(Block <= 17) %>%
   make_eyetrackingr_data(participant_column = "Participant",
