@@ -8,9 +8,11 @@ library(eyetrackingR)
 LT_data.import.adults <- function(participants="adults_2f"){
   single.file.import <- function(file){
     tmp <- read_tsv(file)
-    return(subset(tmp,
-                  CurrentObject %in% c("Feedback","Label","Stimulus"),
-                  select = -c(2:5,10:23)))
+    return(subset(tmp, CurrentObject %in% c("Feedback","Label","Stimulus"),
+                  select = one_of("Subject", "CursorX", "CursorY",
+                                  "TimestampSec", "TimestampMicrosec", "TrialId", "Block",
+                                  "CRESP", "RESP", "ACC", "RT",
+                                  "CurrentObject", "Stimulus", "StiLabel")))
   }
   res.repo <- paste0("../results/",participants,"/data/")
   # Getting participant info
