@@ -184,34 +184,34 @@ ggsave("../results/adults_3f/ParticipantsPerBlock.png",
        plot = behaviour.parts_per_block.plot)
 # Get number of blocks to learning per participant, plot a violin
 behaviour.blocks_per_part <- behaviour %>%
-  group_by(Participant, Condition) %>%
-  summarise(N_Blocks = max(Block))
+  select(c(Participant, Condition, NBlocks)) %>%
+  unique()
 behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
-                                         aes(x = Condition, y = N_Blocks, fill = Condition)) +
+                                         aes(x = Condition, y = NBlocks, fill = Condition)) +
   geom_violin() +
   geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15)
 ggsave("../results/adults_3f/BlocksPerParticipant.png",
        plot = behaviour.blocks_per_part.plot)
-# Accuracy by condition and diagnostic feature
-## Get datasets for training and test
+# BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*(DIAG || RT) ==========================================
+# Get datasets for training and test
 behaviour.training <- behaviour %>%
   subset(Phase == "Familiarisation")
 behaviour.test <- behaviour %>%
   subset(Phase == "Test")
-## Run binomial glmer
-### During training
+# Run binomial glmer
+## During training
 ACC_by_diag.training.glmer <- glmer(ACC ~ Condition*Diagnostic +
                                       (1 + Diagnostic | Participant),
                                     family = binomial,
                                     control = glmerControl(optimizer = "bobyqa"),
                                     data = behaviour.training)
-### At test !!! NOT CONVERGING !!! ==> All participants at ceiling
-###ACC_by_diag.test.glmer <- glm(ACC ~ Condition*Diagnostic +
-###                                  (1 | Participant),
-###                                family = binomial,
-###                                data = behaviour.test)
-## Prepare and plot data
-### During training
+## At test !!! NOT CONVERGING !!! ==> All participants at ceiling
+##ACC_by_diag.test.glmer <- glm(ACC ~ Condition*Diagnostic +
+##                                  (1 | Participant),
+##                                family = binomial,
+##                                data = behaviour.test)
+# Prepare and plot data
+## During training
 ACC_by_diag.training <- behaviour.training %>%
   group_by(Participant, Diagnostic, Condition) %>%
   summarise(Accuracy = sum(ACC)/n())
@@ -223,7 +223,7 @@ ACC_by_diag.training.plot <- ggplot(ACC_by_diag.training,
   geom_violin() +
   geom_boxplot(alpha = 0, outlier.alpha = 1,
                width = .15, position = position_dodge(.9))
-### At test
+## At test
 ACC_by_diag.test <- behaviour.test %>%
   group_by(Participant, Diagnostic, Condition) %>%
   summarise(Accuracy = sum(ACC)/n())
