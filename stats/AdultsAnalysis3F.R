@@ -1,6 +1,6 @@
 library(lme4)
 library(nortest)
-library(tidyverse, broom)
+library(tidyverse); library(broom)
 library(eyetrackingR)
 
 source("Routines.R")

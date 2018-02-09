@@ -9,10 +9,10 @@ LT_data.import.adults <- function(participants="adults_2f"){
   single.file.import <- function(file){
     tmp <- read_tsv(file)
     return(subset(tmp, CurrentObject %in% c("Feedback","Label","Stimulus"),
-                  select = one_of("Subject", "CursorX", "CursorY",
-                                  "TimestampSec", "TimestampMicrosec", "TrialId", "Block",
-                                  "CRESP", "RESP", "ACC", "RT",
-                                  "CurrentObject", "Stimulus", "StiLabel")))
+                  select = c(Subject, CursorX, CursorY,
+                                  TimestampSec, TimestampMicrosec, TrialId, Block,
+                                  CRESP, RESP, ACC, RT,
+                                  CurrentObject, Stimulus, StiLabel)))
   }
   res.repo <- paste0("../results/",participants,"/data/")
   # Getting participant info
@@ -137,12 +137,9 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
 # LOOKING-TIME DATA TO BEHAVIOUR
 # Function extracting all non-LT data per participant per trial
 LT_data.to_behaviour <- function(df){
-  df %<>% select(-one_of("CursorX",
-                         "CursorY",
-                         "CurrentObject",
-                         "TrackLoss",
-                         "TimeStamp",
-                         "AOI_type")) %>%
+  df %<>% select(-c(CursorX, CursorY,
+                    CurrentObject, TimeStamp,
+                    TrackLoss, AOI_type)) %>%
     unique() %>%
     group_by(Participant) %>%
     mutate(NBlocks = max(Block),
