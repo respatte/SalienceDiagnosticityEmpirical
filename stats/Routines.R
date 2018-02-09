@@ -48,7 +48,12 @@ LT_data.import.adults <- function(participants="adults_2f"){
                  first(StiLabel) == "Gatoo")){
                "A_Saldie"
              }else{"A_Gatoo"}},
-             levels = c("NoName","A_Saldie","A_Gatoo"))) %>%
+             levels = c("NoName","A_Saldie","A_Gatoo"))
+           NBlocks = max(Block),
+           LogNBlocks = log(NBlocks),
+           RT = ifelse(RT < 200, NA, RT),
+           LogRT = log(RT),
+           zLogRT = scale(LogRT)) %>%
     select(-one_of("TimestampMicrosec","TimestampSec"))
   if(participants == "adults_3f"){
     df <- df %>%
@@ -140,12 +145,7 @@ LT_data.to_behaviour <- function(df){
   df %<>% select(-c(CursorX, CursorY,
                     CurrentObject, TimeStamp,
                     TrackLoss, AOI_type)) %>%
-    unique() %>%
-    group_by(Participant) %>%
-    mutate(NBlocks = max(Block),
-           LogNBlocks = log(NBlocks),
-           RT = ifelse(RT < 200, NA, RT),
-           LogRT = log(RT))
+    unique()
   return(df)
 }
 
