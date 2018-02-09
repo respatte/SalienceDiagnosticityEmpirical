@@ -1,13 +1,16 @@
 library(lme4)
 library(nortest)
-library(tidyverse)
+library(tidyverse, broom)
 library(eyetrackingR)
 
 source("Routines.R")
 
 # GATHER DATA ======================================================================================
 d <- LT_data.gather("adults_3f")
-behaviour <- d[[2]]
+behaviour <- d[[2]] %>%
+  mutate(Diag = case_when(grepl("1|2", Stimulus) ~ "Feet",
+                          grepl("3|4", Stimulus) ~ "Both",
+                          grepl("5|6", Stimulus) ~ "Tail"))
 LT.clean <- d[[4]] %>%
   subset(Block <= 17) %>%
   make_eyetrackingr_data(participant_column = "Participant",
@@ -192,3 +195,16 @@ behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
   geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15)
 ggsave("../results/adults_3f/BlocksPerParticipant.png",
        plot = behaviour.blocks_per_part.plot)
+# Accuracy by condition and diagnostic feature
+behaviour.training <- behaviour %>%
+  subset(Block > 0)
+behaviour.test <- behaviour %>%
+  subset(Block == 0)
+behaviour.training.ACC.diag.lmer <- lm(ACC ~ Condition*Diag,
+                                       data = behaviour.training)
+behaviour.training.ACC.diag.plot <- ggplot(behaviour.training,
+                                           aes(x = Condition,
+                                               y = ACC,
+                                               colour = Diag)) +
+  stat_summary(fun.y = 'mean', geom = 'point') +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar')
