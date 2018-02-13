@@ -5,13 +5,35 @@ library(tidyverse)
 
 source("Routines.R")
 
-# GATHER DATA
-# Define AOIs
-# AOIs.plot <- ggplot(NULL, aes(xmin = L, xmax = R, ymin = T, ymax = B)) +
-#   xlim(c(0,1920)) + scale_y_reverse(limits = c(1080,0)) +
-#   geom_rect(data = AOIs.infants.head, aes(fill = AOI_type)) +
-#   geom_rect(data = AOIs.infants.tail, aes(fill = AOI_type))
-# ggsave("../results/infants/data_cleaning_graphs/AOIs.png",
-#        plot = AOIs.plot , width = 6.05, height = 2.95)
-
+# GATHER DATA ======================================================================================
 d <- LT_data.gather("infants")
+LT.clean <- d[[4]] %>%
+  make_eyetrackingr_data(participant_column = "Participant",
+                         trial_column = "TrialId",
+                         time_column = "TimeStamp",
+                         trackloss_column = "TrackLoss",
+                         aoi_columns = c("Head","Tail"),
+                         treat_non_aoi_looks_as_missing = T)
+
+# LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK ============================
+# Prepare dataset, include only familiarisation
+LT.prop_tail_per_trial <- make_time_window_data(LT.clean,
+                                                aois=c("Tail"),
+                                                predictor_columns=c("Condition",
+                                                                    "TrialId")) %>%
+  mutate_at("TrialId", as.numeric) %>%
+  subset(TrialId < 25) %>%
+  mutate(Block = ((TrialId-1) %/% 8) + 1)
+# Plot points and smoother accross trials
+LT.prop_tail_per_trial.plot <- ggplot(LT.prop_tail_per_trial,
+                                      aes(x = TrialId, y = Prop,
+                                          colour = Condition)) +
+  geom_jitter() +
+  geom_smooth()
+# Plot violin + boxplot for each block
+LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_trial,
+                                      aes(x = as.factor(Block), y = Prop,
+                                          fill = Condition)) +
+  geom_violin() +
+  geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15,
+               position = position_dodge(.9))
