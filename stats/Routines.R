@@ -10,9 +10,9 @@ LT_data.import.adults <- function(participants="adults_2f"){
     tmp <- read_tsv(file)
     return(subset(tmp, CurrentObject %in% c("Feedback","Label","Stimulus"),
                   select = c(Subject, CursorX, CursorY,
-                                  TimestampSec, TimestampMicrosec, TrialId, Block,
-                                  CRESP, RESP, ACC, RT,
-                                  CurrentObject, Stimulus, StiLabel)))
+                             TimestampSec, TimestampMicrosec, TrialId, Block,
+                             CRESP, RESP, ACC, RT,
+                             CurrentObject, Stimulus, StiLabel)))
   }
   res.repo <- paste0("../results/",participants,"/data/")
   # Getting participant info
@@ -55,9 +55,9 @@ LT_data.import.adults <- function(participants="adults_2f"){
     select(-one_of("TimestampMicrosec","TimestampSec"))
   if(participants == "adults_3f"){
     df <- df %>%
-    mutate(Diagnostic = case_when(grepl("[12]", Stimulus) ~ "Feet",
-                                  grepl("[34]", Stimulus) ~ "Both",
-                                  grepl("[56]", Stimulus) ~ "Tail"))
+      mutate(Diagnostic = case_when(grepl("[12]", Stimulus) ~ "Feet",
+                                    grepl("[34]", Stimulus) ~ "Both",
+                                    grepl("[56]", Stimulus) ~ "Tail"))
   }
   return(df)
 }
@@ -68,13 +68,12 @@ LT_data.import.adults <- function(participants="adults_2f"){
 LT_data.import.infants <- function(res.repo="../results/infants/data/", file.name="infants.tsv",
                                    participants="infants"){
   # Get participant information (Gender, DOB, DOT)
-  participant_info <- read.csv(paste0(res.repo,"ParticipantInformation.csv"),
-                               colClasses = c("factor","factor","Date","Date")) %>%
+  participant_info <- read_csv(paste0(res.repo,"ParticipantInformation.csv")) %>%
     drop_na(DOB) %>%
     mutate(Age = as.numeric(difftime(DOT, DOB, units = "days")),
            DiffTo15mo = Age - 15*7*52/12) %>%
-    # 15months * 7days/week * 52/12weeks/month = 15months in days
-    select(-one_of("DOB","DOT"))
+    # 15months * 7days/week * 52/12weeks/month = 15mo in days
+    select(-c(DOB,DOT))
   # Get sequence information
   sequence_info <- read.csv("../scripts/infants/SequenceInfo.csv") %>%
     mutate(CategoryName = ifelse(Name.first.fam.stim == "NoLabel",
@@ -87,24 +86,23 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
            Condition = ifelse(Name.first.fam.stim == "NoLabel",
                               "No Label",
                               "Label")) %>%
-    select(one_of("PresentationSequence","CategoryName","Condition"))
+    select(c(PresentationSequence,CategoryName,Condition))
   # Read file, do all transformations
-  df <- read.csv(paste0(res.repo,file.name), sep = "\t") %>%
-    rename(TimeStamp = RecordingTimestamp,
-           Participant = ParticipantName,
-           CursorX = GazePointX..ADCSpx.,
-           CursorY = GazePointY..ADCSpx.) %>%
+  df <- read_tsv(paste0(res.repo,file.name)) %>%
+    select(Participant = ParticipantName, PresentationSequence, MediaName,
+           TimeStamp = RecordingTimestamp, StudioEventIndex, ValidityLeft, ValidityRight,
+           CursorX = "GazePointX (ADCSpx)", CursorY = "GazePointY (ADCSpx)") %>%
     subset(!(grepl("AG",.$MediaName) | .$MediaName == "")) %>%
     droplevels() %>%
     group_by(Participant, MediaName) %>%
     mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
            TrialId = max(StudioEventIndex, na.rm = T)/2) %>%
-    subset(!duplicated(TimeStamp)) %>%
     ungroup() %>%
     drop_na(MediaName, TrackLoss) %>%
-    select(-one_of("X", "ValidityLeft", "ValidityRight", "StudioEventIndex")) %>%
-    inner_join(participant_info) %>%
-    inner_join(sequence_info) %>%
+    select(-c(ValidityLeft, ValidityRight, StudioEventIndex)) %>%
+    unique() %>%
+    left_join(participant_info) %>%
+    left_join(sequence_info) %>%
     mutate(Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
                              grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
                              grepl("[HRT]C_", MediaName) ~ "Test - Contrast"),
@@ -119,20 +117,22 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                 grepl("TC_[AB][12]R", MediaName) ~ "NewTailL",
                                 grepl("RC_[AB]L", MediaName) ~ "NewHeadL_NewTailR",
                                 grepl("RC_[AB]R", MediaName) ~ "NewHeadR_NewTailL",
-                                grepl("WL[SG]_A1", MediaName) ~ ifelse(CategoryName == "NL",
-                                                                       "HeadsIn_NoTarget",
-                                                                       paste0("HeadsIn_Target",
-                                                                              ifelse(CategoryName == paste0("A_",
-                                                                                                            substr(MediaName,3,3)),
-                                                                                     substr(MediaName,7,7),
-                                                                                     substr(MediaName,11,11)))),
-                                grepl("WL[SG]_A2", MediaName) ~ ifelse(CategoryName == "NL",
-                                                                       "HeadsOut_NoTarget",
-                                                                       paste0("HeadsOut_Target",
-                                                                              ifelse(CategoryName == paste0("A_",
-                                                                                                            substr(MediaName,3,3)),
-                                                                                     substr(MediaName,7,7),
-                                                                                     substr(MediaName,11,11))))
+                                grepl("WL[SG]_A1", MediaName) ~ 
+                                  ifelse(CategoryName == "NL",
+                                         "HeadsIn_NoTarget",
+                                         paste0("HeadsIn_Target",
+                                                ifelse(CategoryName==paste0("A_",
+                                                                            substr(MediaName,3,3)),
+                                                       substr(MediaName,7,7),
+                                                       substr(MediaName,11,11)))),
+                                grepl("WL[SG]_A2", MediaName) ~
+                                  ifelse(CategoryName == "NL",
+                                         "HeadsOut_NoTarget",
+                                         paste0("HeadsOut_Target",
+                                                ifelse(CategoryName==paste0("A_",
+                                                                            substr(MediaName,3,3)),
+                                                       substr(MediaName,7,7),
+                                                       substr(MediaName,11,11))))
            ))
   return(df)
 }
@@ -219,8 +219,7 @@ LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thr
                                                   one_of("Participant",
                                                          "AboveCriteria")))
   df.clean <- df.trackloss %>%
-    subset(AboveCriteria == T) %>%
-    droplevels()
+    subset(AboveCriteria == T, select = -AboveCriteria)
   # Print how many subjects remain per condition
   print(df.clean %>% group_by(Condition) %>% summarise(n_distinct(Participant)))
   return(df.clean)
@@ -233,30 +232,30 @@ LT_data.gather <- function(participants, verbose = F, graphs = F){
   # Define a list of AOI dataframes for all experiments
   AOIs <<- list()
   AOIs[["adults_2f.Head"]] <<- data.frame(AOI_type=1,
-                                         Left=c(400), Right=c(620),
-                                         Top=c(55), Bottom=c(255))
+                                          Left=c(400), Right=c(620),
+                                          Top=c(55), Bottom=c(255))
   AOIs[["adults_2f.Tail"]] <<- data.frame(AOI_type=1,
-                                         Left=c(20), Right=c(220),
-                                         Top=c(110), Bottom=c(330))
+                                          Left=c(20), Right=c(220),
+                                          Top=c(110), Bottom=c(330))
   AOIs[["adults_3f.Head"]] <<- data.frame(AOI_type=1,
-                                         Left=c(363), Right=c(602),
-                                         Top=c(66), Bottom=c(295))
+                                          Left=c(363), Right=c(602),
+                                          Top=c(66), Bottom=c(295))
   AOIs[["adults_3f.Feet"]] <<- data.frame(AOI_type=1,
-                                         Left=c(146), Right=c(483),
-                                         Top=c(364), Bottom=c(465))
+                                          Left=c(146), Right=c(483),
+                                          Top=c(364), Bottom=c(465))
   AOIs[["adults_3f.Tail"]] <<- data.frame(AOI_type=1,
-                                         Left=c(36), Right=c(260),
-                                         Top=c(115), Bottom=c(310))
+                                          Left=c(36), Right=c(260),
+                                          Top=c(115), Bottom=c(310))
   AOIs[["infants.Head"]] <<- data.frame(AOI_type=c("Reg","Flip"),
-                                  Left=c(1031,1920-1031-450),
-                                  Right=c(1031+450,1920-1031),
-                                  Top=c(197,197),
-                                  Bottom=c(197+450,197+450))
+                                        Left=c(1031,1920-1031-450),
+                                        Right=c(1031+450,1920-1031),
+                                        Top=c(197,197),
+                                        Bottom=c(197+450,197+450))
   AOIs[["infants.Tail"]] <<- data.frame(AOI_type=c("Reg","Flip"),
-                                  Left=c(390,1920-390-450),
-                                  Right=c(390+450,1920-390),
-                                  Top=c(299,299),
-                                  Bottom=c(299+450,299+450))
+                                        Left=c(390,1920-390-450),
+                                        Right=c(390+450,1920-390),
+                                        Top=c(299,299),
+                                        Bottom=c(299+450,299+450))
   # Import raw data
   fun_name <- paste0("LT_data.import.",
                      sub("_[23]f", "", participants))
@@ -281,9 +280,9 @@ LT_data.gather <- function(participants, verbose = F, graphs = F){
                            treat_non_aoi_looks_as_missing = F)
   # Analyse trackloss, clean data
   LT.AOI_summary <- LT.raw_data %>%
-    {if(grepl("adults_[23]f", participants)){
-      group_by(., Participant, CurrentObject)
-      }else{group_by(., Participant, Condition)}}%>%
+  {if(grepl("adults_[23]f", participants)){
+    group_by(., Participant, CurrentObject)
+  }else{group_by(., Participant, Condition)}}%>%
     summarise(TrackLossRatio = sum(TrackLoss)/n(),
               NonAOIRatio = sum(NonAOI, na.rm = T)/(n()-sum(TrackLoss)))
   # Save diagnostic plot if necessary
