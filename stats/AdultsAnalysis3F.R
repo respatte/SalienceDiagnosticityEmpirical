@@ -169,7 +169,8 @@ LT.prop_aois_per_block.plot <- ggplot(LT.prop_aois_per_block,
 ggsave("../results/adults_3f/AOILookingEvolution.png",
        plot = LT.prop_aois_per_block.plot,
        width = 7, height = 5)
-# Plotting first block agains last block
+# Comparing first block agains last block
+## Plot jitter + mean&se + lines
 LT.prop_aois.first_last <- LT.prop_aois_per_block %>%
   subset(BlockTransformation == "Block" &
            (Block == 1 | Block == NBlocks)) %>%
@@ -194,7 +195,35 @@ LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
 ggsave("../results/adults_3f/AOILookingFirstLast.pdf",
        LT.prop_aois.first_last.plot,
        width = 9, height = 6)
-  #stat_summary(fun.data = 'mean_se', geom = 'errorbar')
+## LMER for Prop ~ Condition*Part*AOI
+LT.prop_aois.first_last.lmer.0 <- lmer(ArcSin ~ Part*AOI*Condition - Part +
+                                         (1 + AOI | Participant),
+                                       data = LT.prop_aois.first_last)
+# No main effect of Part since looking at proportions,
+# so overall they should all equate to one when collapsing
+LT.prop_aois.first_last.lmer.1 <- update(LT.prop_aois.first_last.lmer.0,
+                                         . ~ . - Part:AOI:Condition) # Remove
+LT.prop_aois.first_last.lmer.2 <- update(LT.prop_aois.first_last.lmer.1,
+                                         . ~ . - AOI:Condition)
+LT.prop_aois.first_last.lmer.3 <- update(LT.prop_aois.first_last.lmer.2,
+                                         . ~ . - Part:Condition) # Remove
+LT.prop_aois.first_last.lmer.4 <- update(LT.prop_aois.first_last.lmer.3,
+                                         . ~ . - Part:AOI)
+LT.prop_aois.first_last.lmer.5 <- update(LT.prop_aois.first_last.lmer.4,
+                                         . ~ . - Condition) # Remove
+LT.prop_aois.first_last.lmer.6 <- update(LT.prop_aois.first_last.lmer.5,
+                                         . ~ . - AOI)
+LT.prop_aois.first_last.lmer.comp <- anova(LT.prop_aois.first_last.lmer.6,
+                                           LT.prop_aois.first_last.lmer.5,
+                                           LT.prop_aois.first_last.lmer.4,
+                                           LT.prop_aois.first_last.lmer.3,
+                                           LT.prop_aois.first_last.lmer.2,
+                                           LT.prop_aois.first_last.lmer.1,
+                                           LT.prop_aois.first_last.lmer.0)
+LT.prop_aois.first_last.lmer.final <- update(LT.prop_aois.first_last.lmer.0,
+                                             . ~ . - (Condition +
+                                                        Part:Condition +
+                                                        Part:AOI:Condition))
 
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS ====================================================
 # Get how many participants for each block, and make a bar plot
