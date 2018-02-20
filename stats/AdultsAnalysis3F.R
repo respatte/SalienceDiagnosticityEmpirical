@@ -91,13 +91,12 @@ LT.prop_aois_per_block <- make_time_window_data(LT.clean,
                                                                     "ACC")) %>%
   subset(Block > 0) %>%
   group_by(Participant) %>%
-  mutate(N_Blocks = max(Block),
-         OppBlock = Block - N_Blocks,
-         NormBlock = Block/N_Blocks) %>%
-  gather("BlockTransformation","Block", Block, OppBlock, NormBlock) %>%
-  subset(BlockTransformation == "OppBlock") # Keeping only OppBlock transformation
+  mutate(NBlocks = max(Block),
+         OppBlock = Block - NBlocks,
+         NormBlock = Block/NBlocks) %>%
+  gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
 # Growth Curve Analysis (GCA) for each AOI for each BlockTransformation
-# -- Set orthogonal polynomials for GCA
+## Set orthogonal polynomials for GCA
 blocks <- LT.prop_aois_per_block %>%
   {sort(as.vector(unique(.$Block)))}
 orth_poly <- poly(blocks, 7) %>%
@@ -143,7 +142,7 @@ LT.prop_head_per_block.GCA <- lmer(ArcSin ~ Condition:(ot1 + ot2 + ot7) +
                                      (1 | Participant),
                                    data = LT.prop_head_per_block, REML = FALSE)
 # Plot all AOIs and all BlockTransformations
-# -- Get predicted values from model, add to initial data frame
+## Get predicted values from model, add to initial data frame
 LT.prop_feet_per_block$Predicted <- predict(LT.prop_feet_per_block.GCA,
                                             LT.prop_feet_per_block,
                                             re.form = NA)
@@ -156,7 +155,7 @@ LT.prop_tail_per_block$Predicted <- predict(LT.prop_tail_per_block.GCA,
 LT.prop_aois_per_block <- rbind(LT.prop_feet_per_block,
                                 LT.prop_head_per_block,
                                 LT.prop_tail_per_block)
-# -- Plot raw data and predicte values from model
+## Plot raw data and predicte values from model
 LT.prop_aois_per_block.plot <- ggplot(LT.prop_aois_per_block,
                                       aes(x = Block, y = ArcSin,
                                           colour = Condition,
@@ -170,6 +169,32 @@ LT.prop_aois_per_block.plot <- ggplot(LT.prop_aois_per_block,
 ggsave("../results/adults_3f/AOILookingEvolution.png",
        plot = LT.prop_aois_per_block.plot,
        width = 7, height = 5)
+# Plotting first block agains last block
+LT.prop_aois.first_last <- LT.prop_aois_per_block %>%
+  subset(BlockTransformation == "Block" &
+           (Block == 1 | Block == NBlocks)) %>%
+  mutate(Part = ifelse(Block == 1, "First Block", "Last Block"))
+LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
+                                       aes(x = Part, y = Prop,
+                                           colour = Condition,
+                                           fill = Condition)) +
+  facet_wrap(~AOI) + theme(aspect.ratio = 1.618/1, legend.position = "top") +
+  geom_point(position = position_jitterdodge(dodge.width = .8,
+                                             jitter.width = .2),
+             alpha = .25) +
+  geom_errorbar(stat = "summary",
+                width = .2, colour = "black",
+                position = position_dodge(.1)) +
+  geom_line(aes(x = Part, y = Prop, group = Condition),
+            stat = "summary", fun.y = "mean",
+            colour = "black") +
+  geom_point(stat = "summary", fun.y = "mean",
+             shape = 18, size = 3,
+             position = position_dodge(.1))
+ggsave("../results/adults_3f/AOILookingFirstLast.pdf",
+       LT.prop_aois.first_last.plot,
+       width = 9, height = 6)
+  #stat_summary(fun.data = 'mean_se', geom = 'errorbar')
 
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS ====================================================
 # Get how many participants for each block, and make a bar plot
