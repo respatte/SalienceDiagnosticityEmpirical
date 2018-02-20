@@ -7,9 +7,14 @@ source("Routines.R")
 
 # GATHER DATA ======================================================================================
 d <- LT_data.gather("adults_3f")
-behaviour <- d[[2]]
+# Get behavioural and LT data, excluding outliers in terms of
+# number of blocks before learning (graphically, from boxplot)
+behaviour <- d[[2]] %>%
+  subset((Condition == "Label" & NBlocks < 21) |
+           (Condition == "NoLabel" & NBlocks < 10))
 LT.clean <- d[[4]] %>%
-  subset(Block <= 17) %>%
+  subset((Condition == "Label" & NBlocks < 21) |
+           (Condition == "NoLabel" & NBlocks < 10)) %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
@@ -88,11 +93,11 @@ LT.prop_aois_per_block <- make_time_window_data(LT.clean,
                                                 aois=c("Tail","Feet","Head"),
                                                 predictor_columns=c("Condition",
                                                                     "Block",
+                                                                    "NBlocks",
                                                                     "ACC")) %>%
   subset(Block > 0) %>%
   group_by(Participant) %>%
-  mutate(NBlocks = max(Block),
-         OppBlock = Block - NBlocks,
+  mutate(OppBlock = Block - NBlocks,
          NormBlock = Block/NBlocks) %>%
   gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
 # Growth Curve Analysis (GCA) for each AOI for each BlockTransformation
