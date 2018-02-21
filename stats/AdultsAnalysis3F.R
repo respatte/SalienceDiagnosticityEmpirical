@@ -21,7 +21,7 @@ LT.clean <- d[[4]] %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail"),
                          treat_non_aoi_looks_as_missing = T) %>%
-  subset_by_window(window_start_time = -1000, rezero = F)
+  subset_by_window(window_start_time = -1500, rezero = F)
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # Preparing data for analysis and plot
