@@ -30,15 +30,13 @@ LT.time_course_aois <- LT.clean %>%
                           aois = c("Head","Tail","Feet"),
                           predictor_columns=c("Condition",
                                               "Block",
+                                              "NBlocks",
                                               "ACC",
                                               "Stimulus",
                                               "StiLabel")) %>%
-  group_by(Participant) %>%
-  mutate(NBlocks = max(Block)) %>%
-  group_by(Participant, Block) %>%
   mutate(Part = case_when(Block == 0 ~ "Test",
-                          Block <= NBlocks/2 ~ "First half",
-                          T ~ "Second half"))
+                          Block == 1 ~ "First Block",
+                          Block == NBlocks ~ "Last Block"))
 # Growth Curve Analysis of the data
 LT.time_course_aois.GCA <- lmer(Prop ~ AOI:(ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
                                   Condition:AOI:(ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
@@ -61,18 +59,23 @@ LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_aois,
 ggsave("../results/adults_3f/LookingTimeCoursePerBlock.pdf",
        plot = LT.clean.time_course.plot.blocks,
        width = 7, height = 30)
-## Plot for first half, second half, and test
-LT.clean.time_course.plot.parts <- ggplot(LT.time_course_aois,
-                                           aes(x = Time, y=Prop,
-                                               colour=Condition,
-                                               fill=Condition)) +
+## Plot for first block, last block, and test
+LT.time_course_aois.first_last <- LT.time_course_aois %>%
+  drop_na(Part)
+intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
+                    x_int = c(0, 2000, 0, 2000))
+LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_aois.first_last,
+                                               aes(x = Time, y=Prop,
+                                                   colour=Condition,
+                                                   fill=Condition)) +
   xlab('Time in Trial') + ylab("Looking to AOI (Prop)") +
   facet_grid(AOI~Part, scales = "free_x") + theme(legend.position = "top") + ylim(0,1) +
+  geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5) +
   stat_summary(fun.y='mean', geom='line', linetype = '61') +
   stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
   geom_hline(yintercept = 1/3)
-ggsave("../results/adults_3f/LookingTimeCoursePerPart.pdf",
-       plot = LT.clean.time_course.plot.parts,
+ggsave("../results/adults_3f/LookingTimeCourseFirstLast.pdf",
+       plot = LT.clean.time_course.first_last.plot,
        width = 7, height = 10)
 ## Global plot
 LT.clean.time_course.plot <- ggplot(subset(LT.time_course_aois, Part != "Test"),
