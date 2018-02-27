@@ -26,7 +26,7 @@ LT.clean <- d[[4]] %>%
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # Preparing data for analysis and plot
-LT.time_course_aois <- LT.clean %>%
+LT.time_course_aois.first_last <- LT.clean %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = c("Head","Tail","Feet"),
                           predictor_columns=c("Condition",
@@ -51,7 +51,7 @@ LT.time_course_aois <- LT.clean %>%
 #                                      ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | StiLabel) +
 #                                   (1 + AOI + Part +
 #                                      ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant),
-#                                 data = LT.time_course_aois, REML = F)
+#                                 data = LT.time_course_aois.first_last, REML = F)
 # ## Check convergence
 # ### Recompute gradient and Hessian with Richardson extrapolation
 # devfun <- update(LT.time_course_aois.GCA, devFunOnly=TRUE)
@@ -85,14 +85,16 @@ ggsave("../results/adults_3f/LookingTimeCourseFirstLast.pdf",
        plot = LT.clean.time_course.first_last.plot,
        width = 7, height = 5.4)
 
-# LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY BLOCK ==================================
+# LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY PART ===================================
 # Prepare dataset with BlockTransformation
 LT.prop_aois.per_block <- make_time_window_data(LT.clean,
                                                 aois=c("Tail","Feet","Head"),
                                                 predictor_columns=c("Condition",
                                                                     "Block",
                                                                     "NBlocks",
-                                                                    "ACC")) %>%
+                                                                    "ACC",
+                                                                    "Stimulus",
+                                                                    "StiLabel")) %>%
   subset(Block > 0) %>%
   group_by(Participant) %>%
   mutate(OppBlock = Block - NBlocks,
@@ -104,13 +106,13 @@ LT.prop_aois.first_last <- LT.prop_aois.per_block %>%
            (Block == 1 | Block == NBlocks)) %>%
   mutate(Part = ifelse(Block == 1, "First Block", "Last Block"))
 ## LMER for Prop ~ Condition*Part*AOI
+# No main effect of Part since looking at proportions,
+# so overall they should all equate to one when collapsing
 LT.prop_aois.first_last.lmer.0 <- lmer(ArcSin ~ Part*AOI*Condition - (Part + Condition) +
                                          (1 + AOI + Part:AOI | Participant) +
                                          (1 + AOI + Part:AOI | Stimulus) +
                                          (1 + AOI + Part:AOI | StiLabel),
                                        data = LT.prop_aois.first_last)
-# No main effect of Part since looking at proportions,
-# so overall they should all equate to one when collapsing
 LT.prop_aois.first_last.lmer.1 <- update(LT.prop_aois.first_last.lmer.0,
                                          . ~ . - Part:AOI:Condition) # Remove
 LT.prop_aois.first_last.lmer.2 <- update(LT.prop_aois.first_last.lmer.1,
@@ -178,6 +180,9 @@ behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
   geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15)
 ggsave("../results/adults_3f/BlocksPerParticipant.pdf", plot = behaviour.blocks_per_part.plot,
        width = 3.5, height = 2.9)
+# Stats for the number of blocks per participant
+behaviour.blocks_per_part.t_test <- t.test(NBlocks ~ Condition,
+                                           data = behaviour.blocks_per_part)
 
 # BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*DIAG*RT) ==============================================
 # Get datasets for training and test
@@ -187,7 +192,7 @@ behaviour.test <- behaviour %>%
   subset(Phase == "Test")
 # Run binomial glmer
 ## During training
-ACC_by_diag.training.glmer <- glmer(ACC ~ Condition*Diagnostic*zLogRT +
+ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*Diagnostic*zLogRT +
                                       (1 + Diagnostic + zLogRT | Participant) +
                                       (1 + Diagnostic + zLogRT | Stimulus) +
                                       (1 + Diagnostic + zLogRT | StiLabel),
@@ -195,7 +200,7 @@ ACC_by_diag.training.glmer <- glmer(ACC ~ Condition*Diagnostic*zLogRT +
                                     control = glmerControl(optimizer = "bobyqa"),
                                     data = behaviour.training)
 ## At test !!! NOT CONVERGING !!! ==> All participants at ceiling
-##ACC_by_diag.test.glmer <- glm(ACC ~ Condition*Diagnostic +
+##ACC_by_diag_by_RT.test.glmer <- glm(ACC ~ Condition*Diagnostic +
 ##                                  (1 | Participant),
 ##                                family = binomial,
 ##                                data = behaviour.test)
