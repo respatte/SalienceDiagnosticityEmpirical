@@ -105,7 +105,9 @@ LT.prop_aois.first_last <- LT.prop_aois.per_block %>%
   mutate(Part = ifelse(Block == 1, "First Block", "Last Block"))
 ## LMER for Prop ~ Condition*Part*AOI
 LT.prop_aois.first_last.lmer.0 <- lmer(ArcSin ~ Part*AOI*Condition - (Part + Condition) +
-                                         (1 + AOI | Participant),
+                                         (1 + AOI + Part:AOI | Participant) +
+                                         (1 + AOI + Part:AOI | Stimulus) +
+                                         (1 + AOI + Part:AOI | StiLabel),
                                        data = LT.prop_aois.first_last)
 # No main effect of Part since looking at proportions,
 # so overall they should all equate to one when collapsing
@@ -186,7 +188,9 @@ behaviour.test <- behaviour %>%
 # Run binomial glmer
 ## During training
 ACC_by_diag.training.glmer <- glmer(ACC ~ Condition*Diagnostic*zLogRT +
-                                      (1 + Diagnostic + zLogRT | Participant),
+                                      (1 + Diagnostic + zLogRT | Participant) +
+                                      (1 + Diagnostic + zLogRT | Stimulus) +
+                                      (1 + Diagnostic + zLogRT | StiLabel),
                                     family = binomial,
                                     control = glmerControl(optimizer = "bobyqa"),
                                     data = behaviour.training)
@@ -226,3 +230,18 @@ ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
                width = .15, position = position_dodge(.9))
 ggsave("../results/adults_3f/ACCbyRTbyDiag_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
        width = 3.5, height = 2.7)
+
+# BEHAVIOURAL ANALYSIS: RT ~ CONFIDENCE ============================================================
+RT_by_conf.lmer.0 <- lmer(RT ~ Confidence*Condition +
+                            (1 + Confidence | Participant) +
+                            (1 + Confidence | Stimulus) +
+                            (1 + Confidence | StiLabel),
+                          data = behaviour.training)
+RT_by_conf.lmer.1 <- update(RT_by_conf.lmer.0, . ~ . - Confidence:Condition)
+RT_by_conf.lmer.2 <- update(RT_by_conf.lmer.1, . ~ . - Confidence)
+RT_by_conf.lmer.3 <- update(RT_by_conf.lmer.2, . ~ . - Condition)
+RT_by_conf.lmer.comp <- anova(RT_by_conf.lmer.3,
+                              RT_by_conf.lmer.2,
+                              RT_by_conf.lmer.1,
+                              RT_by_conf.lmer.0)
+# No significant effect
