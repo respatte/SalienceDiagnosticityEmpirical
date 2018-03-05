@@ -40,31 +40,31 @@ LT.time_course_aois.first_last <- LT.clean %>%
                           Block == 1 ~ "First Block",
                           Block == NBlocks ~ "Last Block")) %>%
   drop_na(Part)
-# # Growth Curve Analysis of the data
-# # Analysing proportions => main effect of Condition or Part nonsensical,
-# # we can only expect differences between AOIs, and between AOIs on different levels
-# LT.time_course_aois.GCA <- lmer(ArcSin ~ (AOI + Condition:AOI + AOI:Part + AOI:Condition:Part)*
-#                                   (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
-#                                   (1 + AOI + Part + Condition +
-#                                      ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Stimulus) +
-#                                   (1 + AOI + Part + Condition +
-#                                      ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | StiLabel) +
-#                                   (1 + AOI + Part +
-#                                      ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant),
-#                                 data = LT.time_course_aois.first_last, REML = F)
-# ## Check convergence
-# ### Recompute gradient and Hessian with Richardson extrapolation
-# devfun <- update(LT.time_course_aois.GCA, devFunOnly=TRUE)
-# pars <- getME(LT.time_course_aois.GCA, "theta")
-# if(require("numDeriv")){
-#   cat("hess:\n"); print(hess <- hessian(devfun, unlist(pars)))
-#   cat("grad:\n"); print(grad <- grad(devfun, unlist(pars)))
-#   cat("scaled gradient:\n")
-#   print(scgrad <- solve(chol(hess), grad))
-# }
-# print(LT.time_course_aois.GCA@optinfo$derivs)
-# ### Restart the fit from computed values
-# LT.time_course_aois.GCA.restart.1 <- update(LT.time_course_aois.GCA, start = pars)
+# Growth Curve Analysis of the data
+# Analysing proportions => main effect of Condition or Part nonsensical,
+# we can only expect differences between AOIs, and between AOIs on different levels
+LT.time_course_aois.GCA <- lmer(ArcSin ~ (AOI + Condition:AOI + AOI:Part + AOI:Condition:Part)*
+                                  (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                  (1 + AOI + Part + Condition +
+                                     ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Stimulus) +
+                                  (1 + AOI + Part + Condition +
+                                     ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | StiLabel) +
+                                  (1 + AOI + Part +
+                                     ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant),
+                                data = LT.time_course_aois.first_last, REML = F)
+## Check convergence
+### Recompute gradient and Hessian with Richardson extrapolation
+devfun <- update(LT.time_course_aois.GCA, devFunOnly=TRUE)
+pars <- getME(LT.time_course_aois.GCA, "theta")
+if(require("numDeriv")){
+  cat("hess:\n"); print(hess <- hessian(devfun, unlist(pars)))
+  cat("grad:\n"); print(grad <- grad(devfun, unlist(pars)))
+  cat("scaled gradient:\n")
+  print(scgrad <- solve(chol(hess), grad))
+}
+print(LT.time_course_aois.GCA@optinfo$derivs)
+### Restart the fit from computed values
+LT.time_course_aois.GCA.restart.1 <- update(LT.time_course_aois.GCA, start = pars)
 # Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
 intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
                     x_int = c(0, 2000, 0, 2000))
