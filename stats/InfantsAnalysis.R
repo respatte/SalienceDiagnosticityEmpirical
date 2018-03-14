@@ -12,7 +12,8 @@ LT.clean <- d[[4]] %>%
                          time_column = "TimeStamp",
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail"),
-                         treat_non_aoi_looks_as_missing = T)
+                         treat_non_aoi_looks_as_missing = T) %>%
+  subset_by_window(window_start_time = 1500, window_end_time = 7000)
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK ============================
 # Prepare dataset, include only familiarisation
@@ -45,17 +46,20 @@ LT.time_course_aois <- LT.clean %>%
                           predictor_columns=c("Condition")) %>%
   mutate_at("TrialId", as.numeric) %>%
   subset(TrialId < 25) %>%
-  mutate(Block = ((TrialId-1) %/% 8) + 1)
-# Plotting individual trials
+  mutate(Part = ((TrialId-1) %/% 8))
+# Plotting first/middle/last 8 trials
+intercept <- tibble(Part = 0:2,
+                    x_int = rep(2250,3)) # Label onset ish (second half trials includes "the")
 LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_aois,
                                            aes(x = Time, y=Prop,
                                                colour=Condition,
                                                fill=Condition)) +
   xlab('Time in Trial') + ylab("Looking to AOI (Prop)") +
-  facet_grid(AOI~Block) + theme(legend.position = "top") + ylim(0,1) +
+  facet_grid(AOI~Part) + theme(legend.position = "top") + ylim(0,1) +
   stat_summary(fun.y='mean', geom='line', linetype = '61') +
   stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
-  geom_hline(yintercept = .5)
-ggsave("../results/infants/LookingTimeCoursePerBlock.pdf",
+  geom_hline(yintercept = .5) +
+  geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5)
+ggsave("../results/infants/LookingTimeCoursePerPart.pdf",
        plot = LT.clean.time_course.plot.blocks,
-       width = 6, height = 4)
+       width = 7, height = 4)
