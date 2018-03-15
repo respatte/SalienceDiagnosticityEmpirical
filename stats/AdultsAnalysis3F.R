@@ -3,6 +3,7 @@ library(nortest)
 library(tidyverse); library(broom)
 library(jtools)
 library(eyetrackingR)
+library(rethinking)
 
 source("Routines.R")
 
@@ -181,13 +182,9 @@ behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
 ggsave("../results/adults_3f/BlocksPerParticipant.pdf", plot = behaviour.blocks_per_part.plot,
        width = 3.5, height = 2.9)
 # Stats for the number of blocks per participant
-NBlocksLabel <- behaviour.blocks_per_part %>%
-  subset(Condition == "Label", select = NBlocks) %>%
-  unlist()
-NBlocksNoLabel <- behaviour.blocks_per_part %>%
-  subset(Condition == "NoLabel", select = NBlocks) %>%
-  unlist()
-behaviour.blocks_per_part.t_test <- ks.test(NBlocksLabel, NBlocksNoLabel)
+behaviour.blocks_per_part.freq_test <- wilcox.test(NBlocks ~ Condition,
+                                                   data = behaviour.blocks_per_part)
+behaviour.blocks_per_part.bayes_test <- 
 
 # BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*DIAG*RT) ==============================================
 # Get datasets for training and test
@@ -199,8 +196,8 @@ behaviour.test <- behaviour %>%
 ## During training
 ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*Diagnostic*zLogRT +
                                       (1 + Diagnostic + zLogRT | Participant) +
-                                      (1 + Diagnostic + zLogRT | Stimulus) +
-                                      (1 + Diagnostic + zLogRT | StiLabel),
+                                      (1 + zLogRT | Stimulus) +
+                                      (1 + zLogRT | StiLabel),
                                     family = binomial,
                                     control = glmerControl(optimizer = "bobyqa"),
                                     data = behaviour.training)
