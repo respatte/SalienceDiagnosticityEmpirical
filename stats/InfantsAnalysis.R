@@ -17,7 +17,7 @@ LT.clean <- d[[4]] %>%
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK ============================
 # Prepare dataset, include only familiarisation
-LT.prop_tail_per_trial <- make_time_window_data(LT.clean,
+LT.prop_tail.per_part <- make_time_window_data(LT.clean,
                                                 aois=c("Tail"),
                                                 predictor_columns=c("Condition",
                                                                     "TrialId")) %>%
@@ -25,7 +25,7 @@ LT.prop_tail_per_trial <- make_time_window_data(LT.clean,
   subset(TrialId < 25) %>%
   mutate(Part = (TrialId-1) %/% 8)
 # Plot jitter + lmer mean&se + lines
-LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
+LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail.per_part,
                                        aes(x = Part, y = Prop,
                                            colour = Condition,
                                            fill = Condition)) +
@@ -45,9 +45,8 @@ LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
              shape = 18, size = 3,
              position = position_dodge(.1))
 ggsave("../results/infants/AOILookingPerParts.pdf",
-       LT.prop_aois.first_last.plot,
-       width = 7, height = 5.4)th = .15,
-               position = position_dodge(.9))
+       LT.prop_tail.per_part.plot,
+       width = 7, height = 5.4)
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # Preparing data for analysis and plot
