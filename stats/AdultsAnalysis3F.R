@@ -23,7 +23,7 @@ LT.clean <- d[[4]] %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail", "Feet"),
                          treat_non_aoi_looks_as_missing = T) %>%
-  subset_by_window(window_start_time = -1500, rezero = F)
+  subset_by_window(window_start_time = -1000, rezero = F)
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # Preparing data for analysis and plot
@@ -148,7 +148,8 @@ LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
                 position = position_dodge(.1)) +
   geom_line(aes(x = Part, y = Prop, group = Condition),
             stat = "summary", fun.y = "mean",
-            colour = "black") +
+            colour = "black",
+            position = position_dodge(.1)) +
   geom_point(stat = "summary", fun.y = "mean",
              shape = 18, size = 3,
              position = position_dodge(.1))
