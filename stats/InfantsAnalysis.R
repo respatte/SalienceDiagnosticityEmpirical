@@ -23,19 +23,30 @@ LT.prop_tail_per_trial <- make_time_window_data(LT.clean,
                                                                     "TrialId")) %>%
   mutate_at("TrialId", as.numeric) %>%
   subset(TrialId < 25) %>%
-  mutate(Block = ((TrialId-1) %/% 8) + 1)
-# Plot points and smoother accross trials
-LT.prop_tail_per_trial.plot <- ggplot(LT.prop_tail_per_trial,
-                                      aes(x = TrialId, y = Prop,
-                                          colour = Condition)) +
-  geom_jitter() +
-  geom_smooth()
-# Plot violin + boxplot for each block
-LT.prop_tail_per_block.plot <- ggplot(LT.prop_tail_per_trial,
-                                      aes(x = as.factor(Block), y = Prop,
-                                          fill = Condition)) +
-  geom_violin() +
-  geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15,
+  mutate(Part = (TrialId-1) %/% 8)
+# Plot jitter + lmer mean&se + lines
+LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
+                                       aes(x = Part, y = Prop,
+                                           colour = Condition,
+                                           fill = Condition)) +
+  theme_apa(legend.pos = "top") + ylab("Looking to AOI (Prop)") +
+  scale_colour_discrete(labels = c("Label", "No Label")) +
+  scale_fill_discrete(labels = c("Label", "No Label")) +
+  geom_point(position = position_jitterdodge(dodge.width = .8,
+                                             jitter.width = .2),
+             alpha = .25) +
+  geom_errorbar(stat = "summary",
+                width = .2, colour = "black",
+                position = position_dodge(.1)) +
+  geom_line(aes(x = Part, y = Prop, group = Condition),
+            stat = "summary", fun.y = "mean",
+            colour = "black") +
+  geom_point(stat = "summary", fun.y = "mean",
+             shape = 18, size = 3,
+             position = position_dodge(.1))
+ggsave("../results/infants/AOILookingPerParts.pdf",
+       LT.prop_aois.first_last.plot,
+       width = 7, height = 5.4)th = .15,
                position = position_dodge(.9))
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================

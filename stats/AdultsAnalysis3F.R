@@ -132,7 +132,7 @@ LT.prop_aois.first_last.lmer.comp <- anova(LT.prop_aois.first_last.lmer.5,
                                            LT.prop_aois.first_last.lmer.0)
 LT.prop_aois.first_last.lmer.final <- update(LT.prop_aois.first_last.lmer.0,
                                              . ~ . - (Part:Condition + Part:AOI:Condition))
-## Plot jitter + lmer mean&se + lines
+## Plot jitter + mean&se + lines
 LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
                                        aes(x = Part, y = Prop,
                                            colour = Condition,
@@ -184,7 +184,6 @@ ggsave("../results/adults_3f/BlocksPerParticipant.pdf", plot = behaviour.blocks_
 # Stats for the number of blocks per participant
 behaviour.blocks_per_part.freq_test <- wilcox.test(NBlocks ~ Condition,
                                                    data = behaviour.blocks_per_part)
-behaviour.blocks_per_part.bayes_test <- 
 
 # BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*DIAG*RT) ==============================================
 # Get datasets for training and test
