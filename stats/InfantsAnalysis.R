@@ -17,15 +17,37 @@ LT.clean <- d[[4]] %>%
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK ============================
 # Prepare dataset, include only familiarisation
-LT.prop_tail.per_part <- make_time_window_data(LT.clean,
+LT.prop_tail <- make_time_window_data(LT.clean,
                                                 aois=c("Tail"),
                                                 predictor_columns=c("Condition",
-                                                                    "TrialId")) %>%
+                                                                    "TrialId",
+                                                                    "Stimulus",
+                                                                    "CategoryName")) %>%
   mutate_at("TrialId", as.numeric) %>%
   subset(TrialId < 25) %>%
-  mutate(Part = (TrialId-1) %/% 8)
+  mutate(Part = (TrialId-1) %/% 8,
+         Trial = (TrialId-1) %/% 2)
+## LMER for Prop ~ Condition*Part*AOI
+# No main effect of Part since looking at proportions,
+# so overall they should all equate to one when collapsing
+LT.prop_tail.per_trial.lmer.0 <- lmer(ArcSin ~ Trial*Condition +
+                                        (1 + Trial | Participant) +
+                                        (1 | Stimulus) +
+                                        (1 | CategoryName),
+                                        data = LT.prop_tail)
+LT.prop_tail.per_trial.lmer.1 <- update(LT.prop_tail.per_trial.lmer.0,
+                                        . ~ . - Trial:Condition)
+LT.prop_tail.per_trial.lmer.2 <- update(LT.prop_tail.per_trial.lmer.1,
+                                        . ~ . - Condition)
+LT.prop_tail.per_trial.lmer.3 <- update(LT.prop_tail.per_trial.lmer.2,
+                                        . ~ . - Trial)
+LT.prop_tail.per_trial.lmer.comp <- anova(LT.prop_tail.per_trial.lmer.3,
+                                          LT.prop_tail.per_trial.lmer.2,
+                                          LT.prop_tail.per_trial.lmer.1,
+                                          LT.prop_tail.per_trial.lmer.0)
+#### NO SIGNIFICANT EFFECT
 # Plot jitter + lmer mean&se + lines
-LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail.per_part,
+LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
                                        aes(x = Part, y = Prop,
                                            colour = Condition,
                                            fill = Condition)) +
