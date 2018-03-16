@@ -37,8 +37,7 @@ LT.time_course_aois.first_last <- LT.clean %>%
                                               "Stimulus",
                                               "StiLabel",
                                               "Diagnostic")) %>%
-  mutate(Part = case_when(Block == 0 ~ "Test",
-                          Block == 1 ~ "First Block",
+  mutate(Part = case_when(Block == 1 ~ "First Block",
                           Block == NBlocks ~ "Last Block")) %>%
   drop_na(Part)
 # Growth Curve Analysis of the data
@@ -46,26 +45,24 @@ LT.time_course_aois.first_last <- LT.clean %>%
 # we can only expect differences between AOIs, and between AOIs on different levels
 LT.time_course_aois.GCA <- lmer(ArcSin ~ (AOI + Condition:AOI + AOI:Part + AOI:Condition:Part)*
                                   (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
-                                  (1 + AOI + Part + Condition +
-                                     ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Stimulus) +
-                                  (1 + AOI + Part + Condition +
-                                     ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | StiLabel) +
                                   (1 + AOI + Part +
-                                     ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant),
+                                     ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant) +
+                                  (1 + AOI | Stimulus) +
+                                  (1 + AOI | StiLabel),
                                 data = LT.time_course_aois.first_last, REML = F)
-## Check convergence
-### Recompute gradient and Hessian with Richardson extrapolation
-devfun <- update(LT.time_course_aois.GCA, devFunOnly=TRUE)
-pars <- getME(LT.time_course_aois.GCA, "theta")
-if(require("numDeriv")){
-  cat("hess:\n"); print(hess <- hessian(devfun, unlist(pars)))
-  cat("grad:\n"); print(grad <- grad(devfun, unlist(pars)))
-  cat("scaled gradient:\n")
-  print(scgrad <- solve(chol(hess), grad))
-}
-print(LT.time_course_aois.GCA@optinfo$derivs)
-### Restart the fit from computed values
-LT.time_course_aois.GCA.restart.1 <- update(LT.time_course_aois.GCA, start = pars)
+# ## Check convergence
+# ### Recompute gradient and Hessian with Richardson extrapolation
+# devfun <- update(LT.time_course_aois.GCA, devFunOnly=TRUE)
+# pars <- getME(LT.time_course_aois.GCA, "theta")
+# if(require("numDeriv")){
+#   cat("hess:\n"); print(hess <- hessian(devfun, unlist(pars)))
+#   cat("grad:\n"); print(grad <- grad(devfun, unlist(pars)))
+#   cat("scaled gradient:\n")
+#   print(scgrad <- solve(chol(hess), grad))
+# }
+# print(LT.time_course_aois.GCA@optinfo$derivs)
+# ### Restart the fit from computed values
+# LT.time_course_aois.GCA.restart.1 <- update(LT.time_course_aois.GCA, start = pars)
 # Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
 intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
                     x_int = c(0, 2000, 0, 2000))
@@ -84,7 +81,7 @@ LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_aois.first_last,
   geom_hline(yintercept = 1/3)
 ggsave("../results/adults_3f/LookingTimeCourseFirstLast.pdf",
        plot = LT.clean.time_course.first_last.plot,
-       width = 7, height = 5.4)
+       width = 7, height = 5.7)
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY PART ===================================
 # Prepare dataset with BlockTransformation
@@ -109,29 +106,26 @@ LT.prop_aois.first_last <- LT.prop_aois.per_block %>%
 ## LMER for Prop ~ Condition*Part*AOI
 # No main effect of Part since looking at proportions,
 # so overall they should all equate to one when collapsing
-LT.prop_aois.first_last.lmer.0 <- lmer(ArcSin ~ Part*AOI*Condition - (Part + Condition) +
+LT.prop_aois.first_last.lmer.0 <- lmer(ArcSin ~ Part*AOI*Condition - (Part*Condition) +
                                          (1 + AOI + Part:AOI | Participant) +
-                                         (1 + AOI + Part:AOI | Stimulus) +
-                                         (1 + AOI + Part:AOI | StiLabel),
+                                         (1 + AOI | Stimulus) +
+                                         (1 + AOI | StiLabel),
                                        data = LT.prop_aois.first_last)
 LT.prop_aois.first_last.lmer.1 <- update(LT.prop_aois.first_last.lmer.0,
                                          . ~ . - Part:AOI:Condition) # Remove
 LT.prop_aois.first_last.lmer.2 <- update(LT.prop_aois.first_last.lmer.1,
                                          . ~ . - AOI:Condition)
 LT.prop_aois.first_last.lmer.3 <- update(LT.prop_aois.first_last.lmer.2,
-                                         . ~ . - Part:Condition) # Remove
-LT.prop_aois.first_last.lmer.4 <- update(LT.prop_aois.first_last.lmer.3,
                                          . ~ . - Part:AOI)
-LT.prop_aois.first_last.lmer.5 <- update(LT.prop_aois.first_last.lmer.4,
+LT.prop_aois.first_last.lmer.4 <- update(LT.prop_aois.first_last.lmer.3,
                                          . ~ . - AOI)
-LT.prop_aois.first_last.lmer.comp <- anova(LT.prop_aois.first_last.lmer.5,
-                                           LT.prop_aois.first_last.lmer.4,
+LT.prop_aois.first_last.lmer.comp <- anova(LT.prop_aois.first_last.lmer.4,
                                            LT.prop_aois.first_last.lmer.3,
                                            LT.prop_aois.first_last.lmer.2,
                                            LT.prop_aois.first_last.lmer.1,
                                            LT.prop_aois.first_last.lmer.0)
 LT.prop_aois.first_last.lmer.final <- update(LT.prop_aois.first_last.lmer.0,
-                                             . ~ . - (Part:Condition + Part:AOI:Condition))
+                                             . ~ . - Part:AOI:Condition)
 ## Plot jitter + mean&se + lines
 LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
                                        aes(x = Part, y = Prop,
@@ -183,6 +177,7 @@ behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
 ggsave("../results/adults_3f/BlocksPerParticipant.pdf", plot = behaviour.blocks_per_part.plot,
        width = 3.5, height = 2.9)
 # Stats for the number of blocks per participant
+behaviour.blocks_per_part.normality <- ad.test(behaviour.blocks_per_part$NBlocks)
 behaviour.blocks_per_part.freq_test <- wilcox.test(NBlocks ~ Condition,
                                                    data = behaviour.blocks_per_part)
 
@@ -237,18 +232,3 @@ ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
                width = .15, position = position_dodge(.9))
 ggsave("../results/adults_3f/ACCbyRTbyDiag_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
        width = 3.5, height = 2.7)
-
-# BEHAVIOURAL ANALYSIS: RT ~ CONFIDENCE ============================================================
-RT_by_conf.lmer.0 <- lmer(RT ~ Confidence*Condition +
-                            (1 + Confidence | Participant) +
-                            (1 + Confidence | Stimulus) +
-                            (1 + Confidence | StiLabel),
-                          data = behaviour.training)
-RT_by_conf.lmer.1 <- update(RT_by_conf.lmer.0, . ~ . - Confidence:Condition)
-RT_by_conf.lmer.2 <- update(RT_by_conf.lmer.1, . ~ . - Confidence)
-RT_by_conf.lmer.3 <- update(RT_by_conf.lmer.2, . ~ . - Condition)
-RT_by_conf.lmer.comp <- anova(RT_by_conf.lmer.3,
-                              RT_by_conf.lmer.2,
-                              RT_by_conf.lmer.1,
-                              RT_by_conf.lmer.0)
-# No significant effect
