@@ -74,24 +74,25 @@ ggsave("../results/infants/AOILookingPerParts.pdf",
 # Preparing data for analysis and plot
 LT.time_course_aois <- LT.clean %>%
   make_time_sequence_data(time_bin_size = 50,
-                          aois = c("Head","Tail"),
+                          aois = c("Tail"),
                           predictor_columns=c("Condition")) %>%
   mutate_at("TrialId", as.numeric) %>%
   subset(TrialId < 25) %>%
   mutate(Part = ((TrialId-1) %/% 8))
 # Plotting first/middle/last 8 trials
 intercept <- tibble(Part = 0:2,
-                    x_int = rep(2250,3)) # Label onset ish (second half trials includes "the")
+                    x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
 LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_aois,
                                            aes(x = Time, y=Prop,
                                                colour=Condition,
                                                fill=Condition)) +
   xlab('Time in Trial') + ylab("Looking to AOI (Prop)") +
-  facet_grid(AOI~Part) + theme(legend.position = "top") + ylim(0,1) +
+  facet_grid(.~Part) +
+  theme(legend.position = "top") + ylim(0,1) +
   stat_summary(fun.y='mean', geom='line', linetype = '61') +
   stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
   geom_hline(yintercept = .5) +
   geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5)
 ggsave("../results/infants/LookingTimeCoursePerPart.pdf",
        plot = LT.clean.time_course.plot.blocks,
-       width = 7, height = 4)
+       width = 7, height = 2.5)
