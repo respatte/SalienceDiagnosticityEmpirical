@@ -36,22 +36,19 @@ LT.time_course_aois.first_last <- LT.clean %>%
                                               "ACC",
                                               "Stimulus",
                                               "StiLabel")) %>%
-  mutate(Part = case_when(Block == 0 ~ "Test",
-                          Block == 1 ~ "First Block",
+  mutate(Part = case_when(Block == 1 ~ "First Block",
                           Block == NBlocks ~ "Last Block")) %>%
   drop_na(Part)
 # Growth Curve Analysis of the data
 # Analysing proportions => main effect of Condition or Part nonsensical,
 # we can only expect differences between AOIs, and between AOIs on different levels
-# LT.time_course_aois.GCA <- lmer(ArcSin ~ (Condition*Part)*
-#                                   (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
-#                                   (1 + Part + Condition +
-#                                      ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Stimulus) +
-#                                   (1 + Part + Condition +
-#                                      ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | StiLabel) +
-#                                   (1 + Part +
-#                                      ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant),
-#                                 data = LT.time_course_aois.first_last, REML = F)
+LT.time_course_aois.GCA <- lmer(ArcSin ~ (Condition*Part)*
+                                  (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                  (1 + Part +
+                                     ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant) +
+                                  (1 | Stimulus) +
+                                  (1| StiLabel),
+                                data = LT.time_course_aois.first_last, REML = F)
 ## Check convergence
 ### Recompute gradient and Hessian with Richardson extrapolation
 # devfun <- update(LT.time_course_aois.GCA, devFunOnly=TRUE)
@@ -83,7 +80,7 @@ LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_aois.first_last,
   geom_hline(yintercept = .5)
 ggsave("../results/adults_2f/LookingTimeCourseFirstLast.pdf",
        plot = LT.clean.time_course.first_last.plot,
-       width = 7, height = 5.4)
+       width = 7, height = 3)
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY PART ===================================
 # Prepare dataset with BlockTransformation
@@ -105,9 +102,7 @@ LT.prop_aois.first_last <- LT.prop_aois.per_block %>%
   subset(BlockTransformation == "Block" &
            (Block == 1 | Block == NBlocks)) %>%
   mutate(Part = ifelse(Block == 1, "First Block", "Last Block"))
-## LMER for Prop ~ Condition*Part*AOI
-# No main effect of Part since looking at proportions,
-# so overall they should all equate to one when collapsing
+## LMER for Prop ~ Condition*Part
 LT.prop_aois.first_last.lmer.0 <- lmer(ArcSin ~ Part*Condition +
                                          (1 + Part | Participant) +
                                          (1 | Stimulus) +
@@ -133,7 +128,8 @@ LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
   theme_apa(legend.pos = "top") + ylab("Looking to AOI (Prop)") +
   scale_colour_discrete(labels = c("Label", "No Label")) +
   scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_point(position = position_jitterdodge(dodge.width = .8,
+  geom_point(size = 1,
+             position = position_jitterdodge(dodge.width = .8,
                                              jitter.width = .2),
              alpha = .25) +
   geom_errorbar(stat = "summary",
@@ -144,11 +140,11 @@ LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
             colour = "black",
             position = position_dodge(.1)) +
   geom_point(stat = "summary", fun.y = "mean",
-             shape = 18, size = 3,
+             shape = 18, size = 2,
              position = position_dodge(.1))
 ggsave("../results/adults_2f/AOILookingFirstLast.pdf",
        LT.prop_aois.first_last.plot,
-       width = 3.5, height = 5.4)
+       width = 3.5, height = 3)
 
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS ====================================================
 # Get how many participants for each block, and make a bar plot
@@ -176,6 +172,7 @@ behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
 ggsave("../results/adults_2f/BlocksPerParticipant.pdf", plot = behaviour.blocks_per_part.plot,
        width = 3.5, height = 2.9)
 # Stats for the number of blocks per participant
+behaviour.blocks_per_part.normality <- ad.test(behaviour.blocks_per_part$NBlocks)
 behaviour.blocks_per_part.freq_test <- wilcox.test(NBlocks ~ Condition,
                                                    data = behaviour.blocks_per_part)
 
@@ -187,10 +184,10 @@ behaviour.test <- behaviour %>%
   subset(Phase == "Test")
 # Run binomial glmer
 ## During training
-ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*Block*zLogRT +
-                                            (1 + Block + zLogRT | Participant) +
-                                            (1 + zLogRT | Stimulus) +
-                                            (1 + zLogRT | StiLabel),
+ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*zLogRT +
+                                            (1 + zLogRT | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StiLabel),
                                           family = binomial,
                                           control = glmerControl(optimizer = "bobyqa"),
                                           data = behaviour.training)
@@ -214,7 +211,7 @@ ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
   geom_boxplot(alpha = 0, outlier.alpha = 1,
                width = .15, position = position_dodge(.9))
 ggsave("../results/adults_2f/ACCbyRTbyBlock_training.pdf", plot = ACC_by_diag_by_RT.training.plot,
-       width = 7, height = 2.7)
+       width = 3.5, height = 2.7)
 ## At test
 ACC_by_diag_by_RT.test <- behaviour.test %>%
   group_by(Participant, Condition) %>%
