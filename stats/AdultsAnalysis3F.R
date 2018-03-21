@@ -4,6 +4,7 @@ library(tidyverse); library(broom)
 library(jtools)
 library(eyetrackingR)
 library(rethinking)
+library(texreg)
 
 source("Routines.R")
 
