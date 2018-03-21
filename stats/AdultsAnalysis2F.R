@@ -1,9 +1,10 @@
+# LIBRARY IMPORTS ==================================================================================
 library(lme4)
 library(nortest)
 library(tidyverse); library(broom)
 library(jtools)
 library(eyetrackingR)
-#library(rethinking)
+library(rethinking)
 
 source("Routines.R")
 
@@ -14,9 +15,15 @@ d <- LT_data.gather("adults_2f")
 behaviour <- d[[2]] %>%
   subset((Condition == "Label" & NBlocks < 8) |
            (Condition == "NoLabel" & NBlocks < 5))
+rote_learning_check <- behaviour %>%
+  subset(Phase == "Test") %>%
+  group_by(Participant, Stimulus) %>%
+  summarise(a = ACC) %>%
+  subset(a == 0) # Participants with mistakes at test (including missed item)
+# No rote learners
 LT.clean <- d[[4]] %>%
-  subset((Condition == "Label" & NBlocks < 21) |
-           (Condition == "NoLabel" & NBlocks < 10)) %>%
+  subset((Condition == "Label" & NBlocks < 8) |
+           (Condition == "NoLabel" & NBlocks < 5)) %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
@@ -48,20 +55,8 @@ LT.time_course_aois.GCA <- lmer(ArcSin ~ (Condition*Part)*
                                      ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant) +
                                   (1 | Stimulus) +
                                   (1| StiLabel),
-                                data = LT.time_course_aois.first_last, REML = F)
-## Check convergence
-### Recompute gradient and Hessian with Richardson extrapolation
-# devfun <- update(LT.time_course_aois.GCA, devFunOnly=TRUE)
-# pars <- getME(LT.time_course_aois.GCA, "theta")
-# if(require("numDeriv")){
-#   cat("hess:\n"); print(hess <- hessian(devfun, unlist(pars)))
-#   cat("grad:\n"); print(grad <- grad(devfun, unlist(pars)))
-#   cat("scaled gradient:\n")
-#   print(scgrad <- solve(chol(hess), grad))
-# }
-# print(LT.time_course_aois.GCA@optinfo$derivs)
-### Restart the fit from computed values
-# LT.time_course_aois.GCA.restart.1 <- update(LT.time_course_aois.GCA, start = pars)
+                                data = LT.time_course_aois.first_last, REML = F,
+                                control = lmerControl(optCtrl = list(maxfun = 100000)))
 # Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
 intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
                     x_int = c(0, 2000, 0, 2000))
