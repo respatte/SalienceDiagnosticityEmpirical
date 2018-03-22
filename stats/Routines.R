@@ -93,7 +93,6 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
            TimeStamp = RecordingTimestamp, StudioEventIndex, ValidityLeft, ValidityRight,
            CursorX = "GazePointX (ADCSpx)", CursorY = "GazePointY (ADCSpx)") %>%
     subset(!(grepl("AG",.$MediaName) | .$MediaName == "")) %>%
-    droplevels() %>%
     group_by(Participant, MediaName) %>%
     mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
            TrialId = max(StudioEventIndex, na.rm = T)/2) %>%
