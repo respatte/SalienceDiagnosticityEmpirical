@@ -1,3 +1,4 @@
+# LIBRARY IMPORTS ==================================================================================
 library(eyetrackingR)
 library(lme4)
 library(tidyverse)
@@ -14,6 +15,8 @@ LT.clean <- d[[4]] %>%
                          aoi_columns = c("Head","Tail"),
                          treat_non_aoi_looks_as_missing = T) %>%
   subset_by_window(window_start_time = 1500, window_end_time = 7000)
+# Check for available PresentationSequence
+s <- LT.clean %>% group_by(PresentationSequence, Participant) %>% summarise(T = sum(TrackLoss)/n())
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK ============================
 # Prepare dataset, include only familiarisation
