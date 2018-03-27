@@ -34,9 +34,8 @@ LT.prop_tail <- make_time_window_data(LT.clean,
 # No main effect of Part since looking at proportions,
 # so overall they should all equate to one when collapsing
 LT.prop_tail.per_trial.lmer.0 <- lmer(ArcSin ~ Trial*Condition +
-                                        (1 + Trial | Participant) +
-                                        (1 | Stimulus) +
-                                        (1 | CategoryName),
+                                        (1 | Participant) +
+                                        (1 | Stimulus),
                                         data = LT.prop_tail)
 LT.prop_tail.per_trial.lmer.1 <- update(LT.prop_tail.per_trial.lmer.0,
                                         . ~ . - Trial:Condition)
@@ -74,15 +73,25 @@ ggsave("../results/infants/AOILookingPerParts.pdf",
        width = 7, height = 5.4)
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
-# Preparing data for analysis and plot
+# DATA PREPARATION
 LT.time_course_aois <- LT.clean %>%
+  subset(Phase == "Familiarisation") %>%
   make_time_sequence_data(time_bin_size = 50,
-                          aois = c("Tail"),
-                          predictor_columns=c("Condition")) %>%
-  mutate_at("TrialId", as.numeric) %>%
-  subset(TrialId < 25) %>%
-  mutate(Part = ((TrialId-1) %/% 8))
-# Plotting first/middle/last 8 trials
+                          aois = "Tail",
+                          predictor_columns=c("Condition",
+                                              "Stimulus"))
+# GROWTH CURVE ANALYSIS
+## TODO
+# BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
+LT.time_cluster_aois <- make_time_cluster_data(LT.time_course_aois, 
+                                               predictor_column = "Condition",
+                                               aoi = "Tail",
+                                               test = "lmer",
+                                               threshold = 1.5,
+                                               formula = ArcSin ~ TrialId*Condition +
+                                                 (1 + TrialId | Participant) +
+                                                 (1 | Stimulus))
+# PLOT
 intercept <- tibble(Part = 0:2,
                     x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
 LT.clean.time_course.plot.blocks <- ggplot(LT.time_course_aois,

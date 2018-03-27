@@ -105,6 +105,9 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
     mutate(Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
                              grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
                              grepl("[HRT]C_", MediaName) ~ "Test - Contrast"),
+           FamPart = case_when(TrialId <= 8 ~ 0,
+                               TrialId <= 16 ~ 1,
+                               TrialId <= 24 ~ 2),
            Stimulus = ifelse(Phase == "Familiarisation",
                              sapply(strsplit(as.character(MediaName), "_"), "[", 2),
                              sapply(strsplit(as.character(MediaName), "_"), "[", 1)),
@@ -131,8 +134,7 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                                 ifelse(CategoryName==paste0("A_",
                                                                             substr(MediaName,3,3)),
                                                        substr(MediaName,7,7),
-                                                       substr(MediaName,11,11))))
-           ))
+                                                       substr(MediaName,11,11))))))
   return(df)
 }
 
