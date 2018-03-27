@@ -1,5 +1,5 @@
 # LIBRARY IMPORTS ==================================================================================
-library(lme4)
+library(lme4);library(lmerTest)
 library(nortest)
 library(tidyverse); library(broom)
 library(jtools)
@@ -34,7 +34,7 @@ LT.clean <- d[[4]] %>%
   subset_by_window(window_start_time = -1000, rezero = F)
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
-# Preparing data for analysis and plot
+# DATA PREPARATION
 LT.time_course_aois.first_last <- LT.clean %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = c("Tail"),
@@ -47,7 +47,7 @@ LT.time_course_aois.first_last <- LT.clean %>%
   mutate(Part = case_when(Block == 1 ~ "First Block",
                           Block == NBlocks ~ "Last Block")) %>%
   drop_na(Part)
-# Growth Curve Analysis of the data
+# GROWTH CURVE ANALYSIS
 # Analysing proportions => main effect of Condition or Part nonsensical,
 # we can only expect differences between AOIs, and between AOIs on different levels
 LT.time_course_aois.GCA <- lmer(ArcSin ~ (Condition*Part)*
@@ -58,6 +58,8 @@ LT.time_course_aois.GCA <- lmer(ArcSin ~ (Condition*Part)*
                                   (1| StiLabel),
                                 data = LT.time_course_aois.first_last, REML = F,
                                 control = lmerControl(optCtrl = list(maxfun = 100000)))
+LT.time_course_aois.GCA.tests <- anova(LT.time_course_aois.GCA, type = 2)
+# PLOTTING
 # Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
 intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
                     x_int = c(0, 2000, 0, 2000))
