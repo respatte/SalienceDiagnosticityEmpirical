@@ -48,17 +48,27 @@ LT.time_course_aois.first_last <- LT.clean %>%
                           Block == NBlocks ~ "Last Block")) %>%
   drop_na(Part)
 # GROWTH CURVE ANALYSIS
-# Analysing proportions => main effect of Condition or Part nonsensical,
-# we can only expect differences between AOIs, and between AOIs on different levels
-LT.time_course_aois.GCA <- lmer(ArcSin ~ (Condition*Part)*
-                                  (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
-                                  (1 + Part +
-                                     ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant) +
-                                  (1 | Stimulus) +
-                                  (1| StiLabel),
-                                data = LT.time_course_aois.first_last, REML = F,
-                                control = lmerControl(optCtrl = list(maxfun = 100000)))
-LT.time_course_aois.GCA.tests <- anova(LT.time_course_aois.GCA, type = 2)
+run_model = F
+if(run_model){
+  ## Run and save the model
+  #- Analysing proportions => main effect of Condition or Part nonsensical,
+  #- we can only expect differences between AOIs, and between AOIs on different levels
+  LT.time_course_aois.GCA <- lmer(ArcSin ~ (Condition*Part)*
+                                    (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                    (1 + Part +
+                                       ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant) +
+                                    (1 | Stimulus) +
+                                    (1| StiLabel),
+                                  data = LT.time_course_aois.first_last, REML = F,
+                                  control = lmerControl(optCtrl = list(maxfun = 100000)))
+  saveRDS(LT.time_course_aois.GCA, file = "../results/adults_2f/GCA.rds")
+  ## Run and save the ANOVA for the model effects
+  LT.time_course_aois.GCA.tests <- anova(LT.time_course_aois.GCA, type = 2)
+  saveRDS(LT.time_course_aois.GCA, file = "../results/adults_2f/GCA_anova.rds")
+}else{
+  LT.time_course_aois.GCA <- readRDS("../results/adults_2f/GCA.rds")
+  LT.time_course_aois.GCA.tests <- readRDS("../results/adults_2f/GCA_anova.rds")
+}
 # PLOTTING
 # Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
 intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
