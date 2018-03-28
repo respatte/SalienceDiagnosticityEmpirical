@@ -85,12 +85,15 @@ LT.time_course_aois <- LT.clean %>%
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 LT.time_cluster_aois <- make_time_cluster_data(LT.time_course_aois, 
                                                predictor_column = "Condition",
+                                               treatment_level = "No Label",
                                                aoi = "Tail",
                                                test = "lmer",
                                                threshold = 1.5,
                                                formula = ArcSin ~ TrialId*Condition +
-                                                 (1 + TrialId | Participant) +
+                                                 (1 | Participant) +
                                                  (1 | Stimulus))
+LT.time_cluster_aois.analysis <- analyze_time_clusters(LT.time_cluster_aois,
+                                                       within_subj = F)
 # PLOT
 intercept <- tibble(Part = 0:2,
                     x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
