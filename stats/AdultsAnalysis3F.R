@@ -58,11 +58,11 @@ if(run_model){
                                   control = lmerControl(optCtrl = list(maxfun = 100000)))
   saveRDS(LT.time_course_aois.GCA, file = "../results/adults_3f/GCA.rds")
   ## Run and save the ANOVA for the model effects
-  LT.time_course_aois.GCA.tests <- anova(LT.time_course_aois.GCA, type = 2)
+  LT.time_course_aois.GCA.anova <- anova(LT.time_course_aois.GCA, type = 2)
   saveRDS(LT.time_course_aois.GCA.tests, file = "../results/adults_3f/GCA_anova.rds")
 }else{
   LT.time_course_aois.GCA <- readRDS("../results/adults_3f/GCA.rds")
-  LT.time_course_aois.GCA.tests <- readRDS("../results/adults_3f/GCA_anova.rds")
+  LT.time_course_aois.GCA.anova <- readRDS("../results/adults_3f/GCA_anova.rds")
 }
 # PLOTTING
 # Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
@@ -86,7 +86,8 @@ ggsave("../results/adults_3f/LookingTimeCourseFirstLast.pdf",
        width = 7, height = 5.7)
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY PART ===================================
-# Prepare dataset with BlockTransformation
+# DATA PREPARATION
+## Prepare dataset with all blocks
 LT.prop_aois.per_block <- make_time_window_data(LT.clean,
                                                 aois=c("Tail","Feet","Head"),
                                                 predictor_columns=c("Condition",
@@ -100,34 +101,22 @@ LT.prop_aois.per_block <- make_time_window_data(LT.clean,
   mutate(OppBlock = Block - NBlocks,
          NormBlock = Block/NBlocks) %>%
   gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
-# Comparing first block against last block
+## Comparing first block against last block
 LT.prop_aois.first_last <- LT.prop_aois.per_block %>%
   subset(BlockTransformation == "Block" &
            (Block == 1 | Block == NBlocks)) %>%
   mutate(Part = ifelse(Block == 1, "First Block", "Last Block"))
-## LMER for Prop ~ Condition*Part*AOI
-# No main effect of Part since looking at proportions,
-# so overall they should all equate to one when collapsing
-LT.prop_aois.first_last.lmer.0 <- lmer(ArcSin ~ Part*AOI*Condition - (Part*Condition) +
+# MIXED-EFFECTS MODELS FOR PROP ~ CONDITION*PART*AOI
+## Run the model
+#- No main effect of Part since looking at proportions,
+#- so overall they should all equate to one when collapsing
+LT.prop_aois.first_last.lmer <- lmer(ArcSin ~ Part*AOI*Condition - (Part*Condition) +
                                          (1 + AOI + Part:AOI | Participant) +
                                          (1 + AOI | Stimulus) +
                                          (1 + AOI | StiLabel),
                                        data = LT.prop_aois.first_last)
-LT.prop_aois.first_last.lmer.1 <- update(LT.prop_aois.first_last.lmer.0,
-                                         . ~ . - Part:AOI:Condition) # Remove
-LT.prop_aois.first_last.lmer.2 <- update(LT.prop_aois.first_last.lmer.1,
-                                         . ~ . - AOI:Condition)
-LT.prop_aois.first_last.lmer.3 <- update(LT.prop_aois.first_last.lmer.2,
-                                         . ~ . - Part:AOI)
-LT.prop_aois.first_last.lmer.4 <- update(LT.prop_aois.first_last.lmer.3,
-                                         . ~ . - AOI)
-LT.prop_aois.first_last.lmer.comp <- anova(LT.prop_aois.first_last.lmer.4,
-                                           LT.prop_aois.first_last.lmer.3,
-                                           LT.prop_aois.first_last.lmer.2,
-                                           LT.prop_aois.first_last.lmer.1,
-                                           LT.prop_aois.first_last.lmer.0)
-LT.prop_aois.first_last.lmer.final <- update(LT.prop_aois.first_last.lmer.0,
-                                             . ~ . - Part:AOI:Condition)
+## Save the ANOVA for model effects
+LT.prop_aois.first_last.lmer.anova <- anova(LT.prop_aois.first_last.lmer, type = 2)
 ## Plot jitter + mean&se + lines
 LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
                                        aes(x = Part, y = Prop,

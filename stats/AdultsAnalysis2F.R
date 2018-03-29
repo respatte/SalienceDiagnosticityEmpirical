@@ -35,7 +35,7 @@ LT.clean <- d[[4]] %>%
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # DATA PREPARATION
-LT.time_course_aois.first_last <- LT.clean %>%
+LT.time_course_tail.first_last <- LT.clean %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = c("Tail"),
                           predictor_columns=c("Condition",
@@ -48,32 +48,32 @@ LT.time_course_aois.first_last <- LT.clean %>%
                           Block == NBlocks ~ "Last Block")) %>%
   drop_na(Part)
 # GROWTH CURVE ANALYSIS
-run_model = F
+run_model = F # Running the model takes around 10 hours on a [check office CPU specs]
 if(run_model){
   ## Run and save the model
   #- Analysing proportions => main effect of Condition or Part nonsensical,
   #- we can only expect differences between AOIs, and between AOIs on different levels
-  LT.time_course_aois.GCA <- lmer(ArcSin ~ (Condition*Part)*
+  LT.time_course_tail.GCA <- lmer(ArcSin ~ (Condition*Part)*
                                     (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
                                     (1 + Part +
                                        ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant) +
                                     (1 | Stimulus) +
                                     (1| StiLabel),
-                                  data = LT.time_course_aois.first_last, REML = F,
+                                  data = LT.time_course_tail.first_last, REML = F,
                                   control = lmerControl(optCtrl = list(maxfun = 100000)))
-  saveRDS(LT.time_course_aois.GCA, file = "../results/adults_2f/GCA.rds")
+  saveRDS(LT.time_course_tail.GCA, file = "../results/adults_2f/GCA.rds")
   ## Run and save the ANOVA for the model effects
-  LT.time_course_aois.GCA.tests <- anova(LT.time_course_aois.GCA, type = 2)
-  saveRDS(LT.time_course_aois.GCA, file = "../results/adults_2f/GCA_anova.rds")
+  LT.time_course_tail.GCA.anova <- anova(LT.time_course_aois.GCA, type = 2)
+  saveRDS(LT.time_course_tail.GCA, file = "../results/adults_2f/GCA_anova.rds")
 }else{
-  LT.time_course_aois.GCA <- readRDS("../results/adults_2f/GCA.rds")
-  LT.time_course_aois.GCA.tests <- readRDS("../results/adults_2f/GCA_anova.rds")
+  LT.time_course_tail.GCA <- readRDS("../results/adults_2f/GCA.rds")
+  LT.time_course_tail.GCA.anova <- readRDS("../results/adults_2f/GCA_anova.rds")
 }
 # PLOTTING
-# Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
+## Plot eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
 intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
                     x_int = c(0, 2000, 0, 2000))
-LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_aois.first_last,
+LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_tail.first_last,
                                                aes(x = Time, y=Prop,
                                                    colour=Condition,
                                                    fill=Condition)) +
@@ -91,45 +91,33 @@ ggsave("../results/adults_2f/LookingTimeCourseFirstLast.pdf",
        width = 7, height = 3)
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY PART ===================================
-# Prepare dataset with BlockTransformation
-LT.prop_aois.per_block <- make_time_window_data(LT.clean,
-                                                aois=c("Tail"),
+# DATA PREPARATION
+## Prepare dataset with all blocks
+LT.prop_tail.per_block <- make_time_window_data(LT.clean,
+                                                aois="Tail",
                                                 predictor_columns=c("Condition",
                                                                     "Block",
                                                                     "NBlocks",
                                                                     "ACC",
                                                                     "Stimulus",
                                                                     "StiLabel")) %>%
-  subset(Block > 0) %>%
-  group_by(Participant) %>%
-  mutate(OppBlock = Block - NBlocks,
-         NormBlock = Block/NBlocks) %>%
-  gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
-# Comparing first block against last block
-LT.prop_aois.first_last <- LT.prop_aois.per_block %>%
-  subset(BlockTransformation == "Block" &
-           (Block == 1 | Block == NBlocks)) %>%
+  subset(Phase == "Familiarisation")
+## Comparing first block against last block
+LT.prop_tail.first_last <- LT.prop_tail.per_block %>%
+  subset(Block == 1 | Block == NBlocks) %>%
   mutate(Part = ifelse(Block == 1, "First Block", "Last Block"))
-## LMER for Prop ~ Condition*Part
-LT.prop_aois.first_last.lmer.0 <- lmer(ArcSin ~ Part*Condition +
-                                         (1 + Part | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StiLabel),
-                                       data = LT.prop_aois.first_last)
-LT.prop_aois.first_last.lmer.1 <- update(LT.prop_aois.first_last.lmer.0,
-                                         . ~ . - Part:Condition) # Remove
-LT.prop_aois.first_last.lmer.2 <- update(LT.prop_aois.first_last.lmer.1,
-                                         . ~ . - Condition) # Remove
-LT.prop_aois.first_last.lmer.3 <- update(LT.prop_aois.first_last.lmer.2,
-                                         . ~ . - Part)
-LT.prop_aois.first_last.lmer.comp <- anova(LT.prop_aois.first_last.lmer.3,
-                                           LT.prop_aois.first_last.lmer.2,
-                                           LT.prop_aois.first_last.lmer.1,
-                                           LT.prop_aois.first_last.lmer.0)
-LT.prop_aois.first_last.lmer.final <- update(LT.prop_aois.first_last.lmer.0,
-                                             . ~ . - (Condition + Part:Condition))
+# MIXED-EFFECTS MODEL FOR PROP ~ CONDITION*PART
+## Run the model
+LT.prop_tail.first_last.lmer <- lmer(ArcSin ~ Part*Condition +
+                                       (1 + Part | Participant) +
+                                       (1 | Stimulus) +
+                                       (1 | StiLabel),
+                                     data = LT.prop_tail.first_last)
+## Save the ANOVA for model effects
+LT.prop_tail.first_last.lmer.anova <- anova(LT.prop_tail.first_last.lmer, type = 2)
+# PLOTTING
 ## Plot jitter + mean&se + lines
-LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
+LT.prop_tail.first_last.plot <- ggplot(LT.prop_tail.first_last,
                                        aes(x = Part, y = Prop,
                                            colour = Condition,
                                            fill = Condition)) +
@@ -151,7 +139,7 @@ LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
              shape = 18, size = 2,
              position = position_dodge(.1))
 ggsave("../results/adults_2f/AOILookingFirstLast.pdf",
-       LT.prop_aois.first_last.plot,
+       LT.prop_tail.first_last.plot,
        width = 3.5, height = 3)
 
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS ====================================================
@@ -184,7 +172,7 @@ behaviour.blocks_per_part.normality <- ad.test(behaviour.blocks_per_part$NBlocks
 behaviour.blocks_per_part.freq_test <- wilcox.test(NBlocks ~ Condition,
                                                    data = behaviour.blocks_per_part)
 
-# BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*DIAG*RT) ==============================================
+# BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*RT) ===================================================
 # Get datasets for training and test
 behaviour.training <- behaviour %>%
   subset(Phase == "Familiarisation")
