@@ -33,27 +33,25 @@ LT.time_course_aois.first_last <- LT.clean %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = c("Head","Tail","Feet"),
                           predictor_columns=c("Condition",
-                                              "Block",
-                                              "NBlocks",
+                                              "FstLst",
                                               "ACC",
                                               "Stimulus",
-                                              "StiLabel",
+                                              "StimLabel",
                                               "Diagnostic")) %>%
-  mutate(Part = case_when(Block == 1 ~ "First Block",
-                          Block == NBlocks ~ "Last Block")) %>%
-  drop_na(Part)
+  drop_na(FstLst)
 # GROWTH CURVE ANALYSIS
-run_model = F
+run_model = F # Running the model takes around 10 hours on a [check office CPU specs]
 if(run_model){
   ## Run and save the model
   # Analysing proportions => main effect of Condition or Part nonsensical,
   # we can only expect differences between AOIs, and between AOIs on different levels
-  LT.time_course_aois.GCA <- lmer(ArcSin ~ (AOI + Condition:AOI + AOI:Part + AOI:Condition:Part)*
+  LT.time_course_aois.GCA <- lmer(ArcSin ~ (AOI + Condition:AOI + AOI:FstLst +
+                                              AOI:Condition:FstLst)*
                                     (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
-                                    (1 + AOI + Part +
+                                    (1 + AOI + FstLst +
                                        ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant) +
                                     (1 + AOI | Stimulus) +
-                                    (1 + AOI | StiLabel),
+                                    (1 + AOI | StimLabel),
                                   data = LT.time_course_aois.first_last, REML = F,
                                   control = lmerControl(optCtrl = list(maxfun = 100000)))
   saveRDS(LT.time_course_aois.GCA, file = "../results/adults_3f/GCA.rds")
@@ -66,7 +64,7 @@ if(run_model){
 }
 # PLOTTING
 # Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
-intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
+intercept <- tibble(FstLst = c(rep("First Block", 2), rep("Last Block", 2)),
                     x_int = c(0, 2000, 0, 2000))
 LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_aois.first_last,
                                                aes(x = Time, y=Prop,
@@ -75,7 +73,7 @@ LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_aois.first_last,
   xlab('Time in Trial') + ylab("Looking to AOI (Prop)") + theme_apa(legend.pos = "top") +
   scale_colour_discrete(labels = c("Label", "No Label")) +
   scale_fill_discrete(labels = c("Label", "No Label")) +
-  facet_grid(AOI~Part, scales = "free_x") + ylim(0,1) +
+  facet_grid(AOI~FstLst, scales = "free_x") + ylim(0,1) +
   scale_x_continuous(breaks = c(-1000, 0, 1000, 2000, 3000)) +
   geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5) +
   stat_summary(fun.y='mean', geom='line', linetype = '61') +
@@ -92,34 +90,36 @@ LT.prop_aois.per_block <- make_time_window_data(LT.clean,
                                                 aois=c("Tail","Feet","Head"),
                                                 predictor_columns=c("Condition",
                                                                     "Block",
-                                                                    "NBlocks",
+                                                                    "FstLst",
                                                                     "ACC",
                                                                     "Stimulus",
-                                                                    "StiLabel")) %>%
-  subset(Block > 0) %>%
-  group_by(Participant) %>%
-  mutate(OppBlock = Block - NBlocks,
-         NormBlock = Block/NBlocks) %>%
-  gather("BlockTransformation","Block", Block, OppBlock, NormBlock)
+                                                                    "StimLabel"))
 ## Comparing first block against last block
 LT.prop_aois.first_last <- LT.prop_aois.per_block %>%
-  subset(BlockTransformation == "Block" &
-           (Block == 1 | Block == NBlocks)) %>%
-  mutate(Part = ifelse(Block == 1, "First Block", "Last Block"))
+  drop_na(FstLst)
 # MIXED-EFFECTS MODELS FOR PROP ~ CONDITION*PART*AOI
-## Run the model
-#- No main effect of Part since looking at proportions,
-#- so overall they should all equate to one when collapsing
-LT.prop_aois.first_last.lmer <- lmer(ArcSin ~ Part*AOI*Condition - (Part*Condition) +
-                                         (1 + AOI + Part:AOI | Participant) +
+run_model = F # Running the model takes around 10 minutes on a [check office CPU specs]
+if(run_model){
+  ## Run and save the model
+  #- No main effect of Part since looking at proportions,
+  #- so overall they should all equate to one when collapsing
+  LT.prop_aois.first_last.lmer <- lmer(ArcSin ~ FstLst*AOI*Condition - (FstLst*Condition) +
+                                         (1 + AOI + FstLst:AOI | Participant) +
                                          (1 + AOI | Stimulus) +
-                                         (1 + AOI | StiLabel),
+                                         (1 + AOI | StimLabel),
                                        data = LT.prop_aois.first_last)
-## Save the ANOVA for model effects
-LT.prop_aois.first_last.lmer.anova <- anova(LT.prop_aois.first_last.lmer, type = 2)
+  saveRDS(LT.prop_aois.first_last.lmer, "../results/adults_3f/PropAOI.rds")
+  ## Run and save the ANOVA for model effects
+  LT.prop_aois.first_last.lmer.anova <- anova(LT.prop_aois.first_last.lmer, type = 2)
+  saveRDS(LT.prop_aois.first_last.lmer.anova, "../results/adults_3f/PropAOI_anova.rds")
+}else{
+  LT.prop_aois.first_last.lmer <- readRDS("../results/adults_3f/PropAOI.rds")
+  LT.prop_aois.first_last.lmer.anova <- readRDS("../results/adults_3f/PropAOI_anova.rds")
+}
+# PLOTTING
 ## Plot jitter + mean&se + lines
 LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
-                                       aes(x = Part, y = Prop,
+                                       aes(x = FstLst, y = Prop,
                                            colour = Condition,
                                            fill = Condition)) +
   facet_wrap(~AOI) + theme_apa(legend.pos = "top") + ylab("Looking to AOI (Prop)") +
@@ -131,7 +131,7 @@ LT.prop_aois.first_last.plot <- ggplot(LT.prop_aois.first_last,
   geom_errorbar(stat = "summary",
                 width = .2, colour = "black",
                 position = position_dodge(.1)) +
-  geom_line(aes(x = Part, y = Prop, group = Condition),
+  geom_line(aes(x = FstLst, y = Prop, group = Condition),
             stat = "summary", fun.y = "mean",
             colour = "black",
             position = position_dodge(.1)) +
@@ -183,7 +183,7 @@ behaviour.test <- behaviour %>%
 ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*Diagnostic*zLogRT +
                                       (1 + Diagnostic + zLogRT | Participant) +
                                       (1 + zLogRT | Stimulus) +
-                                      (1 + zLogRT | StiLabel),
+                                      (1 + zLogRT | StimLabel),
                                     family = binomial,
                                     control = glmerControl(optimizer = "bobyqa"),
                                     data = behaviour.training)
@@ -196,7 +196,7 @@ ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*Diagnostic*zLogRT +
 ## During training
 ACC_by_diag_by_RT.training <- behaviour.training %>%
   group_by(Participant, Diagnostic, Condition) %>%
-  summarise(Accuracy = sum(ACC)/n())
+  summarise(Accuracy = sum(ACC == 1)/n())
 ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
                                     aes(x = Condition,
                                         y = Accuracy,
@@ -211,7 +211,7 @@ ggsave("../results/adults_3f/ACCbyRTbyDiag_training.pdf", plot = ACC_by_diag_by_
 ## At test
 ACC_by_diag_by_RT.test <- behaviour.test %>%
   group_by(Participant, Diagnostic, Condition) %>%
-  summarise(Accuracy = sum(ACC)/n())
+  summarise(Accuracy = sum(ACC == 1)/n())
 ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
                                 aes(x = Condition,
                                     y = Accuracy,

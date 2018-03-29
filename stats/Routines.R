@@ -29,7 +29,7 @@ LT_data.import.adults <- function(participants="adults_2f"){
   stopCluster(cl)
   # Transforming data
   # TODO -- Check what happens when no answer in time: RT == 0 or RT == 10000? ACC? CRESP?
-  df %<>% rename(Participant = Subject) %>%
+  df %<>% rename(Participant = Subject, StimLabel = StiLabel) %>%
     inner_join(participant_info) %>%
     drop_na(RT, CursorX, CursorY) %>%
     subset(RT > 200) %>%
@@ -39,12 +39,12 @@ LT_data.import.adults <- function(participants="adults_2f"){
            TimeStamp = TimestampMicrosec*1e-3 + TimestampSec*1e3,
            AOI_type = 1) %>%
     group_by(Participant) %>%
-    mutate(Condition = if(first(StiLabel) == "NoLabelFeedback"){"NoLabel"}else{"Label"},
+    mutate(Condition = if(first(StimLabel) == "NoLabelFeedback"){"NoLabel"}else{"Label"},
            CategoryName = if(first(Condition) == "NoLabel"){"NoName"}else{
              if((grepl("A",as.character(first(Stimulus))) &
-                 first(StiLabel) == "Saldie")|
+                 first(StimLabel) == "Saldie")|
                 (grepl("B",as.character(first(Stimulus))) &
-                 first(StiLabel) == "Gatoo")){
+                 first(StimLabel) == "Gatoo")){
                "A_Saldie"
              }else{"A_Gatoo"}},
            NBlocks = max(Block),
@@ -52,6 +52,12 @@ LT_data.import.adults <- function(participants="adults_2f"){
            RT = ifelse(RT < 200, NA, RT),
            LogRT = log(RT),
            zLogRT = scale(LogRT)) %>%
+    ungroup() %>%
+    mutate(FstLst = case_when(Block == 1 ~ "First Block",
+                              Block == NBlocks ~ "Last Block")) %>%
+    mutate_at(c("Participant", "Phase", "Condition", "CategoryName", "FstLst", "AOI_type",
+                "CRESP","RESP","ACC","CurrentObject","Stimulus","StimLabel", "Gender"),
+              parse_factor, levels = NULL) %>%
     select(-one_of("TimestampMicrosec","TimestampSec"))
   if(participants == "adults_3f"){
     df <- df %>%

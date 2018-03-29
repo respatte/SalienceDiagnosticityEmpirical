@@ -39,31 +39,28 @@ LT.time_course_tail.first_last <- LT.clean %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = c("Tail"),
                           predictor_columns=c("Condition",
-                                              "Block",
-                                              "NBlocks",
+                                              "FstLst",
                                               "ACC",
                                               "Stimulus",
-                                              "StiLabel")) %>%
-  mutate(Part = case_when(Block == 1 ~ "First Block",
-                          Block == NBlocks ~ "Last Block")) %>%
-  drop_na(Part)
+                                              "StimLabel")) %>%
+  drop_na(FstLst)
 # GROWTH CURVE ANALYSIS
 run_model = F # Running the model takes around 10 hours on a [check office CPU specs]
 if(run_model){
   ## Run and save the model
   #- Analysing proportions => main effect of Condition or Part nonsensical,
   #- we can only expect differences between AOIs, and between AOIs on different levels
-  LT.time_course_tail.GCA <- lmer(ArcSin ~ (Condition*Part)*
+  LT.time_course_tail.GCA <- lmer(ArcSin ~ (Condition*FstLst)*
                                     (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
                                     (1 + Part +
                                        ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7 | Participant) +
                                     (1 | Stimulus) +
-                                    (1| StiLabel),
+                                    (1| StimLabel),
                                   data = LT.time_course_tail.first_last, REML = F,
                                   control = lmerControl(optCtrl = list(maxfun = 100000)))
   saveRDS(LT.time_course_tail.GCA, file = "../results/adults_2f/GCA.rds")
   ## Run and save the ANOVA for the model effects
-  LT.time_course_tail.GCA.anova <- anova(LT.time_course_aois.GCA, type = 2)
+  LT.time_course_tail.GCA.anova <- anova(LT.time_course_tail.GCA, type = 2)
   saveRDS(LT.time_course_tail.GCA, file = "../results/adults_2f/GCA_anova.rds")
 }else{
   LT.time_course_tail.GCA <- readRDS("../results/adults_2f/GCA.rds")
@@ -80,7 +77,7 @@ LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_tail.first_last,
   xlab('Time in Trial') + ylab("Looking to AOI (Prop)") + theme_apa(legend.pos = "top") +
   scale_colour_discrete(labels = c("Label", "No Label")) +
   scale_fill_discrete(labels = c("Label", "No Label")) +
-  facet_grid(.~Part, scales = "free_x") + ylim(0,1) +
+  facet_grid(.~FstLst, scales = "free_x") + ylim(0,1) +
   scale_x_continuous(breaks = c(-1000, 0, 1000, 2000, 3000)) +
   geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5) +
   stat_summary(fun.y='mean', geom='line', linetype = '61') +
@@ -97,28 +94,34 @@ LT.prop_tail.per_block <- make_time_window_data(LT.clean,
                                                 aois="Tail",
                                                 predictor_columns=c("Condition",
                                                                     "Block",
-                                                                    "NBlocks",
+                                                                    "FstLst",
                                                                     "ACC",
                                                                     "Stimulus",
-                                                                    "StiLabel")) %>%
-  subset(Phase == "Familiarisation")
+                                                                    "StimLabel"))
 ## Comparing first block against last block
 LT.prop_tail.first_last <- LT.prop_tail.per_block %>%
-  subset(Block == 1 | Block == NBlocks) %>%
-  mutate(Part = ifelse(Block == 1, "First Block", "Last Block"))
+  drop_na(FstLst)
 # MIXED-EFFECTS MODEL FOR PROP ~ CONDITION*PART
-## Run the model
-LT.prop_tail.first_last.lmer <- lmer(ArcSin ~ Part*Condition +
-                                       (1 + Part | Participant) +
-                                       (1 | Stimulus) +
-                                       (1 | StiLabel),
-                                     data = LT.prop_tail.first_last)
-## Save the ANOVA for model effects
-LT.prop_tail.first_last.lmer.anova <- anova(LT.prop_tail.first_last.lmer, type = 2)
+run_model <- F # Running the model takes around 10 minutes on a [check office CPU specs]
+if(run_model){
+  ## Run and save the model
+  LT.prop_tail.first_last.lmer <- lmer(ArcSin ~ FstLst*Condition +
+                                         (1 + FstLst | Participant) +
+                                         (1 | Stimulus) +
+                                         (1 | StimLabel),
+                                       data = LT.prop_tail.first_last)
+  saveRDS(LT.prop_tail.first_last.lmer, "../results/adults_2f/PropAOI.rds")
+  ## Run and save the ANOVA for model effects
+  LT.prop_tail.first_last.lmer.anova <- anova(LT.prop_tail.first_last.lmer, type = 2)
+  saveRDS(LT.prop_tail.first_last.lmer.anova, "../results/adults_2f/PropAOI_anova.rds")
+}else{
+  LT.prop_tail.first_last.lmer <- readRDS("../results/adults_2f/PropAOI.rds")
+  LT.prop_tail.first_last.lmer.anova <- readRDS("../results/adults_2f/PropAOI_anova.rds")
+}
 # PLOTTING
 ## Plot jitter + mean&se + lines
 LT.prop_tail.first_last.plot <- ggplot(LT.prop_tail.first_last,
-                                       aes(x = Part, y = Prop,
+                                       aes(x = FstLst, y = Prop,
                                            colour = Condition,
                                            fill = Condition)) +
   theme_apa(legend.pos = "top") + ylab("Looking to AOI (Prop)") +
@@ -131,7 +134,7 @@ LT.prop_tail.first_last.plot <- ggplot(LT.prop_tail.first_last,
   geom_errorbar(stat = "summary",
                 width = .2, colour = "black",
                 position = position_dodge(.1)) +
-  geom_line(aes(x = Part, y = Prop, group = Condition),
+  geom_line(aes(x = FstLst, y = Prop, group = Condition),
             stat = "summary", fun.y = "mean",
             colour = "black",
             position = position_dodge(.1)) +
@@ -183,12 +186,12 @@ behaviour.test <- behaviour %>%
 ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*zLogRT +
                                             (1 + zLogRT | Participant) +
                                             (1 | Stimulus) +
-                                            (1 | StiLabel),
+                                            (1 | StimLabel),
                                           family = binomial,
                                           control = glmerControl(optimizer = "bobyqa"),
                                           data = behaviour.training)
 ## At test
-ACC_by_diag_by_RT.test.glmer <- glm(ACC ~ Condition +
+ACC_by_diag_by_RT.test.glmer <- glmer(ACC ~ Condition +
                                   (1 | Participant),
                                 family = binomial,
                                 data = behaviour.test)
@@ -196,7 +199,7 @@ ACC_by_diag_by_RT.test.glmer <- glm(ACC ~ Condition +
 ## During training
 ACC_by_diag_by_RT.training <- behaviour.training %>%
   group_by(Participant, Condition) %>%
-  summarise(Accuracy = sum(ACC)/n())
+  summarise(Accuracy = sum(ACC == 1)/n())
 ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
                                           aes(x = Condition,
                                               y = Accuracy,
@@ -211,7 +214,7 @@ ggsave("../results/adults_2f/ACCbyRTbyBlock_training.pdf", plot = ACC_by_diag_by
 ## At test
 ACC_by_diag_by_RT.test <- behaviour.test %>%
   group_by(Participant, Condition) %>%
-  summarise(Accuracy = sum(ACC)/n())
+  summarise(Accuracy = sum(ACC == 1)/n())
 ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
                                       aes(x = Condition,
                                           y = Accuracy,
