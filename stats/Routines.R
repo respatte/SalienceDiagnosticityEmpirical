@@ -57,7 +57,7 @@ LT_data.import.adults <- function(participants="adults_2f"){
                               Block == NBlocks ~ "Last Block")) %>%
     mutate_at(c("Participant", "Phase", "Condition", "CategoryName", "FstLst", "AOI_type",
                 "CRESP","RESP","ACC","CurrentObject","Stimulus","StimLabel", "Gender"),
-              parse_factor, levels = NULL) %>%
+              parse_factor, levels = NULL, include_na = F) %>%
     select(-one_of("TimestampMicrosec","TimestampSec"))
   if(participants == "adults_3f"){
     df <- df %>%
@@ -238,31 +238,32 @@ LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thr
 LT_data.gather <- function(participants, verbose = F, graphs = F){
   # Define a list of AOI dataframes for all experiments
   AOIs <<- list()
-  AOIs[["adults_2f.Head"]] <<- data.frame(AOI_type=1,
+  AOIs[["adults_2f.Head"]] <<- tibble(AOI_type=1,
                                           Left=c(400), Right=c(620),
                                           Top=c(55), Bottom=c(255))
-  AOIs[["adults_2f.Tail"]] <<- data.frame(AOI_type=1,
+  AOIs[["adults_2f.Tail"]] <<- tibble(AOI_type=1,
                                           Left=c(20), Right=c(220),
                                           Top=c(110), Bottom=c(330))
-  AOIs[["adults_3f.Head"]] <<- data.frame(AOI_type=1,
+  AOIs[["adults_3f.Head"]] <<- tibble(AOI_type=1,
                                           Left=c(363), Right=c(602),
                                           Top=c(66), Bottom=c(295))
-  AOIs[["adults_3f.Feet"]] <<- data.frame(AOI_type=1,
+  AOIs[["adults_3f.Feet"]] <<- tibble(AOI_type=1,
                                           Left=c(146), Right=c(483),
                                           Top=c(364), Bottom=c(465))
-  AOIs[["adults_3f.Tail"]] <<- data.frame(AOI_type=1,
+  AOIs[["adults_3f.Tail"]] <<- tibble(AOI_type=1,
                                           Left=c(36), Right=c(260),
                                           Top=c(115), Bottom=c(310))
-  AOIs[["infants.Head"]] <<- data.frame(AOI_type=c("Reg","Flip"),
+  AOIs[["infants.Head"]] <<- tibble(AOI_type=c("Reg","Flip"),
                                         Left=c(1031,1920-1031-450),
                                         Right=c(1031+450,1920-1031),
                                         Top=c(197,197),
                                         Bottom=c(197+450,197+450))
-  AOIs[["infants.Tail"]] <<- data.frame(AOI_type=c("Reg","Flip"),
+  AOIs[["infants.Tail"]] <<- tibble(AOI_type=c("Reg","Flip"),
                                         Left=c(390,1920-390-450),
                                         Right=c(390+450,1920-390),
                                         Top=c(299,299),
                                         Bottom=c(299+450,299+450))
+  AOIs <<- lapply(AOIs, function(df) mutate_at(df, "AOI_type", parse_factor, levels = NULL))
   # Import raw data
   fun_name <- paste0("LT_data.import.",
                      sub("_[23]f", "", participants))
