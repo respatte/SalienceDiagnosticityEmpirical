@@ -45,7 +45,7 @@ LT.time_course_tail.first_last <- LT.clean %>%
                                               "StimLabel")) %>%
   drop_na(FstLst)
 # GROWTH CURVE ANALYSIS
-run_model <- T # Running the model takes around XX hours on a [check office CPU specs]
+run_model <- F # Running the model takes around 40 minutes on a [check office CPU specs]
 if(run_model){
   ## Run and save the model
   #- Analysing proportions => main effect of Condition or Part nonsensical,
@@ -59,22 +59,22 @@ if(run_model){
                                           (1| StimLabel),
                                         data = LT.time_course_tail.first_last, REML = F,
                                         control = lmerControl(optCtrl = list(maxfun = 100000)))
-  GCA.fit <- proc.time() - t
+  GCA.fit <- proc.time() - t # 1224.741
   t <- proc.time()
   LT.time_course_tail.GCA <- as_lmerModLmerTest(LT.time_course_tail.GCA)
-  GCA.derivatives <- proc.time() - t
+  GCA.derivatives <- proc.time() - t # 1267.300
   saveRDS(LT.time_course_tail.GCA, file = "../results/adults_2f/GCA.rds")
   ## Run and save the ANOVA for the model effects
   t <- proc.time()
   LT.time_course_tail.GCA.anova <- anova(LT.time_course_tail.GCA, type = 2)
-  GCA.anova <- proc.time() - t
+  GCA.anova <- proc.time() - t # 3.312
   saveRDS(LT.time_course_tail.GCA.anova, file = "../results/adults_2f/GCA_anova.rds")
 }else{
   LT.time_course_tail.GCA <- readRDS("../results/adults_2f/GCA.rds")
   LT.time_course_tail.GCA.anova <- readRDS("../results/adults_2f/GCA_anova.rds")
 }
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T
+run_model <- F # Running the model takes around 12 hours on a [check office CPU specs]
 if(run_model){
   t <- proc.time()
   ## Determine clusters
@@ -139,7 +139,7 @@ LT.prop_tail.per_block <- make_time_window_data(LT.clean,
 LT.prop_tail.first_last <- LT.prop_tail.per_block %>%
   drop_na(FstLst)
 # MIXED-EFFECTS MODEL FOR PROP ~ CONDITION*PART
-run_model <- T # Running the model takes around XX minutes on a [check office CPU specs]
+run_model <- F # Running the model takes around half a second on a [check office CPU specs]
 if(run_model){
   ## Run and save the model
   t <- proc.time()

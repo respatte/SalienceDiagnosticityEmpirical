@@ -40,7 +40,7 @@ LT.time_course_aois.first_last <- LT.clean %>%
                                               "Diagnostic")) %>%
   drop_na(FstLst)
 # GROWTH CURVE ANALYSIS
-run_model = T # Running the model takes around XX hours on a [check office CPU specs]
+run_model = T # Running the model takes around 27h30 on a [check office CPU specs]
 if(run_model){
   ## Run and save the model
   # Analysing proportions => main effect of Condition or Part nonsensical,
@@ -55,16 +55,16 @@ if(run_model){
                                           (1 + AOI | StimLabel),
                                         data = LT.time_course_aois.first_last, REML = F,
                                         control = lmerControl(optCtrl = list(maxfun = 100000)))
-  model.fit <- proc.time() - t
+  model.fit <- proc.time() - t # 37309.796
   t <- proc.time()
   LT.time_course_aois.GCA <- as_lmerModLmerTest(LT.time_course_aois.GCA)
-  model.derivatives <- proc.time() - t
+  model.derivatives <- proc.time() - t # 12388.496
   saveRDS(LT.time_course_aois.GCA, file = "../results/adults_3f/GCA.rds")
   ## Run and save the ANOVA for the model effects
   t <- proc.time()
   LT.time_course_aois.GCA.anova <- anova(LT.time_course_aois.GCA, type = 2)
-  model.anova <- proc.time() - t
-  saveRDS(LT.time_course_aois.GCA.tests, file = "../results/adults_3f/GCA_anova.rds")
+  model.anova <- proc.time() - t # 17.812
+  saveRDS(LT.time_course_aois.GCA.anova, file = "../results/adults_3f/GCA_anova.rds")
 }else{
   LT.time_course_aois.GCA <- readRDS("../results/adults_3f/GCA.rds")
   LT.time_course_aois.GCA.anova <- readRDS("../results/adults_3f/GCA_anova.rds")
@@ -136,7 +136,7 @@ LT.prop_aois.per_block <- make_time_window_data(LT.clean,
 LT.prop_aois.first_last <- LT.prop_aois.per_block %>%
   drop_na(FstLst)
 # MIXED-EFFECTS MODELS FOR PROP ~ CONDITION*PART*AOI
-run_model = T # Running the model takes around XX minutes on a [check office CPU specs]
+run_model = T # Running the model takes around 30 seconds on a [check office CPU specs]
 if(run_model){
   ## Run and save the model
   #- No main effect of Part since looking at proportions,
