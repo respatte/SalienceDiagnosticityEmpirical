@@ -40,7 +40,7 @@ LT.time_course_aois.first_last <- LT.clean %>%
                                               "Diagnostic")) %>%
   drop_na(FstLst)
 # GROWTH CURVE ANALYSIS
-run_model = T # Running the model takes around 27h30 on a [check office CPU specs]
+run_model = F # Running the model takes around 27h30 on a [check office CPU specs]
 if(run_model){
   ## Run and save the model
   # Analysing proportions => main effect of Condition or Part nonsensical,
@@ -71,35 +71,35 @@ if(run_model){
 }
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 # needs fixing to test each AOI separately (or together?)
-# run_model <- T
-# if(run_model){
-#   t <- proc.time()
-#   ## Determine clusters
-#   LT.time_cluster_aois.first_last <- LT.time_course_aois.first_last %>%
-#     split(.$FstLst) %>%
-#     lapply(make_time_cluster_data,
-#            predictor_column = "Condition:AOI",
-#            treatment_level = "NoLabel",
-#            aoi = "Tail",
-#            test = "lmer",
-#            threshold = 1.5,
-#            formula = ArcSin ~ AOI + Condition:AOI +
-#              (1 | Participant) +
-#              (1 | Stimulus))
-#   ## Run the analysis
-#   LT.time_cluster_aois.first_last.analysis <- LT.time_cluster_aois.first_last %>%
-#     lapply(analyze_time_clusters, within_subj = T, parallel = T)
-#   bcbp.time <- proc.time() - t
-#   ## Save results
-#   saveRDS(LT.time_cluster_aois.first_last,
-#           "../results/adults_3f/BCBP_clusters.rds")
-#   saveRDS(LT.time_cluster_aois.first_last.analysis,
-#           "../results/adults_3f/BCBP_analysis.rds")
-# }else{
-#   ## Read the results
-#   LT.time_cluster_tail.first_last <- readRDS("../results/adults_3f/BCBP_clusters.rds")
-#   LT.time_cluster_tail.first_last.analysis <- readRDS("../results/adults_3f/BCBP_analysis.rds")
-# }
+run_model <- T
+if(run_model){
+  t <- proc.time()
+  ## Determine clusters
+  LT.time_cluster_aois.first_last <- LT.time_course_aois.first_last %>%
+    split(c(.$FstLst, .$AOI)) %>%
+    lapply(make_time_cluster_data,
+           predictor_column = "Condition:AOI",
+           treatment_level = "NoLabel",
+           aoi = "Tail",
+           test = "lmer",
+           threshold = 1.5,
+           formula = ArcSin ~ Condition +
+             (1 | Participant) +
+             (1 | Stimulus))
+  ## Run the analysis
+  LT.time_cluster_aois.first_last.analysis <- LT.time_cluster_aois.first_last %>%
+    lapply(analyze_time_clusters, within_subj = T, parallel = T)
+  bcbp.time <- proc.time() - t
+  ## Save results
+  saveRDS(LT.time_cluster_aois.first_last,
+          "../results/adults_3f/BCBP_clusters.rds")
+  saveRDS(LT.time_cluster_aois.first_last.analysis,
+          "../results/adults_3f/BCBP_analysis.rds")
+}else{
+  ## Read the results
+  LT.time_cluster_aois.first_last <- readRDS("../results/adults_3f/BCBP_clusters.rds")
+  LT.time_cluster_aois.first_last.analysis <- readRDS("../results/adults_3f/BCBP_analysis.rds")
+}
 # PLOTTING
 # Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
 intercept <- tibble(FstLst = c(rep("First Block", 2), rep("Last Block", 2)),
