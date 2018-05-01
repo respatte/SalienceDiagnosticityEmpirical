@@ -59,7 +59,7 @@ if(run_model){
                                   data = LT.time_course_aois.first_last, REML = F,
                                   control = lmerControl(optCtrl = list(maxfun = 100000)))
   ## Run ANOVA for the model effects
-  LT.time_course_aois.GCA.anova <- anova(LT.time_course_aois.GCA, type = 2)
+  LT.time_course_aois.GCA.anova <- anova(LT.time_course_aois.GCA, type = 1)
   gca.time <- proc.time() - t
   ## Save model and ANOVA
   saveRDS(LT.time_course_aois.GCA, file = "../results/adults_3f/GCA.rds")
@@ -148,7 +148,7 @@ if(run_model){
                                        data = LT.prop_aois.first_last)
   saveRDS(LT.prop_aois.first_last.lmer, "../results/adults_3f/PropAOI.rds")
   ## Run and save the ANOVA for model effects
-  LT.prop_aois.first_last.lmer.anova <- anova(LT.prop_aois.first_last.lmer, type = 2)
+  LT.prop_aois.first_last.lmer.anova <- anova(LT.prop_aois.first_last.lmer, type = 1)
   saveRDS(LT.prop_aois.first_last.lmer.anova, "../results/adults_3f/PropAOI_anova.rds")
   prop_aois.time <- proc.time() - t
 }else{
