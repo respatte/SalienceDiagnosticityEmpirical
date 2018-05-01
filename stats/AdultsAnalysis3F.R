@@ -40,30 +40,29 @@ LT.time_course_aois.first_last <- LT.clean %>%
                                               "Diagnostic")) %>%
   drop_na(FstLst)
 # GROWTH CURVE ANALYSIS
-run_model = F # Running the model takes around 27h30 on a [check office CPU specs]
+run_model = T # Running the model takes around 27h30 on a [check office CPU specs]
+# model.fit = 37309.796
+# model.derivatives = 12388.496
+# model.anova
 if(run_model){
-  ## Run and save the model
+  ## Run model
   # Analysing proportions => main effect of Condition or Part nonsensical,
   # we can only expect differences between AOIs, and between AOIs on different levels
   t <- proc.time()
-  LT.time_course_aois.GCA <- lme4::lmer(ArcSin ~ (AOI + Condition:AOI + AOI:FstLst +
-                                                    AOI:Condition:FstLst)*
-                                          (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
-                                          (1 + AOI + FstLst + ot1 + ot2 + ot3 +
-                                             ot4 + ot5 + ot6 + ot7 | Participant) +
-                                          (1 + AOI | Stimulus) +
-                                          (1 + AOI | StimLabel),
-                                        data = LT.time_course_aois.first_last, REML = F,
-                                        control = lmerControl(optCtrl = list(maxfun = 100000)))
-  model.fit <- proc.time() - t # 37309.796
-  t <- proc.time()
-  LT.time_course_aois.GCA <- as_lmerModLmerTest(LT.time_course_aois.GCA)
-  model.derivatives <- proc.time() - t # 12388.496
-  saveRDS(LT.time_course_aois.GCA, file = "../results/adults_3f/GCA.rds")
-  ## Run and save the ANOVA for the model effects
-  t <- proc.time()
+  LT.time_course_aois.GCA <- lmer(ArcSin ~ (AOI + Condition:AOI + AOI:FstLst +
+                                              AOI:Condition:FstLst)*
+                                    (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                    (1 + AOI + FstLst + ot1 + ot2 + ot3 +
+                                       ot4 + ot5 + ot6 + ot7 | Participant) +
+                                    (1 + AOI | Stimulus) +
+                                    (1 + AOI | StimLabel),
+                                  data = LT.time_course_aois.first_last, REML = F,
+                                  control = lmerControl(optCtrl = list(maxfun = 100000)))
+  ## Run ANOVA for the model effects
   LT.time_course_aois.GCA.anova <- anova(LT.time_course_aois.GCA, type = 2)
-  model.anova <- proc.time() - t # 17.812
+  gca.time <- proc.time() - t
+  ## Save model and ANOVA
+  saveRDS(LT.time_course_aois.GCA, file = "../results/adults_3f/GCA.rds")
   saveRDS(LT.time_course_aois.GCA.anova, file = "../results/adults_3f/GCA_anova.rds")
 }else{
   LT.time_course_aois.GCA <- readRDS("../results/adults_3f/GCA.rds")
@@ -71,7 +70,7 @@ if(run_model){
 }
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 # needs fixing to test each AOI separately (or together?)
-run_model <- T
+run_model <- T # Running the model takes around XXhXX on a [check office CPU specs]
 if(run_model){
   t <- proc.time()
   ## Determine clusters
