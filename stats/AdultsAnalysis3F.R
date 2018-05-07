@@ -75,11 +75,10 @@ if(run_model){
   t <- proc.time()
   ## Determine clusters
   LT.time_cluster_aois.first_last <- LT.time_course_aois.first_last %>%
-    split(c(.$FstLst, .$AOI)) %>%
+    split(list(.$FstLst, .$AOI)) %>%
     lapply(make_time_cluster_data,
-           predictor_column = "Condition:AOI",
+           predictor_column = "Condition",
            treatment_level = "NoLabel",
-           aoi = "Tail",
            test = "lmer",
            threshold = 1.5,
            formula = ArcSin ~ Condition +
