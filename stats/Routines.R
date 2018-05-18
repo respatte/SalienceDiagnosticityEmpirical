@@ -265,7 +265,38 @@ LT_data.gather <- function(participants, verbose = F, graphs = F){
                                         Right=c(390+450,1920-390),
                                         Top=c(299,299),
                                         Bottom=c(299+450,299+450))
-  AOIs <<- lapply(AOIs, function(df) mutate_at(df, "AOI_type", parse_factor, levels = NULL))
+  AOIs[["infants.NewTail"]] <<- tibble(AOI_type=c("NewTailR", "NewTailL",
+                                                  "NewHeadL_NewTailR",
+                                                  "NewHeadR_NewTailL"),
+                                       Left=c(1920-450-1, 1, 1920-450-1, 1),
+                                       Right=c(1920-1, 1+450, 1920-1, 1+450),
+                                       Top=rep(299, 4),
+                                       Bottom=rep(299+450, 4))
+  AOIs[["infants.OldTail"]] <<- tibble(AOI_type=c("NewTailR", "NewTailL"),
+                                       Left=c(1, 1920-450-1),
+                                       Right=c(1+450, 1920-1),
+                                       Top=rep(299, 2),
+                                       Bottom=c(299+450, 2))
+  AOIs[["infants.NewHead"]] <<- tibble(AOI_type=c("NewHeadR", "NewHeadL",
+                                                  "NewHeadL_NewTailR",
+                                                  "NewHeadR_NewTailL"),
+                                       Left=c(1920-450-1, 1, 1920-450-1, 1),
+                                       Right=c(1920-1, 1+450, 1920-1, 1+450),
+                                       Top=rep(197, 4),
+                                       Bottom=rep(197+450, 4))
+  AOIs[["infants.OldHead"]] <<- tibble(AOI_type=c("NewHeadR", "NewHeadL"),
+                                       Left=c(1, 1920-450-1),
+                                       Right=c(1+450, 1920-1),
+                                       Top=rep(197, 2),
+                                       Bottom=rep(197+450, 2))
+  AOIs[["infants.Center"]] <<- tibble(AOI_type=c("NewTailR", "NewTailL",
+                                                 "NewHeadR", "NewHeadL",
+                                                 "NewHeadL_NewTailR",
+                                                 "NewHeadR_NewTailL"),
+                                      Left=rep(510, 6),
+                                      Right=rep(510+900, 6),
+                                      Top=rep(275, 6),
+                                      Bottom=rep(275+450, 6))
   # Import raw data
   fun_name <- paste0("LT_data.import.",
                      sub("_[23]f", "", participants))
