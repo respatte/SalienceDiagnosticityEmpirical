@@ -40,66 +40,64 @@ LT.time_course_aois.first_last <- LT.clean %>%
                                               "Diagnostic")) %>%
   drop_na(FstLst)
 # GROWTH CURVE ANALYSIS
-run_model = T # Running the model takes around XX hours on a [check office CPU specs]
+run_model = T # Running the model takes around 27h30 on a [check office CPU specs]
+# model.fit = 37309.796
+# model.derivatives = 12388.496
+# model.anova
 if(run_model){
-  ## Run and save the model
+  ## Run model
   # Analysing proportions => main effect of Condition or Part nonsensical,
   # we can only expect differences between AOIs, and between AOIs on different levels
   t <- proc.time()
-  LT.time_course_aois.GCA <- lme4::lmer(ArcSin ~ (AOI + Condition:AOI + AOI:FstLst +
-                                                    AOI:Condition:FstLst)*
-                                          (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
-                                          (1 + AOI + FstLst + ot1 + ot2 + ot3 +
-                                             ot4 + ot5 + ot6 + ot7 | Participant) +
-                                          (1 + AOI | Stimulus) +
-                                          (1 + AOI | StimLabel),
-                                        data = LT.time_course_aois.first_last, REML = F,
-                                        control = lmerControl(optCtrl = list(maxfun = 100000)))
-  model.fit <- proc.time() - t
-  t <- proc.time()
-  LT.time_course_aois.GCA <- as_lmerModLmerTest(LT.time_course_aois.GCA)
-  model.derivatives <- proc.time() - t
+  LT.time_course_aois.GCA <- lmer(ArcSin ~ (AOI + Condition:AOI + AOI:FstLst +
+                                              AOI:Condition:FstLst)*
+                                    (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
+                                    (1 + AOI + FstLst + ot1 + ot2 + ot3 +
+                                       ot4 + ot5 + ot6 + ot7 | Participant) +
+                                    (1 + AOI | Stimulus) +
+                                    (1 + AOI | StimLabel),
+                                  data = LT.time_course_aois.first_last, REML = F,
+                                  control = lmerControl(optCtrl = list(maxfun = 100000)))
+  ## Run ANOVA for the model effects
+  LT.time_course_aois.GCA.anova <- anova(LT.time_course_aois.GCA, type = 1)
+  gca.time <- proc.time() - t
+  ## Save model and ANOVA
   saveRDS(LT.time_course_aois.GCA, file = "../results/adults_3f/GCA.rds")
-  ## Run and save the ANOVA for the model effects
-  t <- proc.time()
-  LT.time_course_aois.GCA.anova <- anova(LT.time_course_aois.GCA, type = 2)
-  model.anova <- proc.time() - t
-  saveRDS(LT.time_course_aois.GCA.tests, file = "../results/adults_3f/GCA_anova.rds")
+  saveRDS(LT.time_course_aois.GCA.anova, file = "../results/adults_3f/GCA_anova.rds")
 }else{
   LT.time_course_aois.GCA <- readRDS("../results/adults_3f/GCA.rds")
   LT.time_course_aois.GCA.anova <- readRDS("../results/adults_3f/GCA_anova.rds")
 }
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 # needs fixing to test each AOI separately (or together?)
-# run_model <- T
-# if(run_model){
-#   t <- proc.time()
-#   ## Determine clusters
-#   LT.time_cluster_aois.first_last <- LT.time_course_aois.first_last %>%
-#     split(.$FstLst) %>%
-#     lapply(make_time_cluster_data,
-#            predictor_column = "Condition:AOI",
-#            treatment_level = "NoLabel",
-#            aoi = "Tail",
-#            test = "lmer",
-#            threshold = 1.5,
-#            formula = ArcSin ~ AOI + Condition:AOI +
-#              (1 | Participant) +
-#              (1 | Stimulus))
-#   ## Run the analysis
-#   LT.time_cluster_aois.first_last.analysis <- LT.time_cluster_aois.first_last %>%
-#     lapply(analyze_time_clusters, within_subj = T, parallel = T)
-#   bcbp.time <- proc.time() - t
-#   ## Save results
-#   saveRDS(LT.time_cluster_aois.first_last,
-#           "../results/adults_3f/BCBP_clusters.rds")
-#   saveRDS(LT.time_cluster_aois.first_last.analysis,
-#           "../results/adults_3f/BCBP_analysis.rds")
-# }else{
-#   ## Read the results
-#   LT.time_cluster_tail.first_last <- readRDS("../results/adults_3f/BCBP_clusters.rds")
-#   LT.time_cluster_tail.first_last.analysis <- readRDS("../results/adults_3f/BCBP_analysis.rds")
-# }
+run_model <- T # Running the model takes around XXhXX on a [check office CPU specs]
+if(run_model){
+  t <- proc.time()
+  ## Determine clusters
+  LT.time_cluster_aois.first_last <- LT.time_course_aois.first_last %>%
+    split(list(.$FstLst, .$AOI)) %>%
+    lapply(make_time_cluster_data,
+           predictor_column = "Condition",
+           treatment_level = "NoLabel",
+           test = "lmer",
+           threshold = 1.5,
+           formula = ArcSin ~ Condition +
+             (1 | Participant) +
+             (1 | Stimulus))
+  ## Run the analysis
+  LT.time_cluster_aois.first_last.analysis <- LT.time_cluster_aois.first_last %>%
+    lapply(analyze_time_clusters, within_subj = T, parallel = T)
+  bcbp.time <- proc.time() - t
+  ## Save results
+  saveRDS(LT.time_cluster_aois.first_last,
+          "../results/adults_3f/BCBP_clusters.rds")
+  saveRDS(LT.time_cluster_aois.first_last.analysis,
+          "../results/adults_3f/BCBP_analysis.rds")
+}else{
+  ## Read the results
+  LT.time_cluster_aois.first_last <- readRDS("../results/adults_3f/BCBP_clusters.rds")
+  LT.time_cluster_aois.first_last.analysis <- readRDS("../results/adults_3f/BCBP_analysis.rds")
+}
 # PLOTTING
 # Plotting eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
 intercept <- tibble(FstLst = c(rep("First Block", 2), rep("Last Block", 2)),
@@ -136,7 +134,7 @@ LT.prop_aois.per_block <- make_time_window_data(LT.clean,
 LT.prop_aois.first_last <- LT.prop_aois.per_block %>%
   drop_na(FstLst)
 # MIXED-EFFECTS MODELS FOR PROP ~ CONDITION*PART*AOI
-run_model = T # Running the model takes around XX minutes on a [check office CPU specs]
+run_model = T # Running the model takes around 30 seconds on a [check office CPU specs]
 if(run_model){
   ## Run and save the model
   #- No main effect of Part since looking at proportions,
@@ -149,7 +147,7 @@ if(run_model){
                                        data = LT.prop_aois.first_last)
   saveRDS(LT.prop_aois.first_last.lmer, "../results/adults_3f/PropAOI.rds")
   ## Run and save the ANOVA for model effects
-  LT.prop_aois.first_last.lmer.anova <- anova(LT.prop_aois.first_last.lmer, type = 2)
+  LT.prop_aois.first_last.lmer.anova <- anova(LT.prop_aois.first_last.lmer, type = 1)
   saveRDS(LT.prop_aois.first_last.lmer.anova, "../results/adults_3f/PropAOI_anova.rds")
   prop_aois.time <- proc.time() - t
 }else{
