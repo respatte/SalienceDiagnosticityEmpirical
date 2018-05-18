@@ -77,8 +77,10 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
   participant_info <- read_csv(paste0(res.repo,"ParticipantInformation.csv")) %>%
     drop_na(DOB) %>%
     mutate(Age = as.numeric(difftime(DOT, DOB, units = "days")),
-           DiffTo15mo = Age - 15*7*52/12) %>%
-    # 15months * 7days/week * 52/12weeks/month = 15mo in days
+           DiffTo15mo = case_when(Age >= 430 & Age <= 470 ~ Age - 15*7*52/12)) %>%
+    drop_na(DiffTo15mo) %>%
+    # 15months * 7days/week * 52/12weeks/month = 15mo in days (455)
+    # Lower and upper limits: 455 -15 and 455 + 15 days
     select(-c(DOB,DOT))
   # Get sequence information
   sequence_info <- read.csv("../scripts/infants/SequenceInfo.csv") %>%
@@ -106,7 +108,7 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
     drop_na(MediaName, TrackLoss) %>%
     select(-c(ValidityLeft, ValidityRight, StudioEventIndex)) %>%
     unique() %>%
-    left_join(participant_info) %>%
+    inner_join(participant_info) %>%
     left_join(sequence_info) %>%
     mutate(Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
                              grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
