@@ -297,6 +297,18 @@ LT_data.gather <- function(participants, verbose = F, graphs = F){
                                       Right=rep(510+900, 6),
                                       Top=rep(275, 6),
                                       Bottom=rep(275+450, 6))
+  AOIs[["infants.Target"]] <<- tibble(AOI_type=c("HeadsIn_TargetL", "HeadsOut_TargetL",
+                                                 "HeadsIn_TargetR", "HeadsOut_TargetR"),
+                                      Left=c(1, 1, 1920/2 + 10, 1920/2 + 10),
+                                      Right=c(1920/2 - 10, 1920/2 - 10, 1920-1, 1920-1),
+                                      Top=rep(250, 4),
+                                      Bottom=rep(250+660, 4))
+  AOIs[["infants.Distractor"]] <<- tibble(AOI_type=c("HeadsIn_TargetL", "HeadsOut_TargetL",
+                                                     "HeadsIn_TargetR", "HeadsOut_TargetR"),
+                                          Left=c(1920/2 + 10, 1920/2 + 10, 1, 1),
+                                          Right=c(1920/2 - 1, 1920/2 - 1, 1920-10, 1920-10),
+                                          Top=rep(250, 4),
+                                          Bottom=rep(250+660, 4))
   # Import raw data
   fun_name <- paste0("LT_data.import.",
                      sub("_[23]f", "", participants))
