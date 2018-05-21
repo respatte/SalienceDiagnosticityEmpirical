@@ -40,10 +40,7 @@ LT.time_course_aois.first_last <- LT.clean %>%
                                               "Diagnostic")) %>%
   drop_na(FstLst)
 # GROWTH CURVE ANALYSIS
-run_model = T # Running the model takes around 27h30 on a [check office CPU specs]
-# model.fit = 37309.796
-# model.derivatives = 12388.496
-# model.anova
+run_model = F # Running the model takes around 12h30 on a [check office CPU specs]
 if(run_model){
   ## Run model
   # Analysing proportions => main effect of Condition or Part nonsensical,
@@ -70,7 +67,7 @@ if(run_model){
 }
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 # needs fixing to test each AOI separately (or together?)
-run_model <- T # Running the model takes around XXhXX on a [check office CPU specs]
+run_model <- F # Running the model takes around 24h30 on a [check office CPU specs]
 if(run_model){
   t <- proc.time()
   ## Determine clusters
