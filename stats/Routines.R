@@ -296,7 +296,7 @@ LT_data.gather <- function(participants, verbose = F, graphs = F){
                                        Right=c(1+450, 1920-1),
                                        Top=rep(197, 2),
                                        Bottom=rep(197+450, 2))
-  AOIs[["infants.Center"]] <<- tibble(AOI_type=c("NewTailR", "NewTailL",
+  AOIs[["infants.Centre"]] <<- tibble(AOI_type=c("NewTailR", "NewTailL",
                                                  "NewHeadR", "NewHeadL",
                                                  "NewHeadL_NewTailR",
                                                  "NewHeadR_NewTailL"),
