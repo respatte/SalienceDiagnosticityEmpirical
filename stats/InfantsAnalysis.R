@@ -51,9 +51,9 @@ LT.prop_tail <- make_time_window_data(LT.fam,
                                       aois=c("Tail"),
                                       predictor_columns=c("Condition",
                                                           "TrialId",
+                                                          "TrialNum",
                                                           "Stimulus",
-                                                          "CategoryName")) %>%
-  mutate(TrialNum = as.numeric(TrialId) - 1) # Trial as a numeric starting at 0 for lmer
+                                                          "CategoryName"))
 # LMER for Prop ~ Part*Condition
 LT.prop_tail.per_trial.lmer <- lmer(ArcSin ~ TrialNum*Condition +
                                       (1 | Participant) +
@@ -117,26 +117,56 @@ ggsave("../results/infants/AOILookingPerParts.pdf",
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # DATA PREPARATION
-LT.time_course_aois <- LT.fam %>%
+LT.time_course_tail <- LT.fam %>%
+  group_by(Participant) %>%
+  mutate(First = min(TrialNum, na.rm = T),
+         Last = max(TrialNum, na.rm = T),
+         FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
+                            TrialNum >= Last - 2 ~ "Last Trials")) %>%
+  select(-c(First, Last)) %>%
+  drop_na(FstLst) %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = "Tail",
                           predictor_columns=c("Condition",
-                                              "Stimulus"))
+                                              "Stimulus",
+                                              "FstLst"))
 # GROWTH CURVE ANALYSIS
 ## TODO
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-LT.time_cluster_aois <- make_time_cluster_data(LT.time_course_aois, 
-                                               predictor_column = "Condition",
-                                               treatment_level = "No Label",
-                                               aoi = "Tail",
-                                               test = "lmer",
-                                               threshold = 1.5,
-                                               formula = ArcSin ~ TrialId*Condition +
-                                                 (1 | Participant) +
-                                                 (1 | Stimulus))
-LT.time_cluster_aois.analysis <- analyze_time_clusters(LT.time_cluster_aois,
-                                                       within_subj = F,
-                                                       parallel = T)
+run_model <- T
+if(run_model){
+  t <- proc.time()
+  ## Determine clusters
+  LT.time_cluster_tail <- LT.time_course_tail %>%
+    split(.$FstLst) %>%
+    lapply(make_time_cluster_data,
+           predictor_column = "Condition",
+           treatment_level = "No Label",
+           aoi = "Tail",
+           test = "lmer",
+           threshold = 1.5,
+           formula = ArcSin ~ Condition +
+             (1 | Participant) +
+             (1 | Stimulus))
+  ## Run analysis
+  LT.time_cluster_tail.analysis <- LT.time_cluster_tail %>%
+    lapply(analyze_time_clusters,
+           formula = ArcSin ~ Condition +
+             (1 | Participant) +
+             (1 | Stimulus),
+           within_subj = F,
+           parallel = T)
+  bcbp.time <- proc.time() - t
+  ## Save clusters and analysis
+  saveRDS(LT.time_cluster_tail,
+          "../results/infants/BCBP_clusters.rds")
+  saveRDS(LT.time_cluster_tail.analysis,
+          "../results/infants/BCBP_analysis.rds")
+}else{
+  ## Read the results
+  LT.time_cluster_tail <- readRDS("../results/infants/BCBP_clusters.rds")
+  LT.time_cluster_tail.analysis <- readRDS("../results/infants/BCBP_analysis.rds")
+}
 # PLOT
 intercept <- tibble(Part = 0:2,
                     x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")

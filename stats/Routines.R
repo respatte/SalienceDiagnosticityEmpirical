@@ -103,7 +103,8 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
     subset(!(grepl("AG",.$MediaName) | .$MediaName == "")) %>%
     group_by(Participant, MediaName) %>%
     mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
-           TrialId = max(StudioEventIndex, na.rm = T)/2) %>%
+           TrialId = max(StudioEventIndex, na.rm = T)/2,
+           TrialNum = TrialId - 1) %>% # Trial kept as a numeric, starting at 0 for lmer
     ungroup() %>%
     drop_na(MediaName, TrackLoss) %>%
     select(-c(ValidityLeft, ValidityRight, StudioEventIndex)) %>%
