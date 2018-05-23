@@ -53,18 +53,16 @@ LT.prop_tail <- make_time_window_data(LT.fam,
                                                           "TrialId",
                                                           "Stimulus",
                                                           "CategoryName")) %>%
-  mutate_at("TrialId", as.numeric) %>%
-  mutate(Part = (TrialId-1) %/% 8,
-         Trial = (TrialId-1) %/% 2)
+  mutate(TrialNum = as.numeric(TrialId) - 1) # Trial as a numeric starting at 0 for lmer
 # LMER for Prop ~ Part*Condition
-LT.prop_tail.per_trial.lmer <- lmer(ArcSin ~ Trial*Condition +
+LT.prop_tail.per_trial.lmer <- lmer(ArcSin ~ TrialNum*Condition +
                                       (1 | Participant) +
                                       (1 | Stimulus),
                                     data = LT.prop_tail)
 LT.prop_tail.per_trial.anova <- anova(LT.prop_tail.per_trial.lmer, type = 1)
 # LMER for Prop ~ Part*Condition
-LT.prop_tail.per_part.lmer <- lmer(ArcSin ~ Part*Condition +
-                                     (1 + Part | Participant) +
+LT.prop_tail.per_part.lmer <- lmer(ArcSin ~ FamPart*Condition +
+                                     (1 + FamPart | Participant) +
                                      (1 | Stimulus),
                                    data = LT.prop_tail)
 LT.prop_tail.per_part.anova <- anova(LT.prop_tail.per_part.lmer, type = 1)
@@ -72,7 +70,7 @@ LT.prop_tail.per_part.anova <- anova(LT.prop_tail.per_part.lmer, type = 1)
 # Plot jitter + lmer mean&se + lines
 ## Plot per trial
 LT.prop_tail.per_trial.plot <- ggplot(LT.prop_tail,
-                                     aes(x = Trial, y = Prop,
+                                     aes(x = TrialId, y = Prop,
                                          colour = Condition,
                                          fill = Condition)) +
   theme_apa(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
@@ -84,7 +82,7 @@ LT.prop_tail.per_trial.plot <- ggplot(LT.prop_tail,
   geom_errorbar(stat = "summary",
                 width = .2, colour = "black",
                 position = position_dodge(.1)) +
-  geom_line(aes(x = Trial, y = Prop, group = Condition),
+  geom_line(aes(x = TrialId, y = Prop, group = Condition),
             stat = "summary", fun.y = "mean",
             colour = "black") +
   geom_point(stat = "summary", fun.y = "mean",
@@ -95,7 +93,7 @@ ggsave("../results/infants/AOILookingPerTrial.pdf",
        width = 7, height = 5.4)
 ## Plot per part
 LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
-                                     aes(x = Part, y = Prop,
+                                     aes(x = FamPart, y = Prop,
                                          colour = Condition,
                                          fill = Condition)) +
   theme_apa(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
@@ -107,7 +105,7 @@ LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
   geom_errorbar(stat = "summary",
                 width = .2, colour = "black",
                 position = position_dodge(.1)) +
-  geom_line(aes(x = Part, y = Prop, group = Condition),
+  geom_line(aes(x = FamPart, y = Prop, group = Condition),
             stat = "summary", fun.y = "mean",
             colour = "black") +
   geom_point(stat = "summary", fun.y = "mean",
