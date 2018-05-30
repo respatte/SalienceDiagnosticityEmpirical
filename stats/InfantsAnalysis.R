@@ -35,13 +35,13 @@ LT.test.wl <- d[[4]] %>%
                          aoi_columns = c("Target","Distractor"),
                          treat_non_aoi_looks_as_missing = T)
 # Check for counterbalancing, gender balancing, and age balancing
-pres_seq <- LT.fam %>%
+pres_seq <- d[[4]] %>%
   group_by(PresentationSequence, Participant) %>%
   summarise(T = sum(TrackLoss)/n())
-gender <- LT.fam %>%
+gender <- d[[4]] %>%
   group_by(Gender, Condition) %>%
   summarise(N = n_distinct(Participant))
-age <- LT.fam %>%
+age <- d[[4]] %>%
   group_by(Participant, Condition) %>%
   summarise(Age = first(Age))
 
