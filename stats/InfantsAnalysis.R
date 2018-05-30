@@ -54,7 +54,7 @@ LT.prop_tail <- make_time_window_data(LT.fam,
                                                           "TrialNum",
                                                           "Stimulus",
                                                           "CategoryName"))
-# LMER for Prop ~ Part*Condition
+# LMER for Prop ~ Trial*Condition
 LT.prop_tail.per_trial.lmer <- lmer(ArcSin ~ TrialNum*Condition +
                                       (1 | Participant) +
                                       (1 | Stimulus),
@@ -154,8 +154,26 @@ if(run_model){
            formula = ArcSin ~ Condition +
              (1 | Participant) +
              (1 | Stimulus),
-           within_subj = F,
+           within_subj = T,
            parallel = T)
+# #### TESTING TO REPORT ON eyetrackingR GITHUB
+#   ## Determine clusters
+#   LT.time_cluster_tail <- make_time_cluster_data(LT.time_course_tail,
+#                                                  predictor_column = "ConditionNo Label",
+#                                                  aoi = "Tail",
+#                                                  test = "lmer",
+#                                                  threshold = 1.5,
+#                                                  formula = ArcSin ~ Condition +
+#                                                    (1 | Participant) +
+#                                                    (1 | Stimulus))
+#   ## Run analysis
+#   LT.time_cluster_tail.analysis <- analyze_time_clusters(LT.time_cluster_tail,
+#                                                          formula = ArcSin ~ Condition +
+#                                                            (1 | Participant) +
+#                                                            (1 | Stimulus),
+#                                                          within_subj = T,
+#                                                          parallel = T,
+#                                                          samples = 200)
   bcbp.time <- proc.time() - t
   ## Save clusters and analysis
   saveRDS(LT.time_cluster_tail,
