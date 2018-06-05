@@ -4,8 +4,7 @@ library(nortest)
 library(tidyverse); library(broom)
 library(jtools)
 library(eyetrackingR)
-library(rethinking)
-library(texreg)
+#library(texreg)
 
 source("Routines.R")
 
@@ -74,7 +73,7 @@ if(run_model){
   LT.time_course_tail.GCA.anova <- readRDS("../results/adults_2f/GCA_anova.rds")
 }
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- F # Running the model takes around 12 hours on a [check office CPU specs]
+run_model <- T # Running the model takes around 12 hours on a [check office CPU specs]
 if(run_model){
   t <- proc.time()
   ## Determine clusters
@@ -91,7 +90,12 @@ if(run_model){
              (1 | Stimulus))
   ## Run the analysis
   LT.time_cluster_tail.first_last.analysis <- LT.time_cluster_tail.first_last %>%
-    lapply(analyze_time_clusters, within_subj = T, parallel = T)
+    lapply(analyze_time_clusters,
+           formula = ArcSin ~ Condition +
+             (1 | Participant) +
+             (1 | Stimulus),
+           within_subj = T,
+           parallel = T)
   bcbp.time <- proc.time() - t
   ## Save results
   saveRDS(LT.time_cluster_tail.first_last,
