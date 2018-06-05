@@ -73,7 +73,7 @@ if(run_model){
   LT.time_course_tail.GCA.anova <- readRDS("../results/adults_2f/GCA_anova.rds")
 }
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T # Running the model takes around 12 hours on a [check office CPU specs]
+run_model <- F # Running the model takes around 12 hours on a [check office CPU specs]
 if(run_model){
   t <- proc.time()
   ## Determine clusters
