@@ -9,6 +9,23 @@ source("Routines.R")
 
 # GATHER DATA ======================================================================================
 d <- LT_data.gather("infants")
+# Check for counterbalancing, gender balancing, and age balancing
+pres_seq <- d[[4]] %>%
+  group_by(PresentationSequence, Participant) %>%
+  summarise(T = sum(TrackLoss)/n())
+  # Keep only participant when multiple infants saw the same presentation sequence.
+  # Current choice: improve gender balance in total and between conditions.
+  # remove: P03, P53, P55
+  # keep:   P51, P06, P08
+d[[4]] <- d[[4]] %>%
+  subset(!(Participant %in% c("P03","P53","P55")))
+gender <- d[[4]] %>%
+  group_by(Gender, Condition) %>%
+  summarise(N = n_distinct(Participant))
+age <- d[[4]] %>%
+  group_by(Participant, Condition) %>%
+  summarise(Age = first(Age))
+# Creating datasets for analysis (separating phases)
 LT.fam <- d[[4]] %>%
   subset(Phase == "Familiarisation") %>%
   make_eyetrackingr_data(participant_column = "Participant",
@@ -34,16 +51,6 @@ LT.test.wl <- d[[4]] %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Target","Distractor"),
                          treat_non_aoi_looks_as_missing = T)
-# Check for counterbalancing, gender balancing, and age balancing
-pres_seq <- d[[4]] %>%
-  group_by(PresentationSequence, Participant) %>%
-  summarise(T = sum(TrackLoss)/n())
-gender <- d[[4]] %>%
-  group_by(Gender, Condition) %>%
-  summarise(N = n_distinct(Participant))
-age <- d[[4]] %>%
-  group_by(Participant, Condition) %>%
-  summarise(Age = first(Age))
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK ============================
 # Prepare dataset, include only familiarisation
