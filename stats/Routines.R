@@ -68,7 +68,7 @@ LT_data.import.adults <- function(participants="adults_2f"){
   return(df)
 }
 
-# LOOKING-TIME DATA IMPORT -- ADUTLTS
+# LOOKING-TIME DATA IMPORT -- INFANTS
 # Function importing looking time data from all infant participants,
 # in the ../results/infants/data/infants.tsv file by default
 LT_data.import.infants <- function(res.repo="../results/infants/data/", file.name="infants.tsv",

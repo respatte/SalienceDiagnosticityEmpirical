@@ -64,9 +64,10 @@ LT.prop_tail <- make_time_window_data(LT.fam,
                                       predictor_columns=c("Condition",
                                                           "TrialId",
                                                           "TrialNum",
+                                                          "FamPart",
                                                           "Stimulus",
                                                           "CategoryName"))
-# Tessting Prop ~ Trial*Condition
+# Testing Prop ~ Trial*Condition
 run_model <- T
 if(run_model){
   ## Run lmer (Sampling Theory Based)
@@ -91,12 +92,31 @@ if(run_model){
   LT.prop_tail.per_trial.lmer.anova <- readRDS("../results/infants/TrialByCondition_lmerAnova.rds")
   LT.prop_tail.per_trial.brms.model <- readRDS("../results/infants/TrialByCondition_brmsModel.rds")
 }
-# LMER for Prop ~ Part*Condition
-LT.prop_tail.per_part.lmer <- lmer(ArcSin ~ FamPart*Condition +
-                                     (1 + FamPart | Participant) +
-                                     (1 | Stimulus),
-                                   data = LT.prop_tail)
-LT.prop_tail.per_part.anova <- anova(LT.prop_tail.per_part.lmer, type = 1)
+# Testing Prop ~ Part*Condition
+run_model <- T
+if(run_model){
+  ## Run lmer
+  LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FamPart*Condition +
+                                             (1 + FamPart | Participant) +
+                                             (1 | Stimulus),
+                                           data = LT.prop_tail)
+  LT.prop_tail.per_part.lmer.anova <- anova(LT.prop_tail.per_part.lmer.model, type = 1)
+  ## Run brms
+  LT.prop_tail.per_part.brms.model <- brm(ArcSin ~ FamPart*Condition +
+                                            (1 + FamPart | Participant) +
+                                            (1 | Stimulus),
+                                          data = LT.prop_tail,
+                                          chains = 4, cores = 4)
+  ## Save all the results
+  saveRDS(LT.prop_tail.per_part.lmer.model, "../results/infants/PartByCondition_lmerModel.rds")
+  saveRDS(LT.prop_tail.per_part.lmer.anova, "../results/infants/PartByCondition_lmerAnova.rds")
+  saveRDS(LT.prop_tail.per_part.brms.model, "../results/infants/PartByCondition_brmsModel.rds")
+}else{
+  ## Read all the results
+  LT.prop_tail.per_part.lmer.model <- readRDS("../results/infants/PartByCondition_lmerModel.rds")
+  LT.prop_tail.per_part.lmer.anova <- readRDS("../results/infants/PartByCondition_lmerAnova.rds")
+  LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/PartByCondition_brmsModel.rds")
+}
 #### NO SIGNIFICANT EFFECTS
 # Plot jitter + lmer mean&se + lines
 ## Plot per trial
