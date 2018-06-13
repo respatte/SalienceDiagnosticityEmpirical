@@ -2,6 +2,7 @@
 library(eyetrackingR)
 library(lme4)
 library(lmerTest)
+library(brms)
 library(jtools)
 library(tidyverse)
 
@@ -61,12 +62,31 @@ LT.prop_tail <- make_time_window_data(LT.fam,
                                                           "TrialNum",
                                                           "Stimulus",
                                                           "CategoryName"))
-# LMER for Prop ~ Trial*Condition
-LT.prop_tail.per_trial.lmer <- lmer(ArcSin ~ TrialNum*Condition +
-                                      (1 | Participant) +
-                                      (1 | Stimulus),
-                                    data = LT.prop_tail)
-LT.prop_tail.per_trial.anova <- anova(LT.prop_tail.per_trial.lmer, type = 1)
+# Tessting Prop ~ Trial*Condition
+run_model <- T
+if(run_model){
+  ## Run lmer (Sampling Theory Based)
+  LT.prop_tail.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*Condition +
+                                              (1 | Participant) +
+                                              (1 | Stimulus),
+                                            data = LT.prop_tail)
+  LT.prop_tail.per_trial.lmer.anova <- anova(LT.prop_tail.per_trial.lmer, type = 1)
+  ## Run brms (Bayesian)
+  LT.prop_tail.per_trial.brms.model <- brm(ArcSin ~ TrialNum*Condition +
+                                             (1 | Participant) +
+                                             (1 | Stimulus),
+                                           data = LT.prop_tail,
+                                           chains = 4, cores = 4)
+  ## Save all results
+  saveRDS(LT.prop_tail.per_trial.lmer.model, "../results/infants/TrialByCondition_lmerModel.rds")
+  saveRDS(LT.prop_tail.per_trial.lmer.anova, "../results/infants/TrialByCondition_lmerAnova.rds")
+  saveRDS(LT.prop_tail.per_trial.brms.model, "../results/infants/TrialByCondition_brmsModel.rds")
+}else{
+  ## Read all the results
+  LT.prop_tail.per_trial.lmer.model <- readRDS("../results/infants/TrialByCondition_lmerModel.rds")
+  LT.prop_tail.per_trial.lmer.anova <- readRDS("../results/infants/TrialByCondition_lmerAnova.rds")
+  LT.prop_tail.per_trial.brms.model <- readRDS("../results/infants/TrialByCondition_brmsModel.rds")
+}
 # LMER for Prop ~ Part*Condition
 LT.prop_tail.per_part.lmer <- lmer(ArcSin ~ FamPart*Condition +
                                      (1 + FamPart | Participant) +
