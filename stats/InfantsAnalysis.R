@@ -9,7 +9,11 @@ library(tidyverse)
 source("Routines.R")
 
 # GATHER DATA ======================================================================================
+# Load data and run general checks
 d <- LT_data.gather("infants")
+# Unload snow packages so that parallel works for brms
+detach("package:doSNOW")
+detach("package:snow")
 # Check for counterbalancing, gender balancing, and age balancing
 pres_seq <- d[[4]] %>%
   group_by(PresentationSequence, Participant) %>%
@@ -70,7 +74,7 @@ if(run_model){
                                               (1 | Participant) +
                                               (1 | Stimulus),
                                             data = LT.prop_tail)
-  LT.prop_tail.per_trial.lmer.anova <- anova(LT.prop_tail.per_trial.lmer, type = 1)
+  LT.prop_tail.per_trial.lmer.anova <- anova(LT.prop_tail.per_trial.lmer.model, type = 1)
   ## Run brms (Bayesian)
   LT.prop_tail.per_trial.brms.model <- brm(ArcSin ~ TrialNum*Condition +
                                              (1 | Participant) +
