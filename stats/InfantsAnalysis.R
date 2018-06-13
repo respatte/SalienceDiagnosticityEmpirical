@@ -68,7 +68,7 @@ LT.prop_tail <- make_time_window_data(LT.fam,
                                                           "Stimulus",
                                                           "CategoryName"))
 # Testing Prop ~ Trial*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   LT.prop_tail.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*Condition +
@@ -93,7 +93,7 @@ if(run_model){
   LT.prop_tail.per_trial.brms.model <- readRDS("../results/infants/TrialByCondition_brmsModel.rds")
 }
 # Testing Prop ~ Part*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer
   LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FamPart*Condition +
