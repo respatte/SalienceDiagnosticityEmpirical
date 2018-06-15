@@ -39,6 +39,7 @@ LT.fam <- d[[4]] %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail"),
                          treat_non_aoi_looks_as_missing = T) %>%
+  mutate(TrialNum = as.numeric(TrialId) - 1) %>%
   subset_by_window(window_start_col = "LabelOnset", window_end_col = "TrialEnd")
 LT.test.ctr <- d[[4]] %>%
   subset(Phase == "Test - Contrast") %>%
@@ -195,13 +196,14 @@ if(run_model){
            treatment_level = "No Label",
            aoi = "Tail",
            test = "lmer",
-           threshold = 1.5,
+           threshold = 1,
            formula = ArcSin ~ Condition +
              (1 | Participant) +
              (1 | Stimulus))
   ## Run analysis
   LT.time_cluster_tail.analysis <- LT.time_cluster_tail %>%
     lapply(analyze_time_clusters,
+           threshold = 1,
            formula = ArcSin ~ Condition +
              (1 | Participant) +
              (1 | Stimulus),
@@ -239,17 +241,17 @@ if(run_model){
 # PLOT
 intercept <- tibble(Part = 0:2,
                     x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
-LT.fam.time_course.plot.blocks <- ggplot(LT.time_course_aois,
+LT.fam.time_course.plot.blocks <- ggplot(LT.time_course_tail,
                                          aes(x = Time, y=Prop,
                                              colour=Condition,
                                              fill=Condition)) +
-  xlab('Time in Trial') + ylab("Looking to AOI (Prop)") +
-  facet_grid(.~Part) +
+  xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
+  facet_grid(FstLst~.) +
   theme(legend.position = "top") + ylim(0,1) +
   stat_summary(fun.y='mean', geom='line', linetype = '61') +
   stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
-  geom_hline(yintercept = .5) +
-  geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5)
-ggsave("../results/infants/LookingTimeCoursePerPart.pdf",
+  geom_hline(yintercept = .5)
+  #geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5)
+ggsave("../results/infants/LookingTimeCourseFirstLast.pdf",
        plot = LT.fam.time_course.plot.blocks,
-       width = 7, height = 2.5)
+       width = 3.5, height = 5)
