@@ -203,8 +203,7 @@ if(run_model){
   ## Run analysis
   LT.time_cluster_tail.analysis <- LT.time_cluster_tail %>%
     lapply(analyze_time_clusters,
-           threshold = 1,
-           formula = ArcSin ~ Condition +
+            formula = ArcSin ~ Condition +
              (1 | Participant) +
              (1 | Stimulus),
            within_subj = T,
