@@ -18,7 +18,7 @@ detach("package:snow")
 pres_seq <- d[[4]] %>%
   group_by(PresentationSequence, Participant) %>%
   summarise(T = sum(TrackLoss)/n())
-  # Keep only participant when multiple infants saw the same presentation sequence.
+  # Keep only one participant when multiple infants saw the same presentation sequence.
   # Current choice: improve gender balance in total and between conditions.
   # remove: P03, P53, P55
   # keep:   P51, P06, P08
@@ -30,7 +30,8 @@ gender <- d[[4]] %>%
 age <- d[[4]] %>%
   group_by(Participant, Condition) %>%
   summarise(Age = first(Age))
-# Creating datasets for analysis (separating phases)
+# Creating general datasets for analysis (separating phases, no window sub-setting)
+## Familiarisation
 LT.fam <- d[[4]] %>%
   subset(Phase == "Familiarisation") %>%
   make_eyetrackingr_data(participant_column = "Participant",
@@ -39,8 +40,14 @@ LT.fam <- d[[4]] %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail"),
                          treat_non_aoi_looks_as_missing = T) %>%
-  mutate(TrialNum = as.numeric(TrialId) - 1) %>%
-  subset_by_window(window_start_col = "LabelOnset", window_end_col = "TrialEnd")
+  mutate(TrialNum = as.numeric(TrialId) - 1) %>% # Useful for models
+  group_by(Participant) %>%
+  mutate(First = min(TrialNum, na.rm = T),
+         Last = max(TrialNum, na.rm = T),
+         FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
+                            TrialNum >= Last - 2 ~ "Last Trials")) %>%
+  select(-c(First, Last)) # Useful to compare beginning-end of experiment per infant
+## Contrast tests
 LT.test.ctr <- d[[4]] %>%
   subset(Phase == "Test - Contrast") %>%
   make_eyetrackingr_data(participant_column = "Participant",
@@ -49,6 +56,7 @@ LT.test.ctr <- d[[4]] %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("NewHead","OldHead","NewTail","OldTail","Centre"),
                          treat_non_aoi_looks_as_missing = T)
+## Word learning tests
 LT.test.wl <- d[[4]] %>%
   subset(Phase == "Test - Word Learning") %>%
   make_eyetrackingr_data(participant_column = "Participant",
@@ -170,12 +178,6 @@ ggsave("../results/infants/AOILookingPerParts.pdf",
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # DATA PREPARATION
 LT.time_course_tail <- LT.fam %>%
-  group_by(Participant) %>%
-  mutate(First = min(TrialNum, na.rm = T),
-         Last = max(TrialNum, na.rm = T),
-         FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
-                            TrialNum >= Last - 2 ~ "Last Trials")) %>%
-  select(-c(First, Last)) %>%
   drop_na(FstLst) %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = "Tail",
