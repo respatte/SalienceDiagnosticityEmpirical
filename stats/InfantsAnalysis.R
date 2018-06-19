@@ -40,15 +40,6 @@ LT.fam <- d[[4]] %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail"),
                          treat_non_aoi_looks_as_missing = T) %>%
-  mutate(TrialNum = as.numeric(TrialId) - 1) %>% # Useful for models
-  group_by(Participant) %>%
-  mutate(First = min(TrialNum, na.rm = T),
-         Last = max(TrialNum, na.rm = T),
-         FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
-                            TrialNum >= Last - 2 ~ "Last Trials")) %>%
-         # Useful to compare beginning-end of experiment per infant
-  ungroup() %>%
-  select(-c(First, Last)) %>%
   subset_by_window(window_start_time = 1500,      # Start after stimulus moving in,
                    window_end_col = "TrialEnd") %>% # and end 4000ms after LabelOnset
   mutate(LabelOnset = LabelOnset - 1500) # Update LabelOnset after window sub-setting
@@ -74,12 +65,13 @@ LT.test.wl <- d[[4]] %>%
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK ============================
 # Prepare dataset, include only familiarisation
 LT.prop_tail <- LT.fam %>%
-  subset_by_window(window_start_col = "LabelOnset")
+  subset_by_window(window_start_col = "LabelOnset") %>%
   make_time_window_data(aois=c("Tail"),
                         predictor_columns=c("Condition",
                                             "TrialId",
                                             "TrialNum",
                                             "FamPart",
+                                            "FstLst",
                                             "Stimulus",
                                             "CategoryName"))
 # Testing Prop ~ Trial*Condition
@@ -119,6 +111,31 @@ if(run_model){
   ## Run brms
   LT.prop_tail.per_part.brms.model <- brm(ArcSin ~ FamPart*Condition +
                                             (1 + FamPart | Participant) +
+                                            (1 | Stimulus),
+                                          data = LT.prop_tail,
+                                          chains = 4, cores = 4)
+  ## Save all the results
+  saveRDS(LT.prop_tail.per_part.lmer.model, "../results/infants/PartByCondition_lmerModel.rds")
+  saveRDS(LT.prop_tail.per_part.lmer.anova, "../results/infants/PartByCondition_lmerAnova.rds")
+  saveRDS(LT.prop_tail.per_part.brms.model, "../results/infants/PartByCondition_brmsModel.rds")
+}else{
+  ## Read all the results
+  LT.prop_tail.per_part.lmer.model <- readRDS("../results/infants/PartByCondition_lmerModel.rds")
+  LT.prop_tail.per_part.lmer.anova <- readRDS("../results/infants/PartByCondition_lmerAnova.rds")
+  LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/PartByCondition_brmsModel.rds")
+}
+# Testing Prop ~ FstLst*Condition
+run_model <- T
+if(run_model){
+  ## Run lmer
+  LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FstLst*Condition +
+                                             (1 + FstLst | Participant) +
+                                             (1 | Stimulus),
+                                           data = LT.prop_tail)
+  LT.prop_tail.per_part.lmer.anova <- anova(LT.prop_tail.per_part.lmer.model, type = 1)
+  ## Run brms
+  LT.prop_tail.per_part.brms.model <- brm(ArcSin ~ FstLst*Condition +
+                                            (1 + FstLst | Participant) +
                                             (1 | Stimulus),
                                           data = LT.prop_tail,
                                           chains = 4, cores = 4)
