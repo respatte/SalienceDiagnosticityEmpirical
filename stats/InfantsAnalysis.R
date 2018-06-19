@@ -133,27 +133,30 @@ if(run_model){
 # Testing Prop ~ FstLst*Condition
 run_model <- T
 if(run_model){
+  ## Select data
+  LT.prop_tail.fstlst <- LT.prop_tail %>%
+    drop_na(FstLst)
   ## Run lmer
-  LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FstLst*Condition +
+  LT.prop_tail.per_fstlst.lmer.model <- lmer(ArcSin ~ FstLst*Condition +
                                              (1 + FstLst | Participant) +
                                              (1 | Stimulus),
-                                           data = LT.prop_tail)
-  LT.prop_tail.per_part.lmer.anova <- anova(LT.prop_tail.per_part.lmer.model, type = 1)
+                                           data = LT.prop_tail.fstlst)
+  LT.prop_tail.per_fstlst.lmer.anova <- anova(LT.prop_tail.per_part.lmer.model, type = 1)
   ## Run brms
-  LT.prop_tail.per_part.brms.model <- brm(ArcSin ~ FstLst*Condition +
+  LT.prop_tail.per_fstlst.brms.model <- brm(ArcSin ~ FstLst*Condition +
                                             (1 + FstLst | Participant) +
                                             (1 | Stimulus),
-                                          data = LT.prop_tail,
+                                          data = LT.prop_tail.fstlst,
                                           chains = 4, cores = 4)
   ## Save all the results
-  saveRDS(LT.prop_tail.per_part.lmer.model, "../results/infants/PartByCondition_lmerModel.rds")
-  saveRDS(LT.prop_tail.per_part.lmer.anova, "../results/infants/PartByCondition_lmerAnova.rds")
-  saveRDS(LT.prop_tail.per_part.brms.model, "../results/infants/PartByCondition_brmsModel.rds")
+  saveRDS(LT.prop_tail.per_fstlst.lmer.model, "../results/infants/FstLstByCondition_lmerModel.rds")
+  saveRDS(LT.prop_tail.per_fstlst.lmer.anova, "../results/infants/FstLstByCondition_lmerAnova.rds")
+  saveRDS(LT.prop_tail.per_fstlst.brms.model, "../results/infants/FstLstByCondition_brmsModel.rds")
 }else{
   ## Read all the results
-  LT.prop_tail.per_part.lmer.model <- readRDS("../results/infants/PartByCondition_lmerModel.rds")
-  LT.prop_tail.per_part.lmer.anova <- readRDS("../results/infants/PartByCondition_lmerAnova.rds")
-  LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/PartByCondition_brmsModel.rds")
+  LT.prop_tail.per_fstlst.lmer.model <-readRDS("../results/infants/FstLstByCondition_lmerModel.rds")
+  LT.prop_tail.per_fstlst.lmer.anova <-readRDS("../results/infants/FstLstByCondition_lmerAnova.rds")
+  LT.prop_tail.per_fstlst.brms.model <-readRDS("../results/infants/FstLstByCondition_brmsModel.rds")
 }
 #### NO SIGNIFICANT EFFECTS
 # Plot jitter + lmer mean&se + lines
@@ -204,7 +207,7 @@ ggsave("../results/infants/AOILookingPerParts.pdf",
        LT.prop_tail.per_part.plot,
        width = 7, height = 5.4)
 ## Plot per FstLst
-LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
+LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail.fstlst,
                                      aes(x = FstLst, y = Prop,
                                          colour = Condition,
                                          fill = Condition)) +
