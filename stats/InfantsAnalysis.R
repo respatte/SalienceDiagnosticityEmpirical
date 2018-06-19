@@ -34,6 +34,12 @@ age <- d[[4]] %>%
 ## Familiarisation
 LT.fam <- d[[4]] %>%
   subset(Phase == "Familiarisation") %>%
+  group_by(Participant) %>%
+  mutate(First = min(TrialNum, na.rm = T),
+         Last = max(TrialNum, na.rm = T),
+         FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
+                            TrialNum >= Last - 2 ~ "Last Trials")) %>%
+         # Useful to compare beginning-end of experiment per infant
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
@@ -130,7 +136,7 @@ if(run_model){
   ## Run lmer
   LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FstLst*Condition +
                                              (1 + FstLst | Participant) +
-                                             (1 | Stimulus),
+                                             (1 | Stimuli),
                                            data = LT.prop_tail)
   LT.prop_tail.per_part.lmer.anova <- anova(LT.prop_tail.per_part.lmer.model, type = 1)
   ## Run brms

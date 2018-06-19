@@ -104,16 +104,10 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
     group_by(Participant, MediaName) %>%
     mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
            TrialId = floor(1 + (8/9)*max(StudioEventIndex, na.rm = T)/2)) %>%
-    group_by(Participant) %>%
-    mutate(TrialNum = TrialId - 1, # Useful for models
-           First = min(TrialNum, na.rm = T),
-           Last = max(TrialNum, na.rm = T),
-           FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
-                              TrialNum >= Last - 2 ~ "Last Trials")) %>%
-           # Useful to compare beginning-end of experiment per infant
     ungroup() %>%
+    mutate(TrialNum = TrialId - 1) %>% # Useful for models
     drop_na(MediaName, TrackLoss) %>%
-    select(-c(ValidityLeft, ValidityRight, StudioEventIndex, First, Last)) %>%
+    select(-c(ValidityLeft, ValidityRight, StudioEventIndex)) %>%
     unique() %>%
     inner_join(participant_info) %>%
     left_join(sequence_info) %>%
