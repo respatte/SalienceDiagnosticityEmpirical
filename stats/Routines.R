@@ -123,6 +123,8 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                   grepl("_G2", MediaName) ~ 3485,
                                   grepl("_S1", MediaName) ~ 3050,
                                   grepl("_S2", MediaName) ~ 3400),
+           PrePost = case_when(TimeStamp <= LabelOnset ~ "Pre Label Onset",
+                               TimeStamp >= LabelOnset+360 ~ "Post Label Onset"),
            TrialEnd = LabelOnset + 4000,
            Stimulus = ifelse(Phase == "Familiarisation",
                              sapply(strsplit(as.character(MediaName), "_"), "[", 2),
