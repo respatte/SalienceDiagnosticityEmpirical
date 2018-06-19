@@ -40,6 +40,7 @@ LT.fam <- d[[4]] %>%
          FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
                             TrialNum >= Last - 2 ~ "Last Trials")) %>%
          # Useful to compare beginning-end of experiment per infant
+  select(-c(First, Last)) %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
                          time_column = "TimeStamp",

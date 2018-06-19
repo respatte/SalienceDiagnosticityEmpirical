@@ -150,7 +150,10 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                                 ifelse(CategoryName==paste0("A_",
                                                                             substr(MediaName,3,3)),
                                                        substr(MediaName,7,7),
-                                                       substr(MediaName,11,11))))))
+                                                       substr(MediaName,11,11)))))) %>%
+    mutate_at(c("Participant", "PresentationSequence", "MediaName", "TrialId",
+                "Gender", "CategoryName", "Condition", "Phase", "Stimulus"),
+              parse_factor, levels = NULL, include_na = F)
   return(df)
 }
 
@@ -212,9 +215,8 @@ LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thr
   # Compute and plot proportion of valid trials per subject
   # (number of valid trials / number of trials for subject)
   # (looking only at familiarisation phase)
-  df.trackloss$TrialId <- as.numeric(df.trackloss$TrialId)
   df.described <- describe_data(df.trackloss[which(df.trackloss$Phase == "Familiarisation"),],
-                                'TrialId', 'Participant')
+                                'TrialNum', 'Participant')
   if(grepl("adults_[23]f", participants)){
     df.described$ProportionTrials <- df.described$NumTrials / df.described$Max
   }else{
