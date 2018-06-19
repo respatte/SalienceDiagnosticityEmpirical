@@ -30,7 +30,7 @@ gender <- d[[4]] %>%
 age <- d[[4]] %>%
   group_by(Participant, Condition) %>%
   summarise(Age = first(Age))
-# Creating general datasets for analysis (separating phases, no window sub-setting)
+# Creating general datasets for analysis (separating phases, general window sub-setting)
 ## Familiarisation
 LT.fam <- d[[4]] %>%
   subset(Phase == "Familiarisation") %>%
@@ -46,7 +46,12 @@ LT.fam <- d[[4]] %>%
          Last = max(TrialNum, na.rm = T),
          FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
                             TrialNum >= Last - 2 ~ "Last Trials")) %>%
-  select(-c(First, Last)) # Useful to compare beginning-end of experiment per infant
+         # Useful to compare beginning-end of experiment per infant
+  ungroup() %>%
+  select(-c(First, Last)) %>%
+  subset_by_window(window_start_time = 1500,      # Start after stimulus moving in,
+                   window_end_col = "TrialEnd") %>% # and end 4000ms after LabelOnset
+  mutate(LabelOnset = LabelOnset - 1500) # Update LabelOnset after window sub-setting
 ## Contrast tests
 LT.test.ctr <- d[[4]] %>%
   subset(Phase == "Test - Contrast") %>%
@@ -68,16 +73,17 @@ LT.test.wl <- d[[4]] %>%
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK ============================
 # Prepare dataset, include only familiarisation
-LT.prop_tail <- make_time_window_data(LT.fam,
-                                      aois=c("Tail"),
-                                      predictor_columns=c("Condition",
-                                                          "TrialId",
-                                                          "TrialNum",
-                                                          "FamPart",
-                                                          "Stimulus",
-                                                          "CategoryName"))
+LT.prop_tail <- LT.fam %>%
+  subset_by_window(window_start_col = "LabelOnset")
+  make_time_window_data(aois=c("Tail"),
+                        predictor_columns=c("Condition",
+                                            "TrialId",
+                                            "TrialNum",
+                                            "FamPart",
+                                            "Stimulus",
+                                            "CategoryName"))
 # Testing Prop ~ Trial*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   LT.prop_tail.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*Condition +
@@ -102,7 +108,7 @@ if(run_model){
   LT.prop_tail.per_trial.brms.model <- readRDS("../results/infants/TrialByCondition_brmsModel.rds")
 }
 # Testing Prop ~ Part*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer
   LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FamPart*Condition +
