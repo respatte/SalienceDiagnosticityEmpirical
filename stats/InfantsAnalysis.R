@@ -438,14 +438,18 @@ LT.time_course_tail <- LT.fam %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = "Tail",
                           predictor_columns=c("Condition",
-                                              "Stimulus",
-                                              "FstLst"))
+                                              "FstLst"),
+                          summarize_by = "Participant")
 # GROWTH CURVE ANALYSIS
 ## TODO
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 run_model <- T
 if(run_model){
   t <- proc.time()
+  ## Determine threshold based on alpha = .05 two-tailed
+  num_sub = length(unique((LT.time_course_tail$Participant)))
+  threshold_t = qt(p = 1 - .05/2, 
+                   df = num_sub-1)
   ## Determine clusters
   LT.time_cluster_tail <- LT.time_course_tail %>%
     split(.$FstLst) %>%
@@ -453,18 +457,12 @@ if(run_model){
            predictor_column = "Condition",
            treatment_level = "No Label",
            aoi = "Tail",
-           test = "lmer",
-           threshold = 1,
-           formula = ArcSin ~ Condition +
-             (1 | Participant) +
-             (1 | Stimulus))
+           test = "t.test",
+           threshold = threshold_t)
   ## Run analysis
   LT.time_cluster_tail.analysis <- LT.time_cluster_tail %>%
     lapply(analyze_time_clusters,
-           formula = ArcSin ~ Condition +
-             (1 | Participant) +
-             (1 | Stimulus),
-           within_subj = T,
+           within_subj = F,
            parallel = T)
   # #### TESTING TO REPORT ON eyetrackingR GITHUB
   #   ## Determine clusters
