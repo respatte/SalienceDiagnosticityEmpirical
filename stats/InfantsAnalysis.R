@@ -3,7 +3,6 @@ library(eyetrackingR)
 library(lme4)
 library(lmerTest)
 library(brms)
-library(jtools)
 library(tidyverse)
 
 source("Routines.R")
@@ -137,7 +136,7 @@ if(run_model){
   ## Run lmer
   LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FstLst*Condition +
                                              (1 + FstLst | Participant) +
-                                             (1 | Stimuli),
+                                             (1 | Stimulus),
                                            data = LT.prop_tail)
   LT.prop_tail.per_part.lmer.anova <- anova(LT.prop_tail.per_part.lmer.model, type = 1)
   ## Run brms
@@ -163,7 +162,7 @@ LT.prop_tail.per_trial.plot <- ggplot(LT.prop_tail,
                                      aes(x = TrialId, y = Prop,
                                          colour = Condition,
                                          fill = Condition)) +
-  theme_apa(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
+  theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
   scale_colour_discrete(labels = c("Label", "No Label")) +
   scale_fill_discrete(labels = c("Label", "No Label")) +
   geom_point(position = position_jitterdodge(dodge.width = .8,
@@ -186,7 +185,7 @@ LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
                                      aes(x = FamPart, y = Prop,
                                          colour = Condition,
                                          fill = Condition)) +
-  theme_apa(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
+  theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
   scale_colour_discrete(labels = c("Label", "No Label")) +
   scale_fill_discrete(labels = c("Label", "No Label")) +
   geom_point(position = position_jitterdodge(dodge.width = .8,
@@ -202,6 +201,29 @@ LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
              shape = 18, size = 3,
              position = position_dodge(.1))
 ggsave("../results/infants/AOILookingPerParts.pdf",
+       LT.prop_tail.per_part.plot,
+       width = 7, height = 5.4)
+## Plot per FstLst
+LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
+                                     aes(x = FstLst, y = Prop,
+                                         colour = Condition,
+                                         fill = Condition)) +
+  theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
+  scale_colour_discrete(labels = c("Label", "No Label")) +
+  scale_fill_discrete(labels = c("Label", "No Label")) +
+  geom_point(position = position_jitterdodge(dodge.width = .8,
+                                             jitter.width = .2),
+             alpha = .25) +
+  geom_errorbar(stat = "summary",
+                width = .2, colour = "black",
+                position = position_dodge(.1)) +
+  geom_line(aes(x = FamPart, y = Prop, group = Condition),
+            stat = "summary", fun.y = "mean",
+            colour = "black") +
+  geom_point(stat = "summary", fun.y = "mean",
+             shape = 18, size = 3,
+             position = position_dodge(.1))
+ggsave("../results/infants/AOILookingPerFstLst.pdf",
        LT.prop_tail.per_part.plot,
        width = 7, height = 5.4)
 
