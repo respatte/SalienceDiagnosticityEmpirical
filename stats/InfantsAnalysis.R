@@ -434,7 +434,7 @@ ggsave("../results/infants/AOILookingPrePostPerFstLst.pdf",
 # DATA PREPARATION
 LT.time_course_tail <- LT.fam %>%
   drop_na(FstLst) %>%
-  subset_by_window(window_start_col = "LabelOnset", remove = F) %>%
+  subset_by_window(window_start_col = "LabelOnset") %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = "Tail",
                           predictor_columns=c("Condition",
@@ -495,6 +495,7 @@ if(run_model){
   LT.time_cluster_tail <- readRDS("../results/infants/BCBP_clusters.rds")
   LT.time_cluster_tail.analysis <- readRDS("../results/infants/BCBP_analysis.rds")
 }
+
 # PLOT
 intercept <- tibble(Part = 0:2,
                     x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
