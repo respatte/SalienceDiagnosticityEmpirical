@@ -501,10 +501,23 @@ if(generate_plots){
 # CONTRAST TEST ANALYSIS ===========================================================================
 # WORD LEARNING TEST ANALYSIS ======================================================================
 # Prepare dataset
-LT.target_dist.wl <- LT.test.wl %>%
+LT.prop_target <- LT.test.wl %>%
   subset(Condition == "Label") %>%
   subset_by_window(window_start_col = "LabelOnset",
                    window_end_col = "TrialEnd") %>%
   make_time_window_data(aois = "Target",
-                        predictor_columns = "CategoryName")
+                        predictor_columns = "CategoryName") %>%
+  mutate(ChanceArcsin = ArcSin - asin(.5)) # Value centered on chance looking, useful for test
 # Testing in general
+## Run lmer
+LT.prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant) + (1 | CategoryName),
+                                  data = LT.prop_target)
+LT.prop_target.lmer.null <- lmer(ChanceArcsin ~ 0 + (1 | Participant) +  (1 | CategoryName),
+                                 data = LT.prop_target)
+LT.prop_target.lmer.anova <- anova(LT.prop_target.lmer.null,
+                                   LT.prop_target.lmer.model)
+## Run brms
+LT.prop_target.brms.model <- brm(ChanceArcsin ~ 1 + (1 | Participant) + (1 | CategoryName),
+                                 data = LT.prop_target,
+                                 chains = 4, cores = 4, iter = 1000)
+.
