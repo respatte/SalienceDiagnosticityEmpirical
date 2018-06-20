@@ -89,7 +89,7 @@ LT.prop_tail <- LT.fam %>%
                                             "Stimulus",
                                             "CategoryName"))
 # Testing Prop ~ Trial*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   LT.prop_tail.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*Condition +
@@ -118,7 +118,7 @@ if(run_model){
   LT.prop_tail.per_trial.brms.model <- readRDS("../results/infants/Trial_brmsModel.rds")
 }
 # Testing Prop ~ Part*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer
   LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FamPart*Condition +
@@ -147,7 +147,7 @@ if(run_model){
   LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/Part_brmsModel.rds")
 }
 # Testing Prop ~ FstLst*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Select data
   LT.prop_tail.fstlst <- LT.prop_tail %>%
@@ -281,20 +281,7 @@ if(run_model){
   ## Run brms (Bayesian)
   prior.pre_post.per_trial <- c(set_prior("uniform(0,1.6)",
                                           class = "Intercept"),
-                                set_prior("normal(0,.5)",
-                                          coef = "TrialNum"),
-                                set_prior("normal(0,.5)",
-                                          coef = "PrePostPostLabelOnset"),
-                                set_prior("normal(0,.5)",
-                                          coef = "ConditionLabel"),
-                                set_prior("normal(0,.5)",
-                                          coef = "TrialNum:PrePostPostLabelOnset"),
-                                set_prior("normal(0,.5)",
-                                          coef = "TrialNum:ConditionLabel"),
-                                set_prior("normal(0,.5)",
-                                          coef = "PrePostPostLabelOnset:ConditionLabel"),
-                                set_prior("normal(0,.5)",
-                                          coef = "TrialNum:PrePostPostLabelOnset:ConditionLabel"))
+                                set_prior("normal(0,.5)", class = "b"))
   LT.pre_post.per_trial.brms.model <- brm(ArcSin ~ TrialNum*PrePost*Condition +
                                             (1 | Participant) +
                                             (1 | Stimulus),
@@ -323,20 +310,7 @@ if(run_model){
   ## Run brms
   prior.pre_post.per_part <- c(set_prior("uniform(0,1.6)",
                                          class = "Intercept"),
-                               set_prior("normal(0,.5)",
-                                         coef = "FamPart"),
-                               set_prior("normal(0,.5)",
-                                         coef = "PrePostPostLabelOnset"),
-                               set_prior("normal(0,.5)",
-                                         coef = "ConditionLabel"),
-                               set_prior("normal(0,.5)",
-                                         coef = "FamPart:PrePostPostLabelOnset"),
-                               set_prior("normal(0,.5)",
-                                         coef = "FamPart:ConditionLabel"),
-                               set_prior("normal(0,.5)",
-                                         coef = "PrePostPostLabelOnset:ConditionLabel"),
-                               set_prior("normal(0,.5)",
-                                         coef = "FamPart:PrePostPostLabelOnset:ConditionLabel"))
+                               set_prior("normal(0,.5)", class = "b"))
   LT.pre_post.per_part.brms.model <- brm(ArcSin ~ FamPart*PrePost*Condition +
                                            (1 + FamPart | Participant) +
                                            (1 | Stimulus),
@@ -368,20 +342,7 @@ if(run_model){
   ## Run brms
   prior.pre_post.per_fstlst <- c(set_prior("uniform(0,1.6)",
                                            class = "Intercept"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "FstLstLastTrials"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "PrePostPostLabelOnset"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "ConditionLabel"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "FstLstLastTrials:PrePostPostLabelOnset"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "FstLstLastTrials:ConditionLabel"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "PrePostPostLabelOnset:ConditionLabel"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "FstLstLastTrials:PrePostPostLabelOnset:ConditionLabel"))
+                                 set_prior("normal(0,.5)", class = "b"))
   LT.pre_post.per_fstlst.brms.model <- brm(ArcSin ~ FstLst*PrePost*Condition +
                                              (1 + FstLst | Participant) +
                                              (1 | Stimulus),
