@@ -497,3 +497,14 @@ if(generate_plots){
          plot = LT.fam.time_course.plot.blocks,
          width = 3.5, height = 5)
 }
+
+# CONTRAST TEST ANALYSIS ===========================================================================
+# WORD LEARNING TEST ANALYSIS ======================================================================
+# Prepare dataset
+LT.target_dist.wl <- LT.test.wl %>%
+  subset(Condition == "Label") %>%
+  subset_by_window(window_start_col = "LabelOnset",
+                   window_end_col = "TrialEnd") %>%
+  make_time_window_data(aois = "Target",
+                        predictor_columns = "CategoryName")
+# Testing in general
