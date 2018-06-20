@@ -89,7 +89,7 @@ LT.prop_tail <- LT.fam %>%
                                             "Stimulus",
                                             "CategoryName"))
 # Testing Prop ~ Trial*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   LT.prop_tail.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*Condition +
@@ -98,9 +98,18 @@ if(run_model){
                                             data = LT.prop_tail)
   LT.prop_tail.per_trial.lmer.anova <- anova(LT.prop_tail.per_trial.lmer.model, type = 1)
   ## Run brms (Bayesian)
+  prior.prop_tail.per_trial <- c(set_prior("uniform(0,1.6)",
+                                           class = "Intercept"),
+                                 set_prior("normal(0,.5)",
+                                           coef = "TrialNum"),
+                                 set_prior("normal(0,.5)",
+                                           coef = "ConditionLabel"),
+                                 set_prior("normal(0,.5)",
+                                           coef = "TrialNum:ConditionLabel"))
   LT.prop_tail.per_trial.brms.model <- brm(ArcSin ~ TrialNum*Condition +
                                              (1 | Participant) +
                                              (1 | Stimulus),
+                                           prior = prior.prop_tail.per_trial,
                                            data = LT.prop_tail,
                                            chains = 4, cores = 4)
   ## Save all results
@@ -114,7 +123,7 @@ if(run_model){
   LT.prop_tail.per_trial.brms.model <- readRDS("../results/infants/Trial_brmsModel.rds")
 }
 # Testing Prop ~ Part*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer
   LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FamPart*Condition +
@@ -123,10 +132,19 @@ if(run_model){
                                            data = LT.prop_tail)
   LT.prop_tail.per_part.lmer.anova <- anova(LT.prop_tail.per_part.lmer.model, type = 1)
   ## Run brms
+  prior.prop_tail.per_part <- c(set_prior("uniform(0,1.6)",
+                                          class = "Intercept"),
+                                set_prior("normal(0,.5)",
+                                          coef = "FamPart"),
+                                set_prior("normal(0,.5)",
+                                          coef = "ConditionLabel"),
+                                set_prior("normal(0,.5)",
+                                          coef = "FamPart:ConditionLabel"))
   LT.prop_tail.per_part.brms.model <- brm(ArcSin ~ FamPart*Condition +
                                             (1 + FamPart | Participant) +
                                             (1 | Stimulus),
                                           data = LT.prop_tail,
+                                          prior = prior.prop_tail.per_part,
                                           chains = 4, cores = 4)
   ## Save all the results
   saveRDS(LT.prop_tail.per_part.lmer.model, "../results/infants/Part_lmerModel.rds")
@@ -139,7 +157,7 @@ if(run_model){
   LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/Part_brmsModel.rds")
 }
 # Testing Prop ~ FstLst*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Select data
   LT.prop_tail.fstlst <- LT.prop_tail %>%
@@ -151,10 +169,19 @@ if(run_model){
                                              data = LT.prop_tail.fstlst)
   LT.prop_tail.per_fstlst.lmer.anova <- anova(LT.prop_tail.per_fstlst.lmer.model, type = 1)
   ## Run brms
+  prior.prop_tail.per_fstlst <- c(set_prior("uniform(0,1.6)",
+                                           class = "Intercept"),
+                                 set_prior("normal(0,.5)",
+                                           coef = "FstLstLastTrials"),
+                                 set_prior("normal(0,.5)",
+                                           coef = "ConditionLabel"),
+                                 set_prior("normal(0,.5)",
+                                           coef = "FstLstLastTrials:ConditionLabel"))
   LT.prop_tail.per_fstlst.brms.model <- brm(ArcSin ~ FstLst*Condition +
                                               (1 + FstLst | Participant) +
                                               (1 | Stimulus),
                                             data = LT.prop_tail.fstlst,
+                                            prior = prior.prop_tail.per_fstlst,
                                             chains = 4, cores = 4)
   ## Save all the results
   saveRDS(LT.prop_tail.per_fstlst.lmer.model, "../results/infants/FstLst_lmerModel.rds")
@@ -166,7 +193,6 @@ if(run_model){
   LT.prop_tail.per_fstlst.lmer.anova <- readRDS("../results/infants/FstLst_lmerAnova.rds")
   LT.prop_tail.per_fstlst.brms.model <- readRDS("../results/infants/FstLst_brmsModel.rds")
 }
-#### NO SIGNIFICANT EFFECTS
 
 # Plot jitter + mean&se + lines
 generate_plots <- F
