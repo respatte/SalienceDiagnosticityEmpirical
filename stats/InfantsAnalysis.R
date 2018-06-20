@@ -76,7 +76,7 @@ LT.test.wl <- d[[4]] %>%
                          aoi_columns = c("Target","Distractor"),
                          treat_non_aoi_looks_as_missing = T)
 
-# LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK ============================
+# FAMILIARISATION ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK =========================
 # Prepare dataset
 LT.prop_tail <- LT.fam %>%
   subset_by_window(window_start_col = "LabelOnset") %>%
@@ -256,7 +256,7 @@ if(generate_plots){
          width = 7, height = 5.4)
 }
 
-# LOOKING TIME ANALYSIS: PROP AOI LOOKING PRE/POST LABEL ONSET =====================================
+# FAMILIARISATION ANALYSIS: PROP AOI LOOKING PRE/POST LABEL ONSET ==================================
 # Prepare dataset
 LT.pre_post <- LT.fam %>%
   make_time_window_data(aois=c("Tail"),
@@ -413,7 +413,7 @@ if(generate_plots){
          width = 7, height = 3)
 }
 
-# LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
+# FAMILIARISATION ANALYSIS: TIME COURSE ============================================================
 # DATA PREPARATION
 LT.time_course_tail <- LT.fam %>%
   drop_na(FstLst) %>%
