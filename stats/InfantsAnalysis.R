@@ -27,8 +27,13 @@ gender <- d[[4]] %>%
   group_by(Gender, Condition) %>%
   summarise(N = n_distinct(Participant))
 age <- d[[4]] %>%
-  group_by(Participant, Condition) %>%
+  group_by(Participant, Condition, Gender) %>%
   summarise(Age = first(Age))
+age_gender_condition <- age %>%
+  group_by(Condition, Gender) %>%
+  summarise(mu = mean(Age),
+            l = min(Age),
+            u = max(Age))
 # Creating general datasets for analysis (separating phases, general window sub-setting)
 ## Familiarisation
 LT.fam <- d[[4]] %>%
@@ -84,7 +89,7 @@ LT.prop_tail <- LT.fam %>%
                                             "Stimulus",
                                             "CategoryName"))
 # Testing Prop ~ Trial*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   LT.prop_tail.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*Condition +
@@ -109,7 +114,7 @@ if(run_model){
   LT.prop_tail.per_trial.brms.model <- readRDS("../results/infants/Trial_brmsModel.rds")
 }
 # Testing Prop ~ Part*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer
   LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FamPart*Condition +
@@ -134,7 +139,7 @@ if(run_model){
   LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/Part_brmsModel.rds")
 }
 # Testing Prop ~ FstLst*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Select data
   LT.prop_tail.fstlst <- LT.prop_tail %>%
@@ -164,78 +169,81 @@ if(run_model){
 #### NO SIGNIFICANT EFFECTS
 
 # Plot jitter + mean&se + lines
-## Plot per trial
-LT.prop_tail.per_trial.plot <- ggplot(LT.prop_tail,
-                                      aes(x = TrialId, y = Prop,
-                                          colour = Condition,
-                                          fill = Condition)) +
-  theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
-  scale_colour_discrete(labels = c("Label", "No Label")) +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_point(position = position_jitterdodge(dodge.width = .8,
-                                             jitter.width = .2),
-             alpha = .25) +
-  geom_errorbar(stat = "summary",
-                width = .2, colour = "black",
-                position = position_dodge(.1)) +
-  geom_line(aes(x = TrialId, y = Prop, group = Condition),
-            stat = "summary", fun.y = "mean",
-            colour = "black",
-            position = position_dodge(.1)) +
-  geom_point(stat = "summary", fun.y = "mean",
-             shape = 18, size = 3,
-             position = position_dodge(.1))
-ggsave("../results/infants/AOILookingPerTrial.pdf",
-       LT.prop_tail.per_trial.plot,
-       width = 7, height = 5.4)
-## Plot per part
-LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
-                                     aes(x = FamPart, y = Prop,
-                                         colour = Condition,
-                                         fill = Condition)) +
-  theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
-  scale_colour_discrete(labels = c("Label", "No Label")) +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_point(position = position_jitterdodge(dodge.width = .8,
-                                             jitter.width = .2),
-             alpha = .25) +
-  geom_errorbar(stat = "summary",
-                width = .2, colour = "black",
-                position = position_dodge(.1)) +
-  geom_line(aes(x = FamPart, y = Prop, group = Condition),
-            stat = "summary", fun.y = "mean",
-            colour = "black",
-            position = position_dodge(.1)) +
-  geom_point(stat = "summary", fun.y = "mean",
-             shape = 18, size = 3,
-             position = position_dodge(.1))
-ggsave("../results/infants/AOILookingPerParts.pdf",
-       LT.prop_tail.per_part.plot,
-       width = 7, height = 5.4)
-## Plot per FstLst
-LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail.fstlst,
-                                     aes(x = FstLst, y = Prop,
-                                         colour = Condition,
-                                         fill = Condition)) +
-  theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
-  scale_colour_discrete(labels = c("Label", "No Label")) +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_point(position = position_jitterdodge(dodge.width = .8,
-                                             jitter.width = .2),
-             alpha = .25) +
-  geom_errorbar(stat = "summary",
-                width = .2, colour = "black",
-                position = position_dodge(.1)) +
-  geom_line(aes(x = FstLst, y = Prop, group = Condition),
-            stat = "summary", fun.y = "mean",
-            colour = "black",
-            position = position_dodge(.1)) +
-  geom_point(stat = "summary", fun.y = "mean",
-             shape = 18, size = 3,
-             position = position_dodge(.1))
-ggsave("../results/infants/AOILookingPerFstLst.pdf",
-       LT.prop_tail.per_part.plot,
-       width = 7, height = 5.4)
+generate_plots <- F
+if(generate_plots){
+  ## Plot per trial
+  LT.prop_tail.per_trial.plot <- ggplot(LT.prop_tail,
+                                        aes(x = TrialId, y = Prop,
+                                            colour = Condition,
+                                            fill = Condition)) +
+    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
+    scale_colour_discrete(labels = c("Label", "No Label")) +
+    scale_fill_discrete(labels = c("Label", "No Label")) +
+    geom_point(position = position_jitterdodge(dodge.width = .8,
+                                               jitter.width = .2),
+               alpha = .25) +
+    geom_errorbar(stat = "summary",
+                  width = .2, colour = "black",
+                  position = position_dodge(.1)) +
+    geom_line(aes(x = TrialId, y = Prop, group = Condition),
+              stat = "summary", fun.y = "mean",
+              colour = "black",
+              position = position_dodge(.1)) +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 3,
+               position = position_dodge(.1))
+  ggsave("../results/infants/AOILookingPerTrial.pdf",
+         LT.prop_tail.per_trial.plot,
+         width = 7, height = 5.4)
+  ## Plot per part
+  LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
+                                       aes(x = FamPart, y = Prop,
+                                           colour = Condition,
+                                           fill = Condition)) +
+    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
+    scale_colour_discrete(labels = c("Label", "No Label")) +
+    scale_fill_discrete(labels = c("Label", "No Label")) +
+    geom_point(position = position_jitterdodge(dodge.width = .8,
+                                               jitter.width = .2),
+               alpha = .25) +
+    geom_errorbar(stat = "summary",
+                  width = .2, colour = "black",
+                  position = position_dodge(.1)) +
+    geom_line(aes(x = FamPart, y = Prop, group = Condition),
+              stat = "summary", fun.y = "mean",
+              colour = "black",
+              position = position_dodge(.1)) +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 3,
+               position = position_dodge(.1))
+  ggsave("../results/infants/AOILookingPerParts.pdf",
+         LT.prop_tail.per_part.plot,
+         width = 7, height = 5.4)
+  ## Plot per FstLst
+  LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail.fstlst,
+                                       aes(x = FstLst, y = Prop,
+                                           colour = Condition,
+                                           fill = Condition)) +
+    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
+    scale_colour_discrete(labels = c("Label", "No Label")) +
+    scale_fill_discrete(labels = c("Label", "No Label")) +
+    geom_point(position = position_jitterdodge(dodge.width = .8,
+                                               jitter.width = .2),
+               alpha = .25) +
+    geom_errorbar(stat = "summary",
+                  width = .2, colour = "black",
+                  position = position_dodge(.1)) +
+    geom_line(aes(x = FstLst, y = Prop, group = Condition),
+              stat = "summary", fun.y = "mean",
+              colour = "black",
+              position = position_dodge(.1)) +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 3,
+               position = position_dodge(.1))
+  ggsave("../results/infants/AOILookingPerFstLst.pdf",
+         LT.prop_tail.per_part.plot,
+         width = 7, height = 5.4)
+}
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING PRE/POST LABEL ONSET =====================================
 # Prepare dataset
@@ -251,7 +259,7 @@ LT.pre_post <- LT.fam %>%
                                             "CategoryName")) %>%
   drop_na(PrePost)
 # Testing Prop ~ Trial*PrePost*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   LT.pre_post.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*PrePost*Condition +
@@ -293,7 +301,7 @@ if(run_model){
   LT.pre_post.per_trial.brms.model <- readRDS("../results/infants/PrePost_Trial_brmsModel.rds")
 }
 # Testing Prop ~ Part*PrePost*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer
   LT.pre_post.per_part.lmer.model <- lmer(ArcSin ~ FamPart*PrePost*Condition +
@@ -335,7 +343,7 @@ if(run_model){
   LT.pre_post.per_part.brms.model <- readRDS("../results/infants/PrePost_Part_brmsModel.rds")
 }
 # Testing Prop ~ FstLst*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Select data
   LT.pre_post.fstlst <- LT.pre_post %>%
@@ -381,54 +389,57 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-## Plot per part
-LT.pre_post.per_part.plot <- ggplot(LT.pre_post,
-                                    aes(x = PrePost, y = Prop,
-                                        colour = Condition,
-                                        fill = Condition)) +
-  theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") + facet_grid(.~FamPart) +
-  scale_colour_discrete(labels = c("Label", "No Label")) +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_point(position = position_jitterdodge(dodge.width = .8,
-                                             jitter.width = .2),
-             alpha = .25) +
-  geom_errorbar(stat = "summary",
-                width = .2, colour = "black",
-                position = position_dodge(.1)) +
-  geom_line(aes(x = PrePost, y = Prop, group = Condition),
-            stat = "summary", fun.y = "mean",
-            colour = "black",
-            position = position_dodge(.1)) +
-  geom_point(stat = "summary", fun.y = "mean",
-             shape = 18, size = 3,
-             position = position_dodge(.1))
-ggsave("../results/infants/AOILookingPrePostPerParts.pdf",
-       LT.pre_post.per_part.plot,
-       width = 7, height = 3)
-## Plot per FstLst
-LT.pre_post.per_fstlst.plot <- ggplot(LT.pre_post.fstlst,
+generate_plots <- F
+if(generate_plots){
+  ## Plot per part
+  LT.pre_post.per_part.plot <- ggplot(LT.pre_post,
                                       aes(x = PrePost, y = Prop,
                                           colour = Condition,
                                           fill = Condition)) +
-  theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") + facet_grid(.~FstLst) +
-  scale_colour_discrete(labels = c("Label", "No Label")) +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_point(position = position_jitterdodge(dodge.width = .8,
-                                             jitter.width = .2),
-             alpha = .25) +
-  geom_errorbar(stat = "summary",
-                width = .2, colour = "black",
-                position = position_dodge(.1)) +
-  geom_line(aes(x = PrePost, y = Prop, group = Condition),
-            stat = "summary", fun.y = "mean",
-            colour = "black",
-            position = position_dodge(.1)) +
-  geom_point(stat = "summary", fun.y = "mean",
-             shape = 18, size = 3,
-             position = position_dodge(.1))
-ggsave("../results/infants/AOILookingPrePostPerFstLst.pdf",
-       LT.pre_post.per_fstlst.plot,
-       width = 7, height = 3)
+    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") + facet_grid(.~FamPart) +
+    scale_colour_discrete(labels = c("Label", "No Label")) +
+    scale_fill_discrete(labels = c("Label", "No Label")) +
+    geom_point(position = position_jitterdodge(dodge.width = .8,
+                                               jitter.width = .2),
+               alpha = .25) +
+    geom_errorbar(stat = "summary",
+                  width = .2, colour = "black",
+                  position = position_dodge(.1)) +
+    geom_line(aes(x = PrePost, y = Prop, group = Condition),
+              stat = "summary", fun.y = "mean",
+              colour = "black",
+              position = position_dodge(.1)) +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 3,
+               position = position_dodge(.1))
+  ggsave("../results/infants/AOILookingPrePostPerParts.pdf",
+         LT.pre_post.per_part.plot,
+         width = 7, height = 3)
+  ## Plot per FstLst
+  LT.pre_post.per_fstlst.plot <- ggplot(LT.pre_post.fstlst,
+                                        aes(x = PrePost, y = Prop,
+                                            colour = Condition,
+                                            fill = Condition)) +
+    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") + facet_grid(.~FstLst) +
+    scale_colour_discrete(labels = c("Label", "No Label")) +
+    scale_fill_discrete(labels = c("Label", "No Label")) +
+    geom_point(position = position_jitterdodge(dodge.width = .8,
+                                               jitter.width = .2),
+               alpha = .25) +
+    geom_errorbar(stat = "summary",
+                  width = .2, colour = "black",
+                  position = position_dodge(.1)) +
+    geom_line(aes(x = PrePost, y = Prop, group = Condition),
+              stat = "summary", fun.y = "mean",
+              colour = "black",
+              position = position_dodge(.1)) +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 3,
+               position = position_dodge(.1))
+  ggsave("../results/infants/AOILookingPrePostPerFstLst.pdf",
+         LT.pre_post.per_fstlst.plot,
+         width = 7, height = 3)
+}
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # DATA PREPARATION
@@ -443,7 +454,7 @@ LT.time_course_tail <- LT.fam %>%
 # GROWTH CURVE ANALYSIS
 ## TODO
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T
+run_model <- F
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -495,19 +506,22 @@ if(run_model){
 }
 
 # PLOT
-intercept <- tibble(Part = 0:2,
-                    x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
-LT.fam.time_course.plot.blocks <- ggplot(LT.time_course_tail,
-                                         aes(x = Time, y=Prop,
-                                             colour=Condition,
-                                             fill=Condition)) +
-  xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
-  facet_grid(FstLst~.) +
-  theme(legend.position = "top") + ylim(0,1) +
-  stat_summary(fun.y='mean', geom='line', linetype = '61') +
-  stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
-  geom_hline(yintercept = .5)
-#geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5)
-ggsave("../results/infants/LookingTimeCourseFirstLast.pdf",
-       plot = LT.fam.time_course.plot.blocks,
-       width = 3.5, height = 5)
+generate_plots <- F
+if(generate_plots){
+  intercept <- tibble(Part = 0:2,
+                      x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
+  LT.fam.time_course.plot.blocks <- ggplot(LT.time_course_tail,
+                                           aes(x = Time, y=Prop,
+                                               colour=Condition,
+                                               fill=Condition)) +
+    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
+    facet_grid(FstLst~.) +
+    theme(legend.position = "top") + ylim(0,1) +
+    stat_summary(fun.y='mean', geom='line', linetype = '61') +
+    stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+    geom_hline(yintercept = .5)
+  #geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5)
+  ggsave("../results/infants/LookingTimeCourseFirstLast.pdf",
+         plot = LT.fam.time_course.plot.blocks,
+         width = 3.5, height = 5)
+}
