@@ -100,12 +100,7 @@ if(run_model){
   ## Run brms (Bayesian)
   prior.prop_tail.per_trial <- c(set_prior("uniform(0,1.6)",
                                            class = "Intercept"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "TrialNum"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "ConditionLabel"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "TrialNum:ConditionLabel"))
+                                 set_prior("normal(0,.5)", class = "b"))
   LT.prop_tail.per_trial.brms.model <- brm(ArcSin ~ TrialNum*Condition +
                                              (1 | Participant) +
                                              (1 | Stimulus),
@@ -134,12 +129,7 @@ if(run_model){
   ## Run brms
   prior.prop_tail.per_part <- c(set_prior("uniform(0,1.6)",
                                           class = "Intercept"),
-                                set_prior("normal(0,.5)",
-                                          coef = "FamPart"),
-                                set_prior("normal(0,.5)",
-                                          coef = "ConditionLabel"),
-                                set_prior("normal(0,.5)",
-                                          coef = "FamPart:ConditionLabel"))
+                                set_prior("normal(0,.5)", class = "b"))
   LT.prop_tail.per_part.brms.model <- brm(ArcSin ~ FamPart*Condition +
                                             (1 + FamPart | Participant) +
                                             (1 | Stimulus),
@@ -171,12 +161,7 @@ if(run_model){
   ## Run brms
   prior.prop_tail.per_fstlst <- c(set_prior("uniform(0,1.6)",
                                            class = "Intercept"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "FstLstLastTrials"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "ConditionLabel"),
-                                 set_prior("normal(0,.5)",
-                                           coef = "FstLstLastTrials:ConditionLabel"))
+                                 set_prior("normal(0,.5)", class = "b"))
   LT.prop_tail.per_fstlst.brms.model <- brm(ArcSin ~ FstLst*Condition +
                                               (1 + FstLst | Participant) +
                                               (1 | Stimulus),
