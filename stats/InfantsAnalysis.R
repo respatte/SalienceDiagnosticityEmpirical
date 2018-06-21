@@ -54,8 +54,8 @@ LT.fam <- d[[4]] %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail"),
                          treat_non_aoi_looks_as_missing = T) %>%
-  subset_by_window(window_start_time = 1500,      # Start after stimulus moving in,
-                   window_end_col = "TrialEnd") %>% # and end 4000ms after LabelOnset
+  subset_by_window(window_start_time = 1500,        # Start after stimulus moving in,
+                   window_end_col = "TrialEnd") %>% # and end 3000ms after LabelOnset
   mutate(LabelOnset = LabelOnset - 1500) # Update LabelOnset after window sub-setting
 ## Contrast tests
 LT.test.ctr <- d[[4]] %>%
@@ -64,7 +64,8 @@ LT.test.ctr <- d[[4]] %>%
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
                          trackloss_column = "TrackLoss",
-                         aoi_columns = c("NewHead","OldHead","NewTail","OldTail","Centre"),
+                         aoi_columns = c("NewHead","OldHead","NewTail","OldTail"),
+                         # Ignore looks twoards the `centre' AOI`
                          treat_non_aoi_looks_as_missing = T)
 ## Word learning tests
 LT.test.wl <- d[[4]] %>%
@@ -187,7 +188,8 @@ if(run_model){
                                                 (1 | Participant) +
                                                 (1 | Stimulus),
                                               data = LT.prop_tail.fstlst,
-                                              prior = prior.prop_tail.per_fstlst,
+                                              prior = set_prior("uniform(0,1.6)",
+                                                                class = "Intercept"),
                                               chains = 4, cores = 4,
                                               save_all_pars = T)
   LT.prop_tail.per_fstlst.brms.bf.3_2 <- bayes_factor(LT.prop_tail.per_fstlst.brms.model.3,
@@ -537,6 +539,8 @@ if(generate_plots){
 }
 
 # CONTRAST TEST ANALYSIS ===========================================================================
+
+
 # WORD LEARNING TEST ANALYSIS ======================================================================
 # Prepare dataset
 LT.prop_target <- LT.test.wl %>%
