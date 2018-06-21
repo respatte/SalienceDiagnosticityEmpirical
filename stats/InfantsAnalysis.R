@@ -216,7 +216,8 @@ if(run_model){
   ## Read all the results
   LT.prop_tail.per_fstlst.lmer.model <- readRDS("../results/infants/FstLst_lmerModel.rds")
   LT.prop_tail.per_fstlst.lmer.anova <- readRDS("../results/infants/FstLst_lmerAnova.rds")
-  LT.prop_tail.per_fstlst.brms.model <- readRDS("../results/infants/FstLst_brmsModel.rds")
+  LT.prop_tail.per_fstlst.brms.models <- readRDS("../results/infants/FstLst_brmsModels.rds")
+  LT.prop_tail.per_fstlst.brms.bayes_factors <- readRDS("../results/infants/FstLst_brmsBayesFactors.rds")
 }
 
 # Plot jitter + mean&se + lines
