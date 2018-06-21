@@ -553,10 +553,23 @@ LT.new_old <- LT.test.ctr %>%
 run_model <- T
 if(run_model){
   ## Run lmer
+  #### CONVERGENCE ISSUE
   LT.new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
                                   (1 | Participant),
                                 data = LT.new_old)
   LT.new_old.lmer.anova <- anova(LT.new_old.lmer.model, type = 1)
+  ## Run brm
+  prior.new_old <- c(set_prior("uniform(-0.8,0.8)",
+                               class = "Intercept"),
+                     set_prior("normal(0,.5)", class = "b"))
+  LT.new_old.brms.model <- brm(ChanceArcsin ~ ContrastType*Condition +
+                                 (1 + ContrastType | Participant),
+                               data = LT.new_old,
+                               prior = prior.new_old,
+                               chains = 4, cores = 4,
+                               save_all_pars = T,
+                               control = list(adapt_delta = .999,
+                                              max_treedepth = 20))
 }
 
 # WORD LEARNING TEST ANALYSIS ======================================================================
