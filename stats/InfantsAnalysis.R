@@ -539,7 +539,24 @@ if(generate_plots){
 }
 
 # CONTRAST TEST ANALYSIS ===========================================================================
-
+# Prepare dataset
+LT.new_old <- LT.test.ctr %>%
+  subset(ContrastType %in% c("Tail", "Head")) %>%
+  mutate(NewFeature = NewTail | NewHead,
+         OldFeature = OldTail | OldHead) %>%
+  make_time_window_data(aois = "NewFeature",
+                        predictor_columns = c("Condition",
+                                              "ContrastType")) %>%
+  mutate(ChanceArcsin = ArcSin - asin(sqrt(.5)))
+# Testing Prop ~ ContrastType*Condition
+run_model <- T
+if(run_model){
+  ## Run lmer
+  LT.new_old.lmer.model <- lmer(ArcSin ~ ContrastType*Condition +
+                                  (1 + ContrastType | Participant),
+                                data = LT.new_old)
+  LT.new_old.lmer.anova <- anova(LT.new_old.lmer.model, type = 1)
+}
 
 # WORD LEARNING TEST ANALYSIS ======================================================================
 # Prepare dataset

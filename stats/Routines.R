@@ -117,6 +117,9 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
            FamPart = case_when(TrialId <= 8 ~ 0,
                                TrialId <= 16 ~ 1,
                                TrialId <= 24 ~ 2),
+           ContrastType = case_when(grepl("HC_", MediaName) ~ "Head",
+                                    grepl("RC_", MediaName) ~ "Relative",
+                                    grepl("TC_", MediaName) ~ "Tail"),
            LabelOnset = case_when(grepl("_NL1", MediaName) ~ 2940,
                                   grepl("_NL2", MediaName) ~ 3240,
                                   grepl("_G1", MediaName) ~ 3300,
@@ -127,7 +130,7 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                   grepl("WLS", MediaName) ~ 2050),
            PrePost = case_when(TimeStamp <= LabelOnset ~ "Pre Label Onset",
                                TimeStamp >= LabelOnset+360 ~ "Post Label Onset"),
-           TrialEnd = LabelOnset + 4000,
+           TrialEnd = LabelOnset + 3000,
            Stimulus = ifelse(Phase == "Familiarisation",
                              sapply(strsplit(as.character(MediaName), "_"), "[", 2),
                              sapply(strsplit(as.character(MediaName), "_"), "[", 1)),
@@ -156,7 +159,8 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                                        substr(MediaName,7,7),
                                                        substr(MediaName,11,11)))))) %>%
     mutate_at(c("Participant", "PresentationSequence", "MediaName", "TrialId",
-                "Gender", "CategoryName", "Condition", "Phase", "Stimulus"),
+                "Gender", "CategoryName", "Condition", "Phase", "Stimulus",
+                "ContrastType"),
               parse_factor, levels = NULL, include_na = F)
   return(df)
 }
