@@ -162,16 +162,54 @@ if(run_model){
   prior.prop_tail.per_fstlst <- c(set_prior("uniform(0,1.6)",
                                            class = "Intercept"),
                                  set_prior("normal(0,.5)", class = "b"))
-  LT.prop_tail.per_fstlst.brms.model <- brm(ArcSin ~ FstLst*Condition +
-                                              (1 + FstLst | Participant) +
-                                              (1 | Stimulus),
-                                            data = LT.prop_tail.fstlst,
-                                            prior = prior.prop_tail.per_fstlst,
-                                            chains = 4, cores = 4)
+  LT.prop_tail.per_fstlst.brms.model.3 <- brm(ArcSin ~ FstLst*Condition +
+                                                (1 + FstLst | Participant) +
+                                                (1 | Stimulus),
+                                              data = LT.prop_tail.fstlst,
+                                              prior = prior.prop_tail.per_fstlst,
+                                              chains = 4, cores = 4,
+                                              save_all_pars = T)
+  LT.prop_tail.per_fstlst.brms.model.2 <- brm(ArcSin ~ FstLst + Condition +
+                                                (1 + FstLst | Participant) +
+                                                (1 | Stimulus),
+                                              data = LT.prop_tail.fstlst,
+                                              prior = prior.prop_tail.per_fstlst,
+                                              chains = 4, cores = 4,
+                                              save_all_pars = T)
+  LT.prop_tail.per_fstlst.brms.model.1 <- brm(ArcSin ~ FstLst +
+                                                (1 + FstLst | Participant) +
+                                                (1 | Stimulus),
+                                              data = LT.prop_tail.fstlst,
+                                              prior = prior.prop_tail.per_fstlst,
+                                              chains = 4, cores = 4,
+                                              save_all_pars = T)
+  LT.prop_tail.per_fstlst.brms.model.0 <- brm(ArcSin ~ 1 +
+                                                (1 | Participant) +
+                                                (1 | Stimulus),
+                                              data = LT.prop_tail.fstlst,
+                                              prior = prior.prop_tail.per_fstlst,
+                                              chains = 4, cores = 4,
+                                              save_all_pars = T)
+  LT.prop_tail.per_fstlst.brms.bf.3_2 <- bayes_factor(LT.prop_tail.per_fstlst.brms.model.3,
+                                                      LT.prop_tail.per_fstlst.brms.model.2)
+  LT.prop_tail.per_fstlst.brms.bf.2_1 <- bayes_factor(LT.prop_tail.per_fstlst.brms.model.2,
+                                                      LT.prop_tail.per_fstlst.brms.model.1)
+  LT.prop_tail.per_fstlst.brms.bf.1_0 <- bayes_factor(LT.prop_tail.per_fstlst.brms.model.1,
+                                                      LT.prop_tail.per_fstlst.brms.model.0)
   ## Save all the results
   saveRDS(LT.prop_tail.per_fstlst.lmer.model, "../results/infants/FstLst_lmerModel.rds")
   saveRDS(LT.prop_tail.per_fstlst.lmer.anova, "../results/infants/FstLst_lmerAnova.rds")
-  saveRDS(LT.prop_tail.per_fstlst.brms.model, "../results/infants/FstLst_brmsModel.rds")
+  LT.prop_tail.per_fstlst.brms.models <- list(LT.prop_tail.per_fstlst.brms.model.3,
+                                              LT.prop_tail.per_fstlst.brms.model.2,
+                                              LT.prop_tail.per_fstlst.brms.model.1,
+                                              LT.prop_tail.per_fstlst.brms.model.0)
+  LT.prop_tail.per_fstlst.brms.bayes_factors <- list(LT.prop_tail.per_fstlst.brms.bf.1_0,
+                                                     LT.prop_tail.per_fstlst.brms.bf.2_1,
+                                                     LT.prop_tail.per_fstlst.brms.bf.3_2)
+  saveRDS(LT.prop_tail.per_fstlst.brms.models,
+          "../results/infants/FstLst_brmsModels.rds")
+  saveRDS(LT.prop_tail.per_fstlst.brms.bayes_factors,
+          "../results/infants/FstLst_brmsBayesFactors.rds")
 }else{
   ## Read all the results
   LT.prop_tail.per_fstlst.lmer.model <- readRDS("../results/infants/FstLst_lmerModel.rds")
@@ -507,7 +545,7 @@ LT.prop_target <- LT.test.wl %>%
                    window_end_col = "TrialEnd") %>%
   make_time_window_data(aois = "Target",
                         predictor_columns = "CategoryName") %>%
-  mutate(ChanceArcsin = ArcSin - asin(.5)) # Value centered on chance looking, useful for test
+  mutate(ChanceArcsin = ArcSin - asin(sqrt(.5))) # Value centered on chance looking, useful for test
 # Testing in general
 ## Run lmer
 LT.prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant) + (1 | CategoryName),
@@ -519,5 +557,6 @@ LT.prop_target.lmer.anova <- anova(LT.prop_target.lmer.null,
 ## Run brms
 LT.prop_target.brms.model <- brm(ChanceArcsin ~ 1 + (1 | Participant) + (1 | CategoryName),
                                  data = LT.prop_target,
-                                 chains = 4, cores = 4, iter = 1000)
-.
+                                 chains = 4, cores = 4, iter = 2000,
+                                 control = list(adapt_delta = .999,
+                                                max_treedepth = 20))
