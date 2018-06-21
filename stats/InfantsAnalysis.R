@@ -552,8 +552,8 @@ LT.new_old <- LT.test.ctr %>%
 run_model <- T
 if(run_model){
   ## Run lmer
-  LT.new_old.lmer.model <- lmer(ArcSin ~ ContrastType*Condition +
-                                  (1 + ContrastType | Participant),
+  LT.new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
+                                  (1 | Participant),
                                 data = LT.new_old)
   LT.new_old.lmer.anova <- anova(LT.new_old.lmer.model, type = 1)
 }
