@@ -148,7 +148,7 @@ if(run_model){
   LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/Part_brmsModel.rds")
 }
 # Testing Prop ~ FstLst*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Select data
   LT.prop_tail.fstlst <- LT.prop_tail %>%
@@ -198,26 +198,20 @@ if(run_model){
                                                       LT.prop_tail.per_fstlst.brms.model.1)
   LT.prop_tail.per_fstlst.brms.bf.1_0 <- bayes_factor(LT.prop_tail.per_fstlst.brms.model.1,
                                                       LT.prop_tail.per_fstlst.brms.model.0)
-  ## Save all the results
-  saveRDS(LT.prop_tail.per_fstlst.lmer.model, "../results/infants/FstLst_lmerModel.rds")
-  saveRDS(LT.prop_tail.per_fstlst.lmer.anova, "../results/infants/FstLst_lmerAnova.rds")
-  LT.prop_tail.per_fstlst.brms.models <- list(LT.prop_tail.per_fstlst.brms.model.3,
-                                              LT.prop_tail.per_fstlst.brms.model.2,
-                                              LT.prop_tail.per_fstlst.brms.model.1,
-                                              LT.prop_tail.per_fstlst.brms.model.0)
   LT.prop_tail.per_fstlst.brms.bayes_factors <- list(LT.prop_tail.per_fstlst.brms.bf.1_0,
                                                      LT.prop_tail.per_fstlst.brms.bf.2_1,
                                                      LT.prop_tail.per_fstlst.brms.bf.3_2)
-  saveRDS(LT.prop_tail.per_fstlst.brms.models,
-          "../results/infants/FstLst_brmsModels.rds")
-  saveRDS(LT.prop_tail.per_fstlst.brms.bayes_factors,
-          "../results/infants/FstLst_brmsBayesFactors.rds")
+  ## Save all the results
+  saveRDS(LT.prop_tail.per_fstlst.lmer.model, "../results/infants/FstLst_lmerModel.rds")
+  saveRDS(LT.prop_tail.per_fstlst.lmer.anova, "../results/infants/FstLst_lmerAnova.rds")
+  saveRDS(LT.prop_tail.per_fstlst.brms.model.3, "../results/infants/FstLst_brmsModel.rds")
+  saveRDS(LT.prop_tail.per_fstlst.brms.bayes_factors, "../results/infants/FstLst_brmsBF.rds")
 }else{
   ## Read all the results
   LT.prop_tail.per_fstlst.lmer.model <- readRDS("../results/infants/FstLst_lmerModel.rds")
   LT.prop_tail.per_fstlst.lmer.anova <- readRDS("../results/infants/FstLst_lmerAnova.rds")
-  LT.prop_tail.per_fstlst.brms.models <- readRDS("../results/infants/FstLst_brmsModels.rds")
-  LT.prop_tail.per_fstlst.brms.bayes_factors <- readRDS("../results/infants/FstLst_brmsBayesFactors.rds")
+  LT.prop_tail.per_fstlst.brms.model.3 <- readRDS("../results/infants/FstLst_brmsModel.rds")
+  LT.prop_tail.per_fstlst.brms.bayes_factors <- readRDS("../results/infants/FstLst_brmsBF.rds")
 }
 
 # Plot jitter + mean&se + lines
@@ -612,4 +606,15 @@ if(run_model){
                                   save_all_pars = T)
   LT.prop_target.brms.bayes_factor <- bayes_factor(LT.prop_target.brms.model,
                                                    LT.prop_target.brms.null)
+  ## Save all the results
+  saveRDS(LT.prop_target.lmer.model, "../results/infants/WL_Target_lmerModel.rds")
+  saveRDS(LT.prop_target.lmer.anova, "../results/infants/WL_Target_lmerAnova.rds")
+  saveRDS(LT.prop_target.brms.model, "../results/infants/WL_Target_brmsModel.rds")
+  saveRDS(LT.prop_target.brms.bayes_factor, "../results/infants/WL_Target_brmsBF.rds")
+}else{
+  ## Read all the results
+  LT.prop_target.lmer.model <- readRDS("../results/infants/WL_Target_lmerModel.rds")
+  LT.prop_target.lmer.anova <- readRDS("../results/infants/WL_Target_lmerAnova.rds")
+  LT.prop_target.brms.model <- readRDS("../results/infants/WL_Target_brmsModel.rds")
+  LT.prop_target.brms.bayes_factor <- readRDS("../results/infants/WL_Target_brmsBF.rds")
 }
