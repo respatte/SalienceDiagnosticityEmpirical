@@ -551,19 +551,61 @@ if(run_model){
   LT.new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
                                   (1 | Participant),
                                 data = LT.new_old)
-  LT.new_old.lmer.anova <- anova(LT.new_old.lmer.model, type = 1)
   ## Run brm
   prior.new_old <- c(set_prior("uniform(-0.8,0.8)",
                                class = "Intercept"),
                      set_prior("normal(0,.5)", class = "b"))
-  LT.new_old.brms.model <- brm(ChanceArcsin ~ ContrastType*Condition +
-                                 (1 + ContrastType | Participant),
-                               data = LT.new_old,
-                               prior = prior.new_old,
-                               chains = 4, cores = 4,
-                               save_all_pars = T,
-                               control = list(adapt_delta = .999,
-                                              max_treedepth = 15))
+  LT.new_old.brms.model.3 <- brm(ChanceArcsin ~ ContrastType*Condition +
+                                   (1 + ContrastType | Participant),
+                                 data = LT.new_old,
+                                 prior = prior.new_old,
+                                 chains = 4, cores = 4, iter = 4000,
+                                 control = list(adapt_delta = .999,
+                                                max_treedepth = 15),
+                                 save_all_pars = T)
+  LT.new_old.brms.model.2 <- brm(ChanceArcsin ~ ContrastType + Condition +
+                                   (1 + ContrastType | Participant),
+                                 data = LT.new_old,
+                                 prior = prior.new_old,
+                                 chains = 4, cores = 4, iter = 4000,
+                                 control = list(adapt_delta = .999,
+                                                max_treedepth = 15),
+                                 save_all_pars = T)
+  LT.new_old.brms.model.1 <- brm(ChanceArcsin ~ ContrastType +
+                                   (1 + ContrastType | Participant),
+                                 data = LT.new_old,
+                                 prior = prior.new_old,
+                                 chains = 4, cores = 4, iter = 4000,
+                                 control = list(adapt_delta = .999,
+                                                max_treedepth = 15),
+                                 save_all_pars = T)
+  LT.new_old.brms.model.0 <- brm(ChanceArcsin ~ 1 +
+                                   (1 | Participant),
+                                 data = LT.new_old,
+                                 prior = set_prior("uniform(-.8,.8)",
+                                                   class = "Intercept"),
+                                 chains = 4, cores = 4, iter = 4000,
+                                 control = list(adapt_delta = .999,
+                                                max_treedepth = 15),
+                                 save_all_pars = T)
+  LT.new_old.brms.bf.3_2 <- bayes_factor(LT.new_old.brms.model.3,
+                                         LT.new_old.brms.model.2)
+  LT.new_old.brms.bf.2_1 <- bayes_factor(LT.new_old.brms.model.2,
+                                         LT.new_old.brms.model.1)
+  LT.new_old.brms.bf.1_0 <- bayes_factor(LT.new_old.brms.model.1,
+                                         LT.new_old.brms.model.0)
+  LT.new_old.brms.bayes_factors <- list(LT.new_old.brms.bf.1_0,
+                                        LT.new_old.brms.bf.2_1,
+                                        LT.new_old.brms.bf.3_2)
+  ## Save all the results
+  saveRDS(LT.new_old.lmer.model, "../results/infants/OldNew_lmerModel.rds")
+  saveRDS(LT.new_old.brms.model.3, "../results/infants/OldNew_brmsModel.rds")
+  saveRDS(LT.new_old.brms.bayes_factors, "../results/infants/OldNew_brmsBF.rds")
+}else{
+  ## Read all the results
+  LT.new_old.lmer.model <- readRDS("../results/infants/OldNew_lmerModel.rds")
+  LT.new_old.brms.model.3 <- readRDS("../results/infants/OldNew_brmsModel.rds")
+  LT.new_old.brms.bayes_factors <- readRDS("../results/infants/OldNew_brmsBF.rds")
 }
 
 # WORD LEARNING TEST ANALYSIS ======================================================================
