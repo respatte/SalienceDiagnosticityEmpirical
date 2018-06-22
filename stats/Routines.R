@@ -34,6 +34,7 @@ LT_data.import.adults <- function(participants="adults_2f"){
     drop_na(RT, CursorX, CursorY) %>%
     subset(RT > 200) %>%
     mutate(TrialId = ifelse(Block==0, TrialId + 252, TrialId),
+           TrialNum = TrialId - 1, # Useful for models
            Phase = ifelse(TrialId < 252, "Familiarisation", "Test"),
            TrackLoss = pmin.int(CursorX,CursorY)<0,
            TimeStamp = TimestampMicrosec*1e-3 + TimestampSec*1e3,
