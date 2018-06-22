@@ -580,7 +580,7 @@ participants <- LT.prop_target %>%
   group_by(Participant) %>%
   summarise(nTrials = n_distinct(TrialId))
 # Testing in general
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer
   LT.prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant),
