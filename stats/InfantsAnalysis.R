@@ -581,6 +581,10 @@ LT.prop_target <- LT.test.wl %>%
   make_time_window_data(aois = "Target",
                         predictor_columns = "CategoryName") %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5))) # Value centered on chance looking, useful for test
+## Check for amount of data available
+participants <- LT.prop_target %>%
+  group_by(Participant) %>%
+  summarise(nTrials = n_distinct(TrialId))
 # Testing in general
 run_model <- T
 if(run_model){
@@ -598,12 +602,14 @@ if(run_model){
                                    prior = set_prior("uniform(-.8,.8)",
                                                      class = "Intercept"),
                                    control = list(adapt_delta = .999,
-                                                  max_treedepth = 20))
+                                                  max_treedepth = 20),
+                                   save_all_pars = T)
   LT.prop_target.brms.null <- brm(ChanceArcsin ~ 0 + (1 | Participant),
                                    data = LT.prop_target,
                                    chains = 4, cores = 4, iter = 2000,
                                    control = list(adapt_delta = .999,
-                                                  max_treedepth = 20))
+                                                  max_treedepth = 20),
+                                  save_all_pars = T)
   LT.prop_target.brms.bayes_factor <- bayes_factor(LT.prop_target.brms.model,
                                                    LT.prop_target.brms.null)
 }
