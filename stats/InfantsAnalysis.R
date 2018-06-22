@@ -569,7 +569,7 @@ if(run_model){
                                chains = 4, cores = 4,
                                save_all_pars = T,
                                control = list(adapt_delta = .999,
-                                              max_treedepth = 20))
+                                              max_treedepth = 15))
 }
 
 # WORD LEARNING TEST ANALYSIS ======================================================================
@@ -582,16 +582,28 @@ LT.prop_target <- LT.test.wl %>%
                         predictor_columns = "CategoryName") %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5))) # Value centered on chance looking, useful for test
 # Testing in general
-## Run lmer
-LT.prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant) + (1 | CategoryName),
-                                  data = LT.prop_target)
-LT.prop_target.lmer.null <- lmer(ChanceArcsin ~ 0 + (1 | Participant) +  (1 | CategoryName),
-                                 data = LT.prop_target)
-LT.prop_target.lmer.anova <- anova(LT.prop_target.lmer.null,
-                                   LT.prop_target.lmer.model)
-## Run brms
-LT.prop_target.brms.model <- brm(ChanceArcsin ~ 1 + (1 | Participant) + (1 | CategoryName),
-                                 data = LT.prop_target,
-                                 chains = 4, cores = 4, iter = 2000,
-                                 control = list(adapt_delta = .999,
-                                                max_treedepth = 20))
+run_model <- T
+if(run_model){
+  ## Run lmer
+  LT.prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant),
+                                    data = LT.prop_target)
+  LT.prop_target.lmer.null <- lmer(ChanceArcsin ~ 0 + (1 | Participant),
+                                   data = LT.prop_target)
+  LT.prop_target.lmer.anova <- anova(LT.prop_target.lmer.null,
+                                     LT.prop_target.lmer.model)
+  ## Run brms
+  LT.prop_target.brms.model <- brm(ChanceArcsin ~ 1 + (1 | Participant),
+                                   data = LT.prop_target,
+                                   chains = 4, cores = 4, iter = 2000,
+                                   prior = set_prior("uniform(-.8,.8)",
+                                                     class = "Intercept"),
+                                   control = list(adapt_delta = .999,
+                                                  max_treedepth = 20))
+  LT.prop_target.brms.null <- brm(ChanceArcsin ~ 0 + (1 | Participant),
+                                   data = LT.prop_target,
+                                   chains = 4, cores = 4, iter = 2000,
+                                   control = list(adapt_delta = .999,
+                                                  max_treedepth = 20))
+  LT.prop_target.brms.bayes_factor <- bayes_factor(LT.prop_target.brms.model,
+                                                   LT.prop_target.brms.null)
+}
