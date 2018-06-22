@@ -217,7 +217,7 @@ LT_data.trackloss_clean <- function(df, participants="adults_2f", trial_prop_thr
     ggsave(paste0("../results/", participants, "/cleaning/TracklossSubjectTrial.png"),
            trackloss.subject.trial.p, width=9, height=15)
   }
-  # Remove trials with trackloss proportion greater than 0.25
+  # Remove trials with trackloss proportion greater than criteria
   df.trackloss <- clean_by_trackloss(data = df,
                                      trial_prop_thresh = trial_prop_thresh)
   # Compute and plot proportion of valid trials per subject
