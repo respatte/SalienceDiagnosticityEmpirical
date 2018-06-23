@@ -556,26 +556,26 @@ if(run_model){
                                class = "Intercept"),
                      set_prior("normal(0,.5)", class = "b"))
   LT.new_old.brms.model.3 <- brm(ChanceArcsin ~ ContrastType*Condition +
-                                   (1 + ContrastType | Participant),
+                                   (1 | Participant),
                                  data = LT.new_old,
                                  prior = prior.new_old,
-                                 chains = 4, cores = 4, iter = 4000,
+                                 chains = 4, cores = 4, iter = 10000,
                                  control = list(adapt_delta = .999,
                                                 max_treedepth = 15),
                                  save_all_pars = T)
   LT.new_old.brms.model.2 <- brm(ChanceArcsin ~ ContrastType + Condition +
-                                   (1 + ContrastType | Participant),
+                                   (1 | Participant),
                                  data = LT.new_old,
                                  prior = prior.new_old,
-                                 chains = 4, cores = 4, iter = 4000,
+                                 chains = 4, cores = 4, iter = 10000,
                                  control = list(adapt_delta = .999,
                                                 max_treedepth = 15),
                                  save_all_pars = T)
   LT.new_old.brms.model.1 <- brm(ChanceArcsin ~ ContrastType +
-                                   (1 + ContrastType | Participant),
+                                   (1 | Participant),
                                  data = LT.new_old,
                                  prior = prior.new_old,
-                                 chains = 4, cores = 4, iter = 4000,
+                                 chains = 4, cores = 4, iter = 10000,
                                  control = list(adapt_delta = .999,
                                                 max_treedepth = 15),
                                  save_all_pars = T)
@@ -584,7 +584,7 @@ if(run_model){
                                  data = LT.new_old,
                                  prior = set_prior("uniform(-.8,.8)",
                                                    class = "Intercept"),
-                                 chains = 4, cores = 4, iter = 4000,
+                                 chains = 4, cores = 4, iter = 10000,
                                  control = list(adapt_delta = .999,
                                                 max_treedepth = 15),
                                  save_all_pars = T)
