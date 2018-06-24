@@ -603,6 +603,7 @@ if(run_model){
                                         LT.new_old.brms.bf.3_2)
   ## Save all the results
   saveRDS(LT.new_old.lmer.model, "../results/infants/OldNew_lmerModel.rds")
+  saveRDS(LT.new_old.lmer.anova, "../results/infants/OldNew_lmerAnova.rds")
   saveRDS(LT.new_old.brms.model.3, "../results/infants/OldNew_brmsModel.rds")
   saveRDS(LT.new_old.brms.bayes_factors, "../results/infants/OldNew_brmsBF.rds")
 }else{
