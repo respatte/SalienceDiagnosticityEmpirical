@@ -543,6 +543,10 @@ LT.new_old <- LT.test.ctr %>%
                         predictor_columns = c("Condition",
                                               "ContrastType")) %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5)))
+## Check for amount of data available
+participants.new_old <- LT.new_old %>%
+  group_by(Participant) %>%
+  summarise(nTrials = n_distinct(TrialId))
 # Testing Prop ~ ContrastType*Condition
 run_model <- T
 if(run_model){
