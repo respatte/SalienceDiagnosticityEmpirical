@@ -537,8 +537,8 @@ if(generate_plots){
 # Prepare dataset
 LT.new_old <- LT.test.ctr %>%
   subset(ContrastType %in% c("Tail", "Head")) %>%
-  mutate(NewFeature = NewTail | NewHead,
-         OldFeature = OldTail | OldHead) %>%
+  mutate(NewFeature = ifelse(is.na(NewTail) & is.na(NewHead),NA,(NewTail | NewHead) %in% T),
+         OldFeature = ifelse(is.na(OldTail) & is.na(NewTail),NA,(OldTail | OldHead) %in% T)) %>%
   make_time_window_data(aois = "NewFeature",
                         predictor_columns = c("Condition",
                                               "ContrastType")) %>%
