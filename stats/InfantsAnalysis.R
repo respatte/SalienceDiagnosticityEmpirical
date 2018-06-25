@@ -687,3 +687,20 @@ if(run_model){
   LT.prop_target.brms.model <- readRDS("../results/infants/WL_Target_brmsModel.rds")
   LT.prop_target.brms.bayes_factor <- readRDS("../results/infants/WL_Target_brmsBF.rds")
 }
+
+# Plot jitter + mean&se
+generate_plots <- T
+if(generate_plots){
+  LT.prop_target.plot.data <- ggplot(LT.prop_target,
+                                 aes(x = AOI, y = Prop)) +
+    theme(legend.pos = "top") + ylab("Looking to New Feature (Prop)") +
+    geom_jitter(alpha = .25) +
+    geom_errorbar(stat = "summary",
+                  width = .2, colour = "black") +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 3) +
+    geom_hline(yintercept = 0.5)
+  ggsave("../results/infants/PropTarget_Data.pdf",
+         LT.prop_target.plot.data,
+         width = 7, height = 5.4)
+}
