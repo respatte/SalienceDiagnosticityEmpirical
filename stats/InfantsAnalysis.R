@@ -609,10 +609,32 @@ if(run_model){
 }else{
   ## Read all the results
   LT.new_old.lmer.model <- readRDS("../results/infants/OldNew_lmerModel.rds")
+  LT.new_old.lmer.anova <- readRDS("../results/infants/OldNew_lmerAnova.rds")
   LT.new_old.brms.model.3 <- readRDS("../results/infants/OldNew_brmsModel.rds")
   LT.new_old.brms.bayes_factors <- readRDS("../results/infants/OldNew_brmsBF.rds")
 }
-
+# Plot jitter + mean&se
+generate_plots <- T
+if(generate_plots){
+  LT.new_old.plot.data <- ggplot(LT.new_old,
+                            aes(x = ContrastType, y = Prop,
+                                colour = Condition,
+                                fill = Condition)) +
+    theme(legend.pos = "top") + ylab("Looking to New Feature (Prop)") +
+    geom_point(position = position_jitterdodge(dodge.width = .8,
+                                               jitter.width = .2),
+               alpha = .25) +
+    geom_errorbar(stat = "summary",
+                  width = .2, colour = "black",
+                  position = position_dodge(.1)) +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 3,
+               position = position_dodge(.1)) +
+    geom_hline(yintercept = 0.5)
+  ggsave("../results/infants/OldNew_Data.pdf",
+         LT.new_old.plot.data,
+         width = 7, height = 5.4)
+}
 # WORD LEARNING TEST ANALYSIS ======================================================================
 # Prepare dataset
 LT.prop_target <- LT.test.wl %>%
