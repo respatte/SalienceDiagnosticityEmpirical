@@ -462,7 +462,7 @@ if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
   num_sub = length(unique((LT.time_course_tail$Participant)))
-  threshold_t = qt(p = 1 - .05/2, 
+  threshold_t = qt(p = 1 - .05/2,
                    df = num_sub-1)
   ## Determine clusters
   LT.time_cluster_tail <- LT.time_course_tail %>%
