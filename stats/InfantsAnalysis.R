@@ -148,7 +148,7 @@ if(run_model){
   LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/Part_brmsModel.rds")
 }
 # Testing Prop ~ FstLst*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Select data
   LT.prop_tail.fstlst <- LT.prop_tail %>%
@@ -548,7 +548,7 @@ participants.new_old <- LT.new_old %>%
   group_by(Participant) %>%
   summarise(nTrials = n_distinct(TrialId))
 # Testing Prop ~ ContrastType*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer
   LT.new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
@@ -681,7 +681,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   LT.prop_target.plot.data <- ggplot(LT.prop_target,
                                  aes(x = AOI, y = Prop)) +
