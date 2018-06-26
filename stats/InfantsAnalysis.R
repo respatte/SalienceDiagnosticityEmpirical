@@ -537,20 +537,24 @@ if(generate_plots){
 # Prepare dataset
 LT.new_old <- LT.test.ctr %>%
   subset(ContrastType %in% c("Tail", "Head")) %>%
-  mutate(NewFeature = NewTail | NewHead,
-         OldFeature = OldTail | OldHead) %>%
+  mutate(NewFeature = ifelse(is.na(NewTail) & is.na(NewHead),NA,(NewTail | NewHead) %in% T),
+         OldFeature = ifelse(is.na(OldTail) & is.na(NewTail),NA,(OldTail | OldHead) %in% T)) %>%
   make_time_window_data(aois = "NewFeature",
                         predictor_columns = c("Condition",
                                               "ContrastType")) %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5)))
+## Check for amount of data available
+participants.new_old <- LT.new_old %>%
+  group_by(Participant) %>%
+  summarise(nTrials = n_distinct(TrialId))
 # Testing Prop ~ ContrastType*Condition
 run_model <- T
 if(run_model){
   ## Run lmer
-  #### CONVERGENCE ISSUE
   LT.new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
                                   (1 | Participant),
                                 data = LT.new_old)
+  LT.new_old.lmer.anova <- anova(LT.new_old.lmer.model, type = 1)
   ## Run brm
   prior.new_old <- c(set_prior("uniform(-0.8,0.8)",
                                class = "Intercept"),
@@ -559,34 +563,26 @@ if(run_model){
                                    (1 | Participant),
                                  data = LT.new_old,
                                  prior = prior.new_old,
-                                 chains = 4, cores = 4, iter = 10000,
-                                 control = list(adapt_delta = .999,
-                                                max_treedepth = 15),
+                                 chains = 4, cores = 4,
                                  save_all_pars = T)
   LT.new_old.brms.model.2 <- brm(ChanceArcsin ~ ContrastType + Condition +
                                    (1 | Participant),
                                  data = LT.new_old,
                                  prior = prior.new_old,
-                                 chains = 4, cores = 4, iter = 10000,
-                                 control = list(adapt_delta = .999,
-                                                max_treedepth = 15),
+                                 chains = 4, cores = 4,
                                  save_all_pars = T)
   LT.new_old.brms.model.1 <- brm(ChanceArcsin ~ ContrastType +
                                    (1 | Participant),
                                  data = LT.new_old,
                                  prior = prior.new_old,
-                                 chains = 4, cores = 4, iter = 10000,
-                                 control = list(adapt_delta = .999,
-                                                max_treedepth = 15),
+                                 chains = 4, cores = 4,
                                  save_all_pars = T)
   LT.new_old.brms.model.0 <- brm(ChanceArcsin ~ 1 +
                                    (1 | Participant),
                                  data = LT.new_old,
                                  prior = set_prior("uniform(-.8,.8)",
                                                    class = "Intercept"),
-                                 chains = 4, cores = 4, iter = 10000,
-                                 control = list(adapt_delta = .999,
-                                                max_treedepth = 15),
+                                 chains = 4, cores = 4,
                                  save_all_pars = T)
   LT.new_old.brms.bf.3_2 <- bayes_factor(LT.new_old.brms.model.3,
                                          LT.new_old.brms.model.2)
@@ -599,15 +595,38 @@ if(run_model){
                                         LT.new_old.brms.bf.3_2)
   ## Save all the results
   saveRDS(LT.new_old.lmer.model, "../results/infants/OldNew_lmerModel.rds")
+  saveRDS(LT.new_old.lmer.anova, "../results/infants/OldNew_lmerAnova.rds")
   saveRDS(LT.new_old.brms.model.3, "../results/infants/OldNew_brmsModel.rds")
   saveRDS(LT.new_old.brms.bayes_factors, "../results/infants/OldNew_brmsBF.rds")
 }else{
   ## Read all the results
   LT.new_old.lmer.model <- readRDS("../results/infants/OldNew_lmerModel.rds")
+  LT.new_old.lmer.anova <- readRDS("../results/infants/OldNew_lmerAnova.rds")
   LT.new_old.brms.model.3 <- readRDS("../results/infants/OldNew_brmsModel.rds")
   LT.new_old.brms.bayes_factors <- readRDS("../results/infants/OldNew_brmsBF.rds")
 }
-
+# Plot jitter + mean&se
+generate_plots <- F
+if(generate_plots){
+  LT.new_old.plot.data <- ggplot(LT.new_old,
+                            aes(x = ContrastType, y = Prop,
+                                colour = Condition,
+                                fill = Condition)) +
+    theme(legend.pos = "top") + ylab("Looking to New Feature (Prop)") +
+    geom_point(position = position_jitterdodge(dodge.width = .8,
+                                               jitter.width = .2),
+               alpha = .25) +
+    geom_errorbar(stat = "summary",
+                  width = .2, colour = "black",
+                  position = position_dodge(.1)) +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 3,
+               position = position_dodge(.1)) +
+    geom_hline(yintercept = 0.5)
+  ggsave("../results/infants/OldNew_Data.pdf",
+         LT.new_old.plot.data,
+         width = 7, height = 5.4)
+}
 # WORD LEARNING TEST ANALYSIS ======================================================================
 # Prepare dataset
 LT.prop_target <- LT.test.wl %>%
@@ -659,4 +678,21 @@ if(run_model){
   LT.prop_target.lmer.anova <- readRDS("../results/infants/WL_Target_lmerAnova.rds")
   LT.prop_target.brms.model <- readRDS("../results/infants/WL_Target_brmsModel.rds")
   LT.prop_target.brms.bayes_factor <- readRDS("../results/infants/WL_Target_brmsBF.rds")
+}
+
+# Plot jitter + mean&se
+generate_plots <- T
+if(generate_plots){
+  LT.prop_target.plot.data <- ggplot(LT.prop_target,
+                                 aes(x = AOI, y = Prop)) +
+    theme(legend.pos = "top") + ylab("Looking to New Feature (Prop)") +
+    geom_jitter(alpha = .25) +
+    geom_errorbar(stat = "summary",
+                  width = .2, colour = "black") +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 3) +
+    geom_hline(yintercept = 0.5)
+  ggsave("../results/infants/PropTarget_Data.pdf",
+         LT.prop_target.plot.data,
+         width = 7, height = 5.4)
 }
