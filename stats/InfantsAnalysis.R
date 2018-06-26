@@ -404,8 +404,6 @@ if(generate_plots){
                                           colour = Condition,
                                           fill = Condition)) +
     theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") + facet_grid(.~FamPart) +
-    scale_colour_discrete(labels = c("Label", "No Label")) +
-    scale_fill_discrete(labels = c("Label", "No Label")) +
     geom_point(position = position_jitterdodge(dodge.width = .8,
                                                jitter.width = .2),
                alpha = .25) +
@@ -428,8 +426,6 @@ if(generate_plots){
                                             colour = Condition,
                                             fill = Condition)) +
     theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") + facet_grid(.~FstLst) +
-    scale_colour_discrete(labels = c("Label", "No Label")) +
-    scale_fill_discrete(labels = c("Label", "No Label")) +
     geom_point(position = position_jitterdodge(dodge.width = .8,
                                                jitter.width = .2),
                alpha = .25) +
