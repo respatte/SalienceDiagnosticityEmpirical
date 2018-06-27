@@ -657,7 +657,7 @@ participants.new_old <- LT.new_old %>%
   group_by(Participant) %>%
   summarise(nTrials = n_distinct(TrialId))
 # Testing Prop ~ ContrastType*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer
   LT.new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
@@ -668,31 +668,38 @@ if(run_model){
   prior.new_old <- c(set_prior("uniform(-0.8,0.8)",
                                class = "Intercept"),
                      set_prior("normal(0,.5)", class = "b"))
-  LT.new_old.brms.model.3 <- brm(ChanceArcsin ~ ContrastType*Condition +
+  LT.new_old.brms.model.4 <- brm(ChanceArcsin ~ ContrastType*Condition +
                                    (1 | Participant),
                                  data = LT.new_old,
                                  prior = prior.new_old,
                                  chains = 4, cores = 4,
                                  save_all_pars = T)
-  LT.new_old.brms.model.2 <- brm(ChanceArcsin ~ ContrastType + Condition +
+  LT.new_old.brms.model.3 <- brm(ChanceArcsin ~ ContrastType + Condition +
                                    (1 | Participant),
                                  data = LT.new_old,
                                  prior = prior.new_old,
                                  chains = 4, cores = 4,
                                  save_all_pars = T)
-  LT.new_old.brms.model.1 <- brm(ChanceArcsin ~ ContrastType +
+  LT.new_old.brms.model.2 <- brm(ChanceArcsin ~ ContrastType +
                                    (1 | Participant),
                                  data = LT.new_old,
                                  prior = prior.new_old,
                                  chains = 4, cores = 4,
                                  save_all_pars = T)
-  LT.new_old.brms.model.0 <- brm(ChanceArcsin ~ 1 +
+  LT.new_old.brms.model.1 <- brm(ChanceArcsin ~ 1 +
                                    (1 | Participant),
                                  data = LT.new_old,
                                  prior = set_prior("uniform(-.8,.8)",
                                                    class = "Intercept"),
                                  chains = 4, cores = 4,
                                  save_all_pars = T)
+  LT.new_old.brms.model.0 <- brm(ChanceArcsin ~ 0 +
+                                   (1 | Participant),
+                                 data = LT.new_old,
+                                 chains = 4, cores = 4,
+                                 save_all_pars = T)
+  LT.new_old.brms.bf.4_3 <- bayes_factor(LT.new_old.brms.model.4,
+                                         LT.new_old.brms.model.3)
   LT.new_old.brms.bf.3_2 <- bayes_factor(LT.new_old.brms.model.3,
                                          LT.new_old.brms.model.2)
   LT.new_old.brms.bf.2_1 <- bayes_factor(LT.new_old.brms.model.2,
@@ -701,17 +708,18 @@ if(run_model){
                                          LT.new_old.brms.model.0)
   LT.new_old.brms.bayes_factors <- list(LT.new_old.brms.bf.1_0,
                                         LT.new_old.brms.bf.2_1,
-                                        LT.new_old.brms.bf.3_2)
+                                        LT.new_old.brms.bf.3_2,
+                                        LT.new_old.brms.bf.4_3)
   ## Save all the results
   saveRDS(LT.new_old.lmer.model, "../results/infants/OldNew_lmerModel.rds")
   saveRDS(LT.new_old.lmer.anova, "../results/infants/OldNew_lmerAnova.rds")
-  saveRDS(LT.new_old.brms.model.3, "../results/infants/OldNew_brmsModel.rds")
+  saveRDS(LT.new_old.brms.model.4, "../results/infants/OldNew_brmsModel.rds")
   saveRDS(LT.new_old.brms.bayes_factors, "../results/infants/OldNew_brmsBF.rds")
 }else{
   ## Read all the results
   LT.new_old.lmer.model <- readRDS("../results/infants/OldNew_lmerModel.rds")
   LT.new_old.lmer.anova <- readRDS("../results/infants/OldNew_lmerAnova.rds")
-  LT.new_old.brms.model.3 <- readRDS("../results/infants/OldNew_brmsModel.rds")
+  LT.new_old.brms.model.4 <- readRDS("../results/infants/OldNew_brmsModel.rds")
   LT.new_old.brms.bayes_factors <- readRDS("../results/infants/OldNew_brmsBF.rds")
 }
 # Plot jitter + mean&se
