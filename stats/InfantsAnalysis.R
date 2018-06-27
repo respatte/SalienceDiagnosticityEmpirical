@@ -99,7 +99,9 @@ LT.gaze_offset.data.correction <- d[[4]] %>%
                              Participant == "P65" ~ CursorY - 50,
                              Participant == "P66" ~ CursorY - 50,
                              Participant == "P67" ~ CursorY - 100,
-                             T ~ as.double(CursorY)))
+                             T ~ as.double(CursorY))) %>%
+  select(-c(Head, Tail, NewTail, OldTail, NewHead, OldHead, Centre, Target, Distractor))
+  # Removing AOIs as they need updating
 ## Saving heatmaps per participant pre-correction
 generate_plots <- F
 if(generate_plots){
@@ -138,9 +140,10 @@ if(generate_plots){
 }
 ## Updating AOI hits
 infants.AOIs <- grep("infants", names(AOIs))
+LT.gaze_offset.data.corrected <- LT.gaze_offset.data.correction
 for(AOI in names(AOIs[infants.AOIs])){
   AOI.name <- sub("infants\\.", "", AOI)
-  LT.gaze_offset.data.corrected <- LT.gaze_offset.data.correction %>%
+  LT.gaze_offset.data.corrected <- LT.gaze_offset.data.corrected %>%
     left_join(AOIs[[AOI]]) %>%
     mutate(!!AOI.name := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom) %>%
     select(-c(Left, Right, Top, Bottom))
@@ -733,6 +736,7 @@ if(generate_plots){
          LT.new_old.plot.data,
          width = 7, height = 5.4)
 }
+
 # WORD LEARNING TEST ANALYSIS ======================================================================
 # Prepare dataset
 LT.prop_target <- LT.test.wl %>%
