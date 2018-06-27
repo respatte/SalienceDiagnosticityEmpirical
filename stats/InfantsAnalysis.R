@@ -37,7 +37,7 @@ age_gender_condition <- age %>%
             u = max(Age))
 # Checking gaze-data offset (checking on Familiarisation only for simplicity)
 ## Saving heatmaps per participant pre-correction
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
                      xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
@@ -89,7 +89,7 @@ LT.gaze_offset.data.correction <- d[[4]] %>%
                              Participant == "P31" ~ CursorY - 100,
                              Participant == "P36" ~ CursorY - 50,
                              Participant == "P37" ~ CursorY - 50,
-                             Participant == "P42" ~ CursorY - 50
+                             Participant == "P42" ~ CursorY - 50,
                              Participant == "P47" ~ CursorY - 50,
                              Participant == "P52" ~ CursorY - 50,
                              Participant == "P59" ~ CursorY - 150,
@@ -101,7 +101,7 @@ LT.gaze_offset.data.correction <- d[[4]] %>%
                              Participant == "P67" ~ CursorY - 100,
                              T ~ as.double(CursorY)))
 ## Saving heatmaps per participant pre-correction
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
                      xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
@@ -200,7 +200,7 @@ LT.prop_tail <- LT.fam %>%
                                             "Stimulus",
                                             "CategoryName"))
 # Testing Prop ~ Trial*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   LT.prop_tail.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*Condition +
@@ -229,7 +229,7 @@ if(run_model){
   LT.prop_tail.per_trial.brms.model <- readRDS("../results/infants/Trial_brmsModel.rds")
 }
 # Testing Prop ~ Part*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer
   LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FamPart*Condition +
@@ -258,7 +258,7 @@ if(run_model){
   LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/Part_brmsModel.rds")
 }
 # Testing Prop ~ FstLst*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Select data
   LT.prop_tail.fstlst <- LT.prop_tail %>%
@@ -325,7 +325,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Plot per trial
   LT.prop_tail.per_trial.plot <- ggplot(LT.prop_tail,
@@ -415,7 +415,7 @@ LT.pre_post <- LT.fam %>%
                                             "CategoryName")) %>%
   drop_na(PrePost)
 # Testing Prop ~ Trial*PrePost*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   LT.pre_post.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*PrePost*Condition +
@@ -444,7 +444,7 @@ if(run_model){
   LT.pre_post.per_trial.brms.model <- readRDS("../results/infants/PrePost_Trial_brmsModel.rds")
 }
 # Testing Prop ~ Part*PrePost*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer
   LT.pre_post.per_part.lmer.model <- lmer(ArcSin ~ FamPart*PrePost*Condition +
@@ -473,7 +473,7 @@ if(run_model){
   LT.pre_post.per_part.brms.model <- readRDS("../results/infants/PrePost_Part_brmsModel.rds")
 }
 # Testing Prop ~ FstLst*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Select data
   LT.pre_post.fstlst <- LT.pre_post %>%
@@ -506,7 +506,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Plot per part
   LT.pre_post.per_part.plot <- ggplot(LT.pre_post,
@@ -567,7 +567,7 @@ LT.time_course_tail <- LT.fam %>%
 # GROWTH CURVE ANALYSIS
 ## TODO
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- F
+run_model <- T
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -619,7 +619,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   intercept <- tibble(Part = 0:2,
                       x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
@@ -654,7 +654,7 @@ participants.new_old <- LT.new_old %>%
   group_by(Participant) %>%
   summarise(nTrials = n_distinct(TrialId))
 # Testing Prop ~ ContrastType*Condition
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer
   LT.new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
@@ -712,7 +712,7 @@ if(run_model){
   LT.new_old.brms.bayes_factors <- readRDS("../results/infants/OldNew_brmsBF.rds")
 }
 # Plot jitter + mean&se
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   LT.new_old.plot.data <- ggplot(LT.new_old,
                             aes(x = ContrastType, y = Prop,
@@ -747,7 +747,7 @@ participants <- LT.prop_target %>%
   group_by(Participant) %>%
   summarise(nTrials = n_distinct(TrialId))
 # Testing in general
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run lmer
   LT.prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant),
@@ -787,7 +787,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   LT.prop_target.plot.data <- ggplot(LT.prop_target,
                                  aes(x = AOI, y = Prop)) +
