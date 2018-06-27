@@ -147,7 +147,7 @@ for(AOI in names(AOIs[infants.AOIs])){
 }
 # Creating general datasets for analysis (separating phases, general window sub-setting)
 ## Familiarisation
-LT.fam <- LT.gaze_offset.data.correction %>%
+LT.fam <- LT.gaze_offset.data.corrected %>%
   subset(Phase == "Familiarisation") %>%
   mutate_at("PrePost", parse_factor,
             levels = c("Pre Label Onset", "Post Label Onset"),
@@ -169,7 +169,7 @@ LT.fam <- LT.gaze_offset.data.correction %>%
                    window_end_col = "TrialEnd") %>% # and end 3000ms after LabelOnset
   mutate(LabelOnset = LabelOnset - 1500) # Update LabelOnset after window sub-setting
 ## Contrast tests
-LT.test.ctr <- LT.gaze_offset.data.correction %>%
+LT.test.ctr <- LT.gaze_offset.data.corrected %>%
   subset(Phase == "Test - Contrast") %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
@@ -179,7 +179,7 @@ LT.test.ctr <- LT.gaze_offset.data.correction %>%
                          # Ignore looks twoards the `centre' AOI`
                          treat_non_aoi_looks_as_missing = T)
 ## Word learning tests
-LT.test.wl <- LT.gaze_offset.data.correction %>%
+LT.test.wl <- LT.gaze_offset.data.corrected %>%
   subset(Phase == "Test - Word Learning") %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
