@@ -136,6 +136,15 @@ if(generate_plots){
            width = 3.5, height = 2.9)
   }
 }
+## Updating AOI hits
+infants.AOIs <- grep("infants", names(AOIs))
+for(AOI in names(AOIs[infants.AOIs])){
+  AOI.name <- sub("infants\\.", "", AOI)
+  LT.gaze_offset.data.corrected <- LT.gaze_offset.data.correction %>%
+    left_join(AOIs[[AOI]]) %>%
+    mutate(!!AOI.name := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom) %>%
+    select(-c(Left, Right, Top, Bottom))
+}
 # Creating general datasets for analysis (separating phases, general window sub-setting)
 ## Familiarisation
 LT.fam <- LT.gaze_offset.data.correction %>%
