@@ -568,7 +568,7 @@ LT.time_course_tail <- LT.fam %>%
                                               "FstLst"),
                           summarize_by = "Participant")
 # GROWTH CURVE ANALYSIS
-## TODO
+## TODO?
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 run_model <- F
 if(run_model){
@@ -591,24 +591,6 @@ if(run_model){
     lapply(analyze_time_clusters,
            within_subj = F,
            parallel = T)
-  # #### TESTING TO REPORT ON eyetrackingR GITHUB
-  #   ## Determine clusters
-  #   LT.time_cluster_tail <- make_time_cluster_data(LT.time_course_tail,
-  #                                                  predictor_column = "ConditionNo Label",
-  #                                                  aoi = "Tail",
-  #                                                  test = "lmer",
-  #                                                  threshold = 1.5,
-  #                                                  formula = ArcSin ~ Condition +
-  #                                                    (1 | Participant) +
-  #                                                    (1 | Stimulus))
-  #   ## Run analysis
-  #   LT.time_cluster_tail.analysis <- analyze_time_clusters(LT.time_cluster_tail,
-  #                                                          formula = ArcSin ~ Condition +
-  #                                                            (1 | Participant) +
-  #                                                            (1 | Stimulus),
-  #                                                          within_subj = T,
-  #                                                          parallel = T,
-  #                                                          samples = 200)
   bcbp.time <- proc.time() - t
   ## Save clusters and analysis
   saveRDS(LT.time_cluster_tail,
@@ -654,10 +636,12 @@ LT.new_old <- LT.test.ctr %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5)))
 ## Check for amount of data available
 participants.new_old <- LT.new_old %>%
-  group_by(Participant) %>%
-  summarise(nTrials = n_distinct(TrialId))
+  group_by(Participant, Condition) %>%
+  summarise(nTrials = n_distinct(TrialId)) %>%
+  group_by(Condition, nTrials) %>%
+  summarise(Participants = n_distinct(Participant))
 # Testing Prop ~ ContrastType*Condition
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run lmer
   LT.new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
