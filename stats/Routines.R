@@ -104,10 +104,11 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
     subset(!(grepl("AG",.$MediaName) | .$MediaName == "")) %>%
     group_by(Participant, MediaName) %>%
     mutate(TrackLoss = ValidityLeft + ValidityRight == 8,
-           TrialId = floor(1 + (8/9)*max(StudioEventIndex, na.rm = T)/2)) %>%
+           TrialId = max(StudioEventIndex, na.rm = T)/2) %>%
     ungroup() %>%
-    mutate(TrialNum = TrialId - 1) %>% # Useful for models
     drop_na(MediaName, TrackLoss) %>%
+    mutate(TrialId = as.numeric(as.factor(TrialId)),  # Fixing TrialId to ignore attention gatherers
+           TrialNum = TrialId - 1) %>%                # Useful for models
     select(-c(ValidityLeft, ValidityRight, StudioEventIndex)) %>%
     unique() %>%
     inner_join(participant_info) %>%
@@ -143,7 +144,7 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                 grepl("TC_[AB][12]R", MediaName) ~ "NewTailL",
                                 grepl("RC_[AB]L", MediaName) ~ "NewHeadL_NewTailR",
                                 grepl("RC_[AB]R", MediaName) ~ "NewHeadR_NewTailL",
-                                grepl("WL[SG]_A1", MediaName) ~ 
+                                grepl("WL[SG]_A1", MediaName) ~
                                   ifelse(CategoryName == "NL",
                                          "HeadsIn_NoTarget",
                                          paste0("HeadsIn_Target",
