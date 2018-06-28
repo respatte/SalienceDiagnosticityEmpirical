@@ -861,7 +861,6 @@ if(run_model){
   ## Determine clusters
   LT.prop_target.time_cluster <- LT.prop_target.time_course.chance_test %>%
     make_time_cluster_data(predictor_column = "Chance",
-                           treatment_level = "No Label",
                            aoi = "Target",
                            test = "t.test",
                            threshold = threshold_t)
