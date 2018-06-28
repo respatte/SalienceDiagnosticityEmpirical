@@ -174,11 +174,16 @@ LT.fam <- LT.gaze_offset.data.corrected %>%
 ## Contrast tests
 LT.test.ctr <- LT.gaze_offset.data.corrected %>%
   subset(Phase == "Test - Contrast") %>%
+  mutate(NewFeature = ifelse(ContrastType == "Relative" | (is.na(NewTail) & is.na(NewHead)),
+                             NA, (NewTail | NewHead) %in% T),
+         OldFeature = ifelse(ContrastType == "Relative" | (is.na(OldTail) & is.na(NewTail)),
+                             NA, (OldTail | OldHead) %in% T)) %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
                          trackloss_column = "TrackLoss",
-                         aoi_columns = c("NewHead","OldHead","NewTail","OldTail"),
+                         aoi_columns = c("NewHead","OldHead","NewTail","OldTail",
+                                         "NewFeature", "OldFeature"),
                          # Ignore looks twoards the `centre' AOI`
                          treat_non_aoi_looks_as_missing = T)
 ## Word learning tests
@@ -622,8 +627,6 @@ save_path <- "../results/infants/OldNew/TrialAverage_"
 # Prepare dataset
 LT.new_old <- LT.test.ctr %>%
   subset(ContrastType %in% c("Tail", "Head")) %>%
-  mutate(NewFeature = ifelse(is.na(NewTail) & is.na(NewHead),NA,(NewTail | NewHead) %in% T),
-         OldFeature = ifelse(is.na(OldTail) & is.na(NewTail),NA,(OldTail | OldHead) %in% T)) %>%
   make_time_window_data(aois = "NewFeature",
                         predictor_columns = c("Condition",
                                               "ContrastType")) %>%
@@ -721,6 +724,39 @@ if(generate_plots){
   ggsave(paste0(save_path, "data.pdf"),
          LT.new_old.plot.data,
          width = 7, height = 5.4)
+}
+
+# CONTRAST TEST ANALYSIS: PROP NEW FEATURE LOOKING TIME COURSE BY FSTLST  ==========================
+save_path <- "../results/infants/OldNew/TimeCourse_"
+# Data preparation
+LT.new_old.time_course <- LT.test.ctr %>%
+  subset(ContrastType %in% c("Tail", "Head")) %>%
+  make_time_sequence_data(time_bin_size = 50,
+                          aois = "NewFeature",
+                          predictor_columns=c("Condition",
+                                              "ContrastType"),
+                          summarize_by = "Participant")
+# Run growth curve analysis
+#### NOT ENOUGH DATA
+# Run bootstrapped cluster-based permutation analysis
+#### NOT ENOuGH DATA
+
+# PLOT
+generate_plots <- T
+if(generate_plots){
+  LT.new_old.time_course.plot <- ggplot(LT.new_old.time_course,
+                                        aes(x = Time, y=Prop,
+                                            colour=Condition,
+                                            fill=Condition)) +
+    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
+    facet_grid(ContrastType~.) +
+    theme(legend.position = "top") + ylim(0,1) +
+    stat_summary(fun.y='mean', geom='line', linetype = '61') +
+    stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+    geom_hline(yintercept = .5)
+  ggsave(paste0(save_path, "data.pdf"),
+         plot = LT.new_old.time_course.plot,
+         width = 3.5, height = 5)
 }
 
 # WORD LEARNING TEST ANALYSIS ======================================================================
