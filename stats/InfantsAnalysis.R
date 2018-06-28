@@ -464,6 +464,7 @@ if(generate_plots){
 }
 
 # FAMILIARISATION ANALYSIS: PROP AOI LOOKING PRE/POST LABEL ONSET ==================================
+save_path <- "../results/infants/PrePost/TrialAverage_"
 # Prepare dataset
 LT.pre_post <- LT.fam %>%
   make_time_window_data(aois=c("Tail"),
@@ -496,14 +497,14 @@ if(run_model){
                                           prior = prior.pre_post.per_trial,
                                           chains = 4, cores = 4)
   ## Save all results
-  saveRDS(LT.pre_post.per_trial.lmer.model, "../results/infants/PrePost_Trial_lmerModel.rds")
-  saveRDS(LT.pre_post.per_trial.lmer.anova, "../results/infants/PrePost_Trial_lmerAnova.rds")
-  saveRDS(LT.pre_post.per_trial.brms.model, "../results/infants/PrePost_Trial_brmsModel.rds")
+  saveRDS(LT.pre_post.per_trial.lmer.model, paste0(save_path, "Trials_lmerModel.rds"))
+  saveRDS(LT.pre_post.per_trial.lmer.anova, paste0(save_path, "Trials_lmerAnova.rds"))
+  saveRDS(LT.pre_post.per_trial.brms.model, paste0(save_path, "Trials_brmsModel.rds"))
 }else{
   ## Read all the results
-  LT.pre_post.per_trial.lmer.model <- readRDS("../results/infants/PrePost_Trial_lmerModel.rds")
-  LT.pre_post.per_trial.lmer.anova <- readRDS("../results/infants/PrePost_Trial_lmerAnova.rds")
-  LT.pre_post.per_trial.brms.model <- readRDS("../results/infants/PrePost_Trial_brmsModel.rds")
+  LT.pre_post.per_trial.lmer.model <- readRDS(paste0(save_path, "Trials_lmerModel.rds"))
+  LT.pre_post.per_trial.lmer.anova <- readRDS(paste0(save_path, "Trials_lmerAnova.rds"))
+  LT.pre_post.per_trial.brms.model <- readRDS(paste0(save_path, "Trials_brmsModel.rds"))
 }
 # Testing Prop ~ Part*PrePost*Condition
 run_model <- F
@@ -525,14 +526,14 @@ if(run_model){
                                          prior = prior.pre_post.per_part,
                                          chains = 4, cores = 4)
   ## Save all the results
-  saveRDS(LT.pre_post.per_part.lmer.model, "../results/infants/PrePost_Part_lmerModel.rds")
-  saveRDS(LT.pre_post.per_part.lmer.anova, "../results/infants/PrePost_Part_lmerAnova.rds")
-  saveRDS(LT.pre_post.per_part.brms.model, "../results/infants/PrePost_Part_brmsModel.rds")
+  saveRDS(LT.pre_post.per_part.lmer.model, paste0(save_path, "Parts_lmerModel.rds"))
+  saveRDS(LT.pre_post.per_part.lmer.anova, paste0(save_path, "Parts_lmerAnova.rds"))
+  saveRDS(LT.pre_post.per_part.brms.model, paste0(save_path, "Parts_brmsModel.rds"))
 }else{
   ## Read all the results
-  LT.pre_post.per_part.lmer.model <- readRDS("../results/infants/PrePost_Part_lmerModel.rds")
-  LT.pre_post.per_part.lmer.anova <- readRDS("../results/infants/PrePost_Part_lmerAnova.rds")
-  LT.pre_post.per_part.brms.model <- readRDS("../results/infants/PrePost_Part_brmsModel.rds")
+  LT.pre_post.per_part.lmer.model <- readRDS(paste0(save_path, "Parts_lmerModel.rds"))
+  LT.pre_post.per_part.lmer.anova <- readRDS(paste0(save_path, "Parts_lmerAnova.rds"))
+  LT.pre_post.per_part.brms.model <- readRDS(paste0(save_path, "Parts_brmsModel.rds"))
 }
 # Testing Prop ~ FstLst*Condition
 run_model <- F
@@ -557,14 +558,14 @@ if(run_model){
                                            prior = prior.pre_post.per_fstlst,
                                            chains = 4, cores = 4)
   ## Save all the results
-  saveRDS(LT.pre_post.per_fstlst.lmer.model, "../results/infants/PrePost_FstLst_lmerModel.rds")
-  saveRDS(LT.pre_post.per_fstlst.lmer.anova, "../results/infants/PrePost_FstLst_lmerAnova.rds")
-  saveRDS(LT.pre_post.per_fstlst.brms.model, "../results/infants/PrePost_FstLst_brmsModel.rds")
+  saveRDS(LT.pre_post.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
+  saveRDS(LT.pre_post.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
+  saveRDS(LT.pre_post.per_fstlst.brms.model, paste0(save_path, "FstLst_brmsModel.rds"))
 }else{
   ## Read all the results
-  LT.pre_post.per_fstlst.lmer.model <- readRDS("../results/infants/PrePost_FstLst_lmerModel.rds")
-  LT.pre_post.per_fstlst.lmer.anova <- readRDS("../results/infants/PrePost_FstLst_lmerAnova.rds")
-  LT.pre_post.per_fstlst.brms.model <- readRDS("../results/infants/PrePost_FstLst_brmsModel.rds")
+  LT.pre_post.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FstLst_lmerModel.rds"))
+  LT.pre_post.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FstLst_lmerAnova.rds"))
+  LT.pre_post.per_fstlst.brms.model <- readRDS(paste0(save_path, "FstLst_brmsModel.rds"))
 }
 
 # Plot jitter + mean&se + lines
@@ -589,7 +590,7 @@ if(generate_plots){
     geom_point(stat = "summary", fun.y = "mean",
                shape = 18, size = 3,
                position = position_dodge(.1))
-  ggsave("../results/infants/AOILookingPrePostPerParts.pdf",
+  ggsave(paste0(save_path, "Parts_data.pdf"),
          LT.pre_post.per_part.plot,
          width = 7, height = 3)
   ## Plot per FstLst
@@ -611,13 +612,12 @@ if(generate_plots){
     geom_point(stat = "summary", fun.y = "mean",
                shape = 18, size = 3,
                position = position_dodge(.1))
-  ggsave("../results/infants/AOILookingPrePostPerFstLst.pdf",
+  ggsave(paste0(save_path, "FstLst_data.pdf"),
          LT.pre_post.per_fstlst.plot,
          width = 7, height = 3)
 }
 
 # CONTRAST TEST ANALYSIS ===========================================================================
-save_path <- "../results/infants/PrePost/"
 # Prepare dataset
 LT.new_old <- LT.test.ctr %>%
   subset(ContrastType %in% c("Tail", "Head")) %>%
