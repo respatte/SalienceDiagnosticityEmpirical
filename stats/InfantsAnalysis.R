@@ -401,7 +401,7 @@ if(generate_plots){
 }
 
 # FAMILIARISATION ANALYSIS: PROP TAIL LOOKING TIME COURSE BY FSTLST  ===============================
-save_path <- "../results/infants/PropTail/TrialAverage_"
+save_path <- "../results/infants/PropTail/TimeCourse_"
 # Data preparation
 LT.time_course_tail <- LT.fam %>%
   drop_na(FstLst) %>%
@@ -437,19 +437,17 @@ if(run_model){
            parallel = T)
   bcbp.time <- proc.time() - t
   ## Save clusters and analysis
-  saveRDS(LT.time_cluster_tail, paste0(save_path, "TimeCourse_FstLst_bcbpClusters.rds"))
-  saveRDS(LT.time_cluster_tail.analysis, paste0(save_path, "TimeCourse_FstLst_bcbpAnalysis.rds"))
+  saveRDS(LT.time_cluster_tail, paste0(save_path, "FstLst_bcbpClusters.rds"))
+  saveRDS(LT.time_cluster_tail.analysis, paste0(save_path, "FstLst_bcbpAnalysis.rds"))
 }else{
   ## Read the results
-  LT.time_cluster_tail <- readRDS(paste0(save_path, "TimeCourse_FstLst_bcbpClusters.rds"))
-  LT.time_cluster_tail.analysis <- readRDS(paste0(save_path, "TimeCourse_FstLst_bcbpClusters.rds"))
+  LT.time_cluster_tail <- readRDS(paste0(save_path, "FstLst_bcbpClusters.rds"))
+  LT.time_cluster_tail.analysis <- readRDS(paste0(save_path, "FstLst_bcbpClusters.rds"))
 }
 
 # PLOT
 generate_plots <- F
 if(generate_plots){
-  intercept <- tibble(Part = 0:2,
-                      x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
   LT.fam.time_course.plot.blocks <- ggplot(LT.time_course_tail,
                                            aes(x = Time, y=Prop,
                                                colour=Condition,
@@ -460,8 +458,7 @@ if(generate_plots){
     stat_summary(fun.y='mean', geom='line', linetype = '61') +
     stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
     geom_hline(yintercept = .5)
-  #geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5)
-  ggsave("../results/infants/LookingTimeCourseFirstLast.pdf",
+  ggsave(paste0(save_path, "FstLst_data.pdf"),
          plot = LT.fam.time_course.plot.blocks,
          width = 3.5, height = 5)
 }
@@ -620,6 +617,7 @@ if(generate_plots){
 }
 
 # CONTRAST TEST ANALYSIS ===========================================================================
+save_path <- "../results/infants/PrePost/"
 # Prepare dataset
 LT.new_old <- LT.test.ctr %>%
   subset(ContrastType %in% c("Tail", "Head")) %>%
