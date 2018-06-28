@@ -617,7 +617,8 @@ if(generate_plots){
          width = 7, height = 3)
 }
 
-# CONTRAST TEST ANALYSIS ===========================================================================
+# CONTRAST TEST ANALYSIS: PROP NEW FEATURE BY HEAD/TAIL CONTRAST TEST ==============================
+save_path <- "../results/infants/OldNew/TrialAverage_"
 # Prepare dataset
 LT.new_old <- LT.test.ctr %>%
   subset(ContrastType %in% c("Tail", "Head")) %>%
@@ -688,16 +689,16 @@ if(run_model){
                                         LT.new_old.brms.bf.3_2,
                                         LT.new_old.brms.bf.4_3)
   ## Save all the results
-  saveRDS(LT.new_old.lmer.model, "../results/infants/OldNew_lmerModel.rds")
-  saveRDS(LT.new_old.lmer.anova, "../results/infants/OldNew_lmerAnova.rds")
-  saveRDS(LT.new_old.brms.model.4, "../results/infants/OldNew_brmsModel.rds")
-  saveRDS(LT.new_old.brms.bayes_factors, "../results/infants/OldNew_brmsBF.rds")
+  saveRDS(LT.new_old.lmer.model, paste0(save_path, "lmerModel.rds"))
+  saveRDS(LT.new_old.lmer.anova, paste0(save_path, "lmerAnova.rds"))
+  saveRDS(LT.new_old.brms.model.4, paste0(save_path, "brmsModel.rds"))
+  saveRDS(LT.new_old.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
-  LT.new_old.lmer.model <- readRDS("../results/infants/OldNew_lmerModel.rds")
-  LT.new_old.lmer.anova <- readRDS("../results/infants/OldNew_lmerAnova.rds")
-  LT.new_old.brms.model.4 <- readRDS("../results/infants/OldNew_brmsModel.rds")
-  LT.new_old.brms.bayes_factors <- readRDS("../results/infants/OldNew_brmsBF.rds")
+  LT.new_old.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
+  LT.new_old.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
+  LT.new_old.brms.model.4 <- readRDS(paste0(save_path, "brmsModel.rds"))
+  LT.new_old.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 # Plot jitter + mean&se
 generate_plots <- F
@@ -717,7 +718,7 @@ if(generate_plots){
                shape = 18, size = 3,
                position = position_dodge(.1)) +
     geom_hline(yintercept = 0.5)
-  ggsave("../results/infants/OldNew_Data.pdf",
+  ggsave(paste0(save_path, "data.pdf"),
          LT.new_old.plot.data,
          width = 7, height = 5.4)
 }
