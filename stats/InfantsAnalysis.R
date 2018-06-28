@@ -190,7 +190,7 @@ LT.test.wl <- LT.gaze_offset.data.corrected %>%
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Target","Distractor"),
                          treat_non_aoi_looks_as_missing = T)
-# FAMILIARISATION ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY TRIAL/BLOCK =========================
+# FAMILIARISATION ANALYSIS: PROP TAIL LOOKING BY TRIAL/BLOCK/FSTLST ================================
 # Prepare dataset
 LT.prop_tail <- LT.fam %>%
   subset_by_window(window_start_col = "LabelOnset") %>%
@@ -404,6 +404,73 @@ if(generate_plots){
          width = 7, height = 5.4)
 }
 
+# FAMILIARISATION ANALYSIS: PROP TAIL LOOKING TIME COURSE BY FSTLST  ===============================
+# Data preparation
+LT.time_course_tail <- LT.fam %>%
+  drop_na(FstLst) %>%
+  subset_by_window(window_start_col = "LabelOnset") %>%
+  make_time_sequence_data(time_bin_size = 50,
+                          aois = "Tail",
+                          predictor_columns=c("Condition",
+                                              "FstLst"),
+                          summarize_by = "Participant")
+# GROWTH CURVE ANALYSIS
+## TODO?
+# BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
+run_model <- F
+if(run_model){
+  t <- proc.time()
+  ## Determine threshold based on alpha = .05 two-tailed
+  num_sub = length(unique((LT.time_course_tail$Participant)))
+  threshold_t = qt(p = 1 - .05/2,
+                   df = num_sub-1)
+  ## Determine clusters
+  LT.time_cluster_tail <- LT.time_course_tail %>%
+    split(.$FstLst) %>%
+    lapply(make_time_cluster_data,
+           predictor_column = "Condition",
+           treatment_level = "No Label",
+           aoi = "Tail",
+           test = "t.test",
+           threshold = threshold_t)
+  ## Run analysis
+  LT.time_cluster_tail.analysis <- LT.time_cluster_tail %>%
+    lapply(analyze_time_clusters,
+           within_subj = F,
+           parallel = T)
+  bcbp.time <- proc.time() - t
+  ## Save clusters and analysis
+  saveRDS(LT.time_cluster_tail,
+          "../results/infants/BCBP_clusters.rds")
+  saveRDS(LT.time_cluster_tail.analysis,
+          "../results/infants/BCBP_analysis.rds")
+}else{
+  ## Read the results
+  LT.time_cluster_tail <- readRDS("../results/infants/BCBP_clusters.rds")
+  LT.time_cluster_tail.analysis <- readRDS("../results/infants/BCBP_analysis.rds")
+}
+
+# PLOT
+generate_plots <- F
+if(generate_plots){
+  intercept <- tibble(Part = 0:2,
+                      x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
+  LT.fam.time_course.plot.blocks <- ggplot(LT.time_course_tail,
+                                           aes(x = Time, y=Prop,
+                                               colour=Condition,
+                                               fill=Condition)) +
+    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
+    facet_grid(FstLst~.) +
+    theme(legend.position = "top") + ylim(0,1) +
+    stat_summary(fun.y='mean', geom='line', linetype = '61') +
+    stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+    geom_hline(yintercept = .5)
+  #geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5)
+  ggsave("../results/infants/LookingTimeCourseFirstLast.pdf",
+         plot = LT.fam.time_course.plot.blocks,
+         width = 3.5, height = 5)
+}
+
 # FAMILIARISATION ANALYSIS: PROP AOI LOOKING PRE/POST LABEL ONSET ==================================
 # Prepare dataset
 LT.pre_post <- LT.fam %>%
@@ -555,73 +622,6 @@ if(generate_plots){
   ggsave("../results/infants/AOILookingPrePostPerFstLst.pdf",
          LT.pre_post.per_fstlst.plot,
          width = 7, height = 3)
-}
-
-# FAMILIARISATION ANALYSIS: TIME COURSE ============================================================
-# DATA PREPARATION
-LT.time_course_tail <- LT.fam %>%
-  drop_na(FstLst) %>%
-  subset_by_window(window_start_col = "LabelOnset") %>%
-  make_time_sequence_data(time_bin_size = 50,
-                          aois = "Tail",
-                          predictor_columns=c("Condition",
-                                              "FstLst"),
-                          summarize_by = "Participant")
-# GROWTH CURVE ANALYSIS
-## TODO?
-# BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- F
-if(run_model){
-  t <- proc.time()
-  ## Determine threshold based on alpha = .05 two-tailed
-  num_sub = length(unique((LT.time_course_tail$Participant)))
-  threshold_t = qt(p = 1 - .05/2,
-                   df = num_sub-1)
-  ## Determine clusters
-  LT.time_cluster_tail <- LT.time_course_tail %>%
-    split(.$FstLst) %>%
-    lapply(make_time_cluster_data,
-           predictor_column = "Condition",
-           treatment_level = "No Label",
-           aoi = "Tail",
-           test = "t.test",
-           threshold = threshold_t)
-  ## Run analysis
-  LT.time_cluster_tail.analysis <- LT.time_cluster_tail %>%
-    lapply(analyze_time_clusters,
-           within_subj = F,
-           parallel = T)
-  bcbp.time <- proc.time() - t
-  ## Save clusters and analysis
-  saveRDS(LT.time_cluster_tail,
-          "../results/infants/BCBP_clusters.rds")
-  saveRDS(LT.time_cluster_tail.analysis,
-          "../results/infants/BCBP_analysis.rds")
-}else{
-  ## Read the results
-  LT.time_cluster_tail <- readRDS("../results/infants/BCBP_clusters.rds")
-  LT.time_cluster_tail.analysis <- readRDS("../results/infants/BCBP_analysis.rds")
-}
-
-# PLOT
-generate_plots <- F
-if(generate_plots){
-  intercept <- tibble(Part = 0:2,
-                      x_int = rep(1500,3)) # Label onset ish (second half trials includes "the")
-  LT.fam.time_course.plot.blocks <- ggplot(LT.time_course_tail,
-                                           aes(x = Time, y=Prop,
-                                               colour=Condition,
-                                               fill=Condition)) +
-    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
-    facet_grid(FstLst~.) +
-    theme(legend.position = "top") + ylim(0,1) +
-    stat_summary(fun.y='mean', geom='line', linetype = '61') +
-    stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
-    geom_hline(yintercept = .5)
-  #geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5)
-  ggsave("../results/infants/LookingTimeCourseFirstLast.pdf",
-         plot = LT.fam.time_course.plot.blocks,
-         width = 3.5, height = 5)
 }
 
 # CONTRAST TEST ANALYSIS ===========================================================================
