@@ -191,6 +191,7 @@ LT.test.wl <- LT.gaze_offset.data.corrected %>%
                          aoi_columns = c("Target","Distractor"),
                          treat_non_aoi_looks_as_missing = T)
 # FAMILIARISATION ANALYSIS: PROP TAIL LOOKING BY TRIAL/BLOCK/FSTLST ================================
+save_path <- "../results/infants/PropTail/TrialAverage_"
 # Prepare dataset
 LT.prop_tail <- LT.fam %>%
   subset_by_window(window_start_col = "LabelOnset") %>%
@@ -222,14 +223,14 @@ if(run_model){
                                            data = LT.prop_tail,
                                            chains = 4, cores = 4)
   ## Save all results
-  saveRDS(LT.prop_tail.per_trial.lmer.model, "../results/infants/Trial_lmerModel.rds")
-  saveRDS(LT.prop_tail.per_trial.lmer.anova, "../results/infants/Trial_lmerAnova.rds")
-  saveRDS(LT.prop_tail.per_trial.brms.model, "../results/infants/Trial_brmsModel.rds")
+  saveRDS(LT.prop_tail.per_trial.lmer.model, paste0(save_path, "Trials_lmerModel.rds"))
+  saveRDS(LT.prop_tail.per_trial.lmer.anova, paste0(save_path, "Trials_lmerAnova.rds"))
+  saveRDS(LT.prop_tail.per_trial.brms.model, paste0(save_path, "Trials_brmsModel.rds"))
 }else{
   ## Read all the results
-  LT.prop_tail.per_trial.lmer.model <- readRDS("../results/infants/Trial_lmerModel.rds")
-  LT.prop_tail.per_trial.lmer.anova <- readRDS("../results/infants/Trial_lmerAnova.rds")
-  LT.prop_tail.per_trial.brms.model <- readRDS("../results/infants/Trial_brmsModel.rds")
+  LT.prop_tail.per_trial.lmer.model <- readRDS(paste0(save_path, "Trials_lmerModel.rds"))
+  LT.prop_tail.per_trial.lmer.anova <- readRDS(paste0(save_path, "Trials_lmerAnova.rds"))
+  LT.prop_tail.per_trial.brms.model <- readRDS(paste0(save_path, "Trials_brmsModel.rds"))
 }
 # Testing Prop ~ Part*Condition
 run_model <- F
@@ -251,14 +252,14 @@ if(run_model){
                                           prior = prior.prop_tail.per_part,
                                           chains = 4, cores = 4)
   ## Save all the results
-  saveRDS(LT.prop_tail.per_part.lmer.model, "../results/infants/Part_lmerModel.rds")
-  saveRDS(LT.prop_tail.per_part.lmer.anova, "../results/infants/Part_lmerAnova.rds")
-  saveRDS(LT.prop_tail.per_part.brms.model, "../results/infants/Part_brmsModel.rds")
+  saveRDS(LT.prop_tail.per_part.lmer.model, "../results/infants/PropTail/Part_lmerModel.rds")
+  saveRDS(LT.prop_tail.per_part.lmer.anova, "../results/infants/PropTail/Part_lmerAnova.rds")
+  saveRDS(LT.prop_tail.per_part.brms.model, "../results/infants/PropTail/Part_brmsModel.rds")
 }else{
   ## Read all the results
-  LT.prop_tail.per_part.lmer.model <- readRDS("../results/infants/Part_lmerModel.rds")
-  LT.prop_tail.per_part.lmer.anova <- readRDS("../results/infants/Part_lmerAnova.rds")
-  LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/Part_brmsModel.rds")
+  LT.prop_tail.per_part.lmer.model <- readRDS("../results/infants/PropTail/Part_lmerModel.rds")
+  LT.prop_tail.per_part.lmer.anova <- readRDS("../results/infants/PropTail/Part_lmerAnova.rds")
+  LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/PropTail/Part_brmsModel.rds")
 }
 # Testing Prop ~ FstLst*Condition
 run_model <- F
@@ -315,16 +316,17 @@ if(run_model){
                                                      LT.prop_tail.per_fstlst.brms.bf.2_1,
                                                      LT.prop_tail.per_fstlst.brms.bf.3_2)
   ## Save all the results
-  saveRDS(LT.prop_tail.per_fstlst.lmer.model, "../results/infants/FstLst_lmerModel.rds")
-  saveRDS(LT.prop_tail.per_fstlst.lmer.anova, "../results/infants/FstLst_lmerAnova.rds")
-  saveRDS(LT.prop_tail.per_fstlst.brms.model.3, "../results/infants/FstLst_brmsModel.rds")
-  saveRDS(LT.prop_tail.per_fstlst.brms.bayes_factors, "../results/infants/FstLst_brmsBF.rds")
+  saveRDS(LT.prop_tail.per_fstlst.lmer.model, "../results/infants/PropTail/FstLst_lmerModel.rds")
+  saveRDS(LT.prop_tail.per_fstlst.lmer.anova, "../results/infants/PropTail/FstLst_lmerAnova.rds")
+  saveRDS(LT.prop_tail.per_fstlst.brms.model.3, "../results/infants/PropTail/FstLst_brmsModel.rds")
+  saveRDS(LT.prop_tail.per_fstlst.brms.bayes_factors,
+          "../results/infants/PropTail/FstLst_brmsBF.rds")
 }else{
   ## Read all the results
-  LT.prop_tail.per_fstlst.lmer.model <- readRDS("../results/infants/FstLst_lmerModel.rds")
-  LT.prop_tail.per_fstlst.lmer.anova <- readRDS("../results/infants/FstLst_lmerAnova.rds")
-  LT.prop_tail.per_fstlst.brms.model.3 <- readRDS("../results/infants/FstLst_brmsModel.rds")
-  LT.prop_tail.per_fstlst.brms.bayes_factors <- readRDS("../results/infants/FstLst_brmsBF.rds")
+  LT.prop_tail.per_fstlst.lmer.model <- readRDS("../results/infants/PropTail/FstLst_lmerModel.rds")
+  LT.prop_tail.per_fstlst.lmer.anova <- readRDS("../results/infants/PropTail/FstLst_lmerAnova.rds")
+  LT.prop_tail.per_fstlst.brms.model.3 <- readRDS("../results/infants/PropTail/FstLst_brmsModel.rds")
+  LT.prop_tail.per_fstlst.brms.bayes_factors <- readRDS("../results/infants/PropTail/FstLst_brmsBF.rds")
 }
 
 # Plot jitter + mean&se + lines
@@ -336,8 +338,6 @@ if(generate_plots){
                                             colour = Condition,
                                             fill = Condition)) +
     theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
-    scale_colour_discrete(labels = c("Label", "No Label")) +
-    scale_fill_discrete(labels = c("Label", "No Label")) +
     geom_point(position = position_jitterdodge(dodge.width = .8,
                                                jitter.width = .2),
                alpha = .25) +
@@ -351,7 +351,7 @@ if(generate_plots){
     geom_point(stat = "summary", fun.y = "mean",
                shape = 18, size = 3,
                position = position_dodge(.1))
-  ggsave("../results/infants/AOILookingPerTrial.pdf",
+  ggsave("../results/infants/PropTail/TrialAverage_Trials.pdf",
          LT.prop_tail.per_trial.plot,
          width = 7, height = 5.4)
   ## Plot per part
@@ -360,8 +360,6 @@ if(generate_plots){
                                            colour = Condition,
                                            fill = Condition)) +
     theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
-    scale_colour_discrete(labels = c("Label", "No Label")) +
-    scale_fill_discrete(labels = c("Label", "No Label")) +
     geom_point(position = position_jitterdodge(dodge.width = .8,
                                                jitter.width = .2),
                alpha = .25) +
@@ -375,7 +373,7 @@ if(generate_plots){
     geom_point(stat = "summary", fun.y = "mean",
                shape = 18, size = 3,
                position = position_dodge(.1))
-  ggsave("../results/infants/AOILookingPerParts.pdf",
+  ggsave("../results/infants/PropTail/TrialAverage_Parts.pdf",
          LT.prop_tail.per_part.plot,
          width = 7, height = 5.4)
   ## Plot per FstLst
@@ -384,8 +382,6 @@ if(generate_plots){
                                            colour = Condition,
                                            fill = Condition)) +
     theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
-    scale_colour_discrete(labels = c("Label", "No Label")) +
-    scale_fill_discrete(labels = c("Label", "No Label")) +
     geom_point(position = position_jitterdodge(dodge.width = .8,
                                                jitter.width = .2),
                alpha = .25) +
@@ -399,12 +395,13 @@ if(generate_plots){
     geom_point(stat = "summary", fun.y = "mean",
                shape = 18, size = 3,
                position = position_dodge(.1))
-  ggsave("../results/infants/AOILookingPerFstLst.pdf",
+  ggsave("../results/infants/PropTail/TrialAverage_FstLst.pdf",
          LT.prop_tail.per_part.plot,
          width = 7, height = 5.4)
 }
 
 # FAMILIARISATION ANALYSIS: PROP TAIL LOOKING TIME COURSE BY FSTLST  ===============================
+save_path <- "../results/infants/PropTail/TrialAverage_"
 # Data preparation
 LT.time_course_tail <- LT.fam %>%
   drop_na(FstLst) %>%
@@ -440,14 +437,12 @@ if(run_model){
            parallel = T)
   bcbp.time <- proc.time() - t
   ## Save clusters and analysis
-  saveRDS(LT.time_cluster_tail,
-          "../results/infants/BCBP_clusters.rds")
-  saveRDS(LT.time_cluster_tail.analysis,
-          "../results/infants/BCBP_analysis.rds")
+  saveRDS(LT.time_cluster_tail, paste0(save_path, "TimeCourse_FstLst_bcbpClusters.rds"))
+  saveRDS(LT.time_cluster_tail.analysis, paste0(save_path, "TimeCourse_FstLst_bcbpAnalysis.rds"))
 }else{
   ## Read the results
-  LT.time_cluster_tail <- readRDS("../results/infants/BCBP_clusters.rds")
-  LT.time_cluster_tail.analysis <- readRDS("../results/infants/BCBP_analysis.rds")
+  LT.time_cluster_tail <- readRDS(paste0(save_path, "TimeCourse_FstLst_bcbpClusters.rds"))
+  LT.time_cluster_tail.analysis <- readRDS(paste0(save_path, "TimeCourse_FstLst_bcbpClusters.rds"))
 }
 
 # PLOT
