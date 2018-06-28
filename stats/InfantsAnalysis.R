@@ -724,6 +724,7 @@ if(generate_plots){
 }
 
 # WORD LEARNING TEST ANALYSIS ======================================================================
+save_path <- "../results/infants/WordLearning/TrialAverage_"
 # Prepare dataset
 LT.prop_target <- LT.test.wl %>%
   subset(Condition == "Label") %>%
@@ -764,16 +765,16 @@ if(run_model){
   LT.prop_target.brms.bayes_factor <- bayes_factor(LT.prop_target.brms.model,
                                                    LT.prop_target.brms.null)
   ## Save all the results
-  saveRDS(LT.prop_target.lmer.model, "../results/infants/WL_Target_lmerModel.rds")
-  saveRDS(LT.prop_target.lmer.anova, "../results/infants/WL_Target_lmerAnova.rds")
-  saveRDS(LT.prop_target.brms.model, "../results/infants/WL_Target_brmsModel.rds")
-  saveRDS(LT.prop_target.brms.bayes_factor, "../results/infants/WL_Target_brmsBF.rds")
+  saveRDS(LT.prop_target.lmer.model, paste0(save_path, "lmerModel.rds"))
+  saveRDS(LT.prop_target.lmer.anova, paste0(save_path, "lmerAnova.rds"))
+  saveRDS(LT.prop_target.brms.model, paste0(save_path, "brmsModel.rds"))
+  saveRDS(LT.prop_target.brms.bayes_factor, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
-  LT.prop_target.lmer.model <- readRDS("../results/infants/WL_Target_lmerModel.rds")
-  LT.prop_target.lmer.anova <- readRDS("../results/infants/WL_Target_lmerAnova.rds")
-  LT.prop_target.brms.model <- readRDS("../results/infants/WL_Target_brmsModel.rds")
-  LT.prop_target.brms.bayes_factor <- readRDS("../results/infants/WL_Target_brmsBF.rds")
+  LT.prop_target.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
+  LT.prop_target.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
+  LT.prop_target.brms.model <- readRDS(paste0(save_path, "brmsModel.rds"))
+  LT.prop_target.brms.bayes_factor <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 
 # Plot jitter + mean&se
@@ -788,7 +789,7 @@ if(generate_plots){
     geom_point(stat = "summary", fun.y = "mean",
                shape = 18, size = 3) +
     geom_hline(yintercept = 0.5)
-  ggsave("../results/infants/PropTarget_Data.pdf",
+  ggsave(paste0(save_path, "data.pdf"),
          LT.prop_target.plot.data,
          width = 7, height = 5.4)
 }
