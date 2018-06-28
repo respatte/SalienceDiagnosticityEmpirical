@@ -447,7 +447,7 @@ if(run_model){
 }else{
   ## Read the results
   LT.time_cluster_tail <- readRDS(paste0(save_path, "FstLst_bcbpClusters.rds"))
-  LT.time_cluster_tail.analysis <- readRDS(paste0(save_path, "FstLst_bcbpClusters.rds"))
+  LT.time_cluster_tail.analysis <- readRDS(paste0(save_path, "FstLst_bcbpAnalysis.rds"))
 }
 
 # PLOT
@@ -759,7 +759,7 @@ if(generate_plots){
          width = 3.5, height = 5)
 }
 
-# WORD LEARNING TEST ANALYSIS ======================================================================
+# WORD LEARNING TEST ANALYSIS: PROP TARGET FOR LABEL CONDITION =====================================
 save_path <- "../results/infants/WordLearning/TrialAverage_"
 # Prepare dataset
 LT.prop_target <- LT.test.wl %>%
@@ -828,4 +828,68 @@ if(generate_plots){
   ggsave(paste0(save_path, "data.pdf"),
          LT.prop_target.plot.data,
          width = 7, height = 5.4)
+}
+
+# WORD LEARNING TEST ANALYSIS: PROP TARGET TIME COURSE FOR LABEL CONDITION  ========================
+save_path <- "../results/infants/WordLearning/TimeCourse_"
+# Data preparation
+LT.prop_target.time_course <- LT.test.wl %>%
+  subset_by_window(window_start_col = "LabelOnset",
+                   window_end_col = "TrialEnd") %>%
+  mutate(Chance = F) %>%
+  make_time_sequence_data(time_bin_size = 50,
+                          aois = "Target",
+                          predictor_columns=c("Chance"),
+                          summarize_by = "Participant")
+LT.prop_target.time_course.chance <- LT.prop_target.time_course %>%
+  mutate(Chance = T,
+         Participant = paste0("Chance", Participant),
+         Prop = .5)
+LT.prop_target.time_course.chance_test <- rbind(LT.prop_target.time_course,
+                                                LT.prop_target.time_course.chance) %>%
+  mutate_at("Chance", parse_factor, levels = NULL)
+# GROWTH CURVE ANALYSIS
+## TODO?
+# BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
+run_model <- T
+if(run_model){
+  t <- proc.time()
+  ## Determine threshold based on alpha = .05 two-tailed
+  num_sub = length(unique((LT.prop_target.time_course.chance_test$Participant)))
+  threshold_t = qt(p = 1 - .05/2,
+                   df = num_sub-1)
+  ## Determine clusters
+  LT.prop_target.time_cluster <- LT.prop_target.time_course.chance_test %>%
+    make_time_cluster_data(predictor_column = "Chance",
+                           treatment_level = "No Label",
+                           aoi = "Target",
+                           test = "t.test",
+                           threshold = threshold_t)
+  ## Run analysis
+  LT.prop_target.time_cluster.analysis <- LT.prop_target.time_cluster %>%
+    analyze_time_clusters(within_subj = F,
+                          parallel = T)
+  bcbp.time <- proc.time() - t
+  ## Save clusters and analysis
+  saveRDS(LT.prop_target.time_cluster, paste0(save_path, "bcbpClusters.rds"))
+  saveRDS(LT.prop_target.time_cluster.analysis, paste0(save_path, "bcbpAnalysis.rds"))
+}else{
+  ## Read the results
+  LT.prop_target.time_cluster <- readRDS(paste0(save_path, "bcbpClusters.rds"))
+  LT.prop_target.time_cluster.analysis <- readRDS(paste0(save_path, "bcbpAnalysis.rds"))
+}
+
+# PLOT
+generate_plots <- T
+if(generate_plots){
+  LT.prop_target.time_course.plot <- ggplot(LT.prop_target.time_course,
+                                            aes(x = Time, y=Prop)) +
+    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
+    theme(legend.position = "top") + ylim(0,1) +
+    stat_summary(fun.y='mean', geom='line', linetype = '61') +
+    stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+    geom_hline(yintercept = .5)
+  ggsave(paste0(save_path, "data.pdf"),
+         plot = LT.prop_target.time_course.plot,
+         width = 3.5, height = 2.5)
 }
