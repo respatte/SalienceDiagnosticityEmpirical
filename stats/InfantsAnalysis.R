@@ -894,11 +894,73 @@ if(generate_plots){
 }
 
 # FAMILIARISATION: NUMBER OF SWITCHES ==============================================================
+save_path <- "../results/infants/FamSwitches/FstLst_"
 # Prepare dataset
-LT.fam.switches <- LT.fam %>%
+LT.fam_switches <- LT.fam %>%
   drop_na(Tail) %>%
   group_by(Participant, TrialId) %>%
   summarise(Switches = sum(Tail != lag(Tail), na.rm = T), # Count switches per trial per participant
             # Keep columns for analysis (only one value per trial per participant)
             FstLst = first(FstLst),
             Condition = first(Condition))
+# Testing Switches ~ Condition*FstLst
+run_model <- T
+if(run_model){
+  fam_switches.per_fstlst.lmer.model <- lmer(Switches ~ FstLst*Condition +
+                                               (1 + FstLst | Participant),
+                                             data = LT.fam_switches)
+  fam_switches.per_fstlst.lmer.anova <- anova(fam_switches.per_fstlst.lmer.model, type = 1)
+  ## Run brms
+  prior.fam_switches.per_fstlst <- c(set_prior("uniform(0,1.6)",
+                                               class = "Intercept"),
+                                     set_prior("normal(0,.5)", class = "b"))
+  fam_switches.per_fstlst.brms.model.3 <- brm(Switches ~ FstLst*Condition +
+                                                (1 + FstLst | Participant),
+                                              data = LT.fam_switches,
+                                              prior = prior.fam_switches.per_fstlst,
+                                              chains = 4, cores = 4, iter = 20000,
+                                              save_all_pars = T,
+                                              control = list(adapt_delta = .9999999))
+  fam_switches.per_fstlst.brms.model.2 <- brm(Switches ~ FstLst + Condition +
+                                                (1 + FstLst | Participant),
+                                              data = LT.fam_switches,
+                                              prior = prior.fam_switches.per_fstlst,
+                                              chains = 4, cores = 4, iter = 20000,
+                                              save_all_pars = T,
+                                              control = list(adapt_delta = .9999999))
+  fam_switches.per_fstlst.brms.model.1 <- brm(Switches ~ FstLst +
+                                                (1 + FstLst | Participant),
+                                              data = LT.fam_switches,
+                                              prior = prior.fam_switches.per_fstlst,
+                                              chains = 4, cores = 4, iter = 20000,
+                                              save_all_pars = T,
+                                              control = list(adapt_delta = .9999999))
+  fam_switches.per_fstlst.brms.model.0 <- brm(Switches ~ 1 +
+                                                (1 | Participant),
+                                              data = LT.fam_switches,
+                                              prior = set_prior("uniform(0,1.6)",
+                                                                class = "Intercept"),
+                                              chains = 4, cores = 4, iter = 20000,
+                                              save_all_pars = T,
+                                              control = list(adapt_delta = .9999999))
+  fam_switches.per_fstlst.brms.bf.3_2 <- bayes_factor(fam_switches.per_fstlst.brms.model.3,
+                                                      fam_switches.per_fstlst.brms.model.2)
+  fam_switches.per_fstlst.brms.bf.2_1 <- bayes_factor(fam_switches.per_fstlst.brms.model.2,
+                                                      fam_switches.per_fstlst.brms.model.1)
+  fam_switches.per_fstlst.brms.bf.1_0 <- bayes_factor(fam_switches.per_fstlst.brms.model.1,
+                                                      fam_switches.per_fstlst.brms.model.0)
+  fam_switches.per_fstlst.brms.bayes_factors <- list(fam_switches.per_fstlst.brms.bf.1_0,
+                                                     fam_switches.per_fstlst.brms.bf.2_1,
+                                                     fam_switches.per_fstlst.brms.bf.3_2)
+  ## Save all the results
+  saveRDS(fam_switches.per_fstlst.lmer.model, paste0(save_path, "lmerModel.rds"))
+  saveRDS(fam_switches.per_fstlst.lmer.anova, paste0(save_path, "lmerAnova.rds"))
+  saveRDS(fam_switches.per_fstlst.brms.model.3, paste0(save_path, "brmsModel.rds"))
+  saveRDS(fam_switches.per_fstlst.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
+}else{
+  ## Read all the results
+  fam_switches.per_fstlst.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
+  fam_switches.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
+  fam_switches.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "brmsModel.rds"))
+  fam_switches.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
+}
