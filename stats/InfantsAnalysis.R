@@ -892,3 +892,10 @@ if(generate_plots){
          plot = LT.prop_target.time_course.plot,
          width = 3.5, height = 2.5)
 }
+
+# FAMILIARISATION: NUMBER OF SWITCHES ==============================================================
+# Prepare dataset
+LT.fam.switches <- LT.fam %>%
+  drop_na(Tail) %>%
+  group_by(Participant, TrialId, Condition) %>%
+  summarise(Switches = sum(Tail != lag(Tail), na.rm = T))
