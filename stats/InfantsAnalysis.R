@@ -897,5 +897,8 @@ if(generate_plots){
 # Prepare dataset
 LT.fam.switches <- LT.fam %>%
   drop_na(Tail) %>%
-  group_by(Participant, TrialId, Condition) %>%
-  summarise(Switches = sum(Tail != lag(Tail), na.rm = T))
+  group_by(Participant, TrialId) %>%
+  summarise(Switches = sum(Tail != lag(Tail), na.rm = T), # Count switches per trial per participant
+            # Keep columns for analysis (only one value per trial per participant)
+            FstLst = first(FstLst),
+            Condition = first(Condition))
