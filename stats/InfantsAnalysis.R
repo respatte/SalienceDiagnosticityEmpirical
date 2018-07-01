@@ -910,7 +910,7 @@ if(run_model){
                                                  (1 + FstLst | Participant),
                                                data = LT.fam_switches,
                                                family = poisson())
-  fam_switches.per_fstlst.glmer.anova <- anova(fam_switches.per_fstlst.glmer.model, type = 1)
+  # Current p-values from summary may not be the best. Do something else?
   ## Run brms
   prior.fam_switches.per_fstlst <- c(set_prior("normal(0,.5)", class = "b"))
   fam_switches.per_fstlst.brms.model.3 <- brm(Switches ~ FstLst*Condition +
@@ -955,13 +955,11 @@ if(run_model){
                                                      fam_switches.per_fstlst.brms.bf.3_2)
   ## Save all the results
   saveRDS(fam_switches.per_fstlst.glmer.model, paste0(save_path, "glmerModel.rds"))
-  saveRDS(fam_switches.per_fstlst.glmer.anova, paste0(save_path, "glmerAnova.rds"))
   saveRDS(fam_switches.per_fstlst.brms.model.3, paste0(save_path, "brmsModel.rds"))
   saveRDS(fam_switches.per_fstlst.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
   fam_switches.per_fstlst.glmer.model <- readRDS(paste0(save_path, "glmerModel.rds"))
-  fam_switches.per_fstlst.glmer.anova <- readRDS(paste0(save_path, "glmerAnova.rds"))
   fam_switches.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "brmsModel.rds"))
   fam_switches.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
@@ -996,7 +994,7 @@ if(run_model){
                                               (1 + FstLst | Participant),
                                             data = LT.first_aoi,
                                             family = binomial())
-  first_aoi.per_fstlst.glmer.anova <- anova(first_aoi.per_fstlst.glmer.model, type = 1)
+  # Current p-values from summary may not be the best. Do something else?
   ## Run brms
   prior.first_aoi.per_fstlst <- c(set_prior("normal(0,.5)", class = "b"))
   first_aoi.per_fstlst.brms.model.3 <- brm(AOI ~ FstLst*Condition +
@@ -1037,13 +1035,11 @@ if(run_model){
                                                   first_aoi.per_fstlst.brms.bf.3_2)
   ## Save all the results
   saveRDS(first_aoi.per_fstlst.glmer.model, paste0(save_path, "FirstAOI_glmerModel.rds"))
-  saveRDS(first_aoi.per_fstlst.glmer.anova, paste0(save_path, "FirstAOI_glmerAnova.rds"))
   saveRDS(first_aoi.per_fstlst.brms.model.3, paste0(save_path, "FirstAOI_brmsModel.rds"))
   saveRDS(first_aoi.per_fstlst.brms.bayes_factors, paste0(save_path, "FirstAOI_brmsBF.rds"))
 }else{
   ## Read all the results
   first_aoi.per_fstlst.glmer.model <- readRDS(paste0(save_path, "FirstAOI_glmerModel.rds"))
-  first_aoi.per_fstlst.glmer.anova <- readRDS(paste0(save_path, "FirstAOI_glmerAnova.rds"))
   first_aoi.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "FirstAOI_brmsModel.rds"))
   first_aoi.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstAOI_brmsBF.rds"))
 }
