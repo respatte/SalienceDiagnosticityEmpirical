@@ -968,3 +968,85 @@ if(run_model){
   fam_switches.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "brmsModel.rds"))
   fam_switches.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
+
+# FAMILIARISATION: FIRST LOOK ======================================================================
+save_path <- "../results/infants/FirstLook/"
+# Prepare datasets
+LT.first_look <- LT.fam %>%
+  drop_na(Tail) %>%
+  group_by(Participant, TrialId, Tail) %>%
+  summarise(FirstAOILook = first(TimeStamp), # First time to each AOI
+            AOI = parse_factor(ifelse(first(Tail), "Tail", "Head"),
+                               levels = c("Head", "Tail")), # Explicit AOI flag
+            # Keep columns for analysis (only one value per trial per participant)
+            Condition = first(Condition),
+            FstLst = first(FstLst)) %>%
+  select(-Tail)
+LT.first_aoi <- LT.first_look %>%
+  group_by(Participant, TrialId) %>%
+  arrange(FirstAOILook) %>%
+  summarise(AOI = first(AOI),
+            # Keep columns for analysis (only one value per trial per participant)
+            Condition = first(Condition),
+            FstLst = first(FstLst))
+LT.first_tail <- LT.first_look %>%
+  subset(AOI == "Tail", select = -AOI) # Discards trials with no Tail look: is it okay?
+
+# Testing (First)AOI ~ Condition*FstLst
+run_model <- T
+if(run_model){
+  first_aoi.per_fstlst.glmer.model <- glmer(AOI ~ FstLst*Condition +
+                                              (1 + FstLst | Participant),
+                                            data = LT.first_aoi,
+                                            family = binomial())
+  first_aoi.per_fstlst.glmer.anova <- anova(first_aoi.per_fstlst.glmer.model, type = 1)
+  ## Run brms
+  prior.first_aoi.per_fstlst <- c(set_prior("normal(0,.5)", class = "b"))
+  first_aoi.per_fstlst.brms.model.3 <- brm(AOI ~ FstLst*Condition +
+                                             (1 + FstLst | Participant),
+                                           data = LT.first_aoi,
+                                           prior = prior.first_aoi.per_fstlst,
+                                           family = bernoulli(),
+                                           chains = 4, cores = 4,
+                                           save_all_pars = T)
+  first_aoi.per_fstlst.brms.model.2 <- brm(AOI ~ FstLst + Condition +
+                                             (1 + FstLst | Participant),
+                                           data = LT.first_aoi,
+                                           prior = prior.first_aoi.per_fstlst,
+                                           family = bernoulli(),
+                                           chains = 4, cores = 4,
+                                           save_all_pars = T)
+  first_aoi.per_fstlst.brms.model.1 <- brm(AOI ~ FstLst +
+                                             (1 + FstLst | Participant),
+                                           data = LT.first_aoi,
+                                           prior = prior.first_aoi.per_fstlst,
+                                           family = bernoulli(),
+                                           chains = 4, cores = 4,
+                                           save_all_pars = T)
+  first_aoi.per_fstlst.brms.model.0 <- brm(AOI ~ 1 +
+                                             (1 | Participant),
+                                           data = LT.first_aoi,
+                                           family = bernoulli(),
+                                           chains = 4, cores = 4,
+                                           save_all_pars = T)
+  first_aoi.per_fstlst.brms.bf.3_2 <- bayes_factor(first_aoi.per_fstlst.brms.model.3,
+                                                   first_aoi.per_fstlst.brms.model.2)
+  first_aoi.per_fstlst.brms.bf.2_1 <- bayes_factor(first_aoi.per_fstlst.brms.model.2,
+                                                   first_aoi.per_fstlst.brms.model.1)
+  first_aoi.per_fstlst.brms.bf.1_0 <- bayes_factor(first_aoi.per_fstlst.brms.model.1,
+                                                   first_aoi.per_fstlst.brms.model.0)
+  first_aoi.per_fstlst.brms.bayes_factors <- list(first_aoi.per_fstlst.brms.bf.1_0,
+                                                  first_aoi.per_fstlst.brms.bf.2_1,
+                                                  first_aoi.per_fstlst.brms.bf.3_2)
+  ## Save all the results
+  saveRDS(first_aoi.per_fstlst.glmer.model, paste0(save_path, "FirstAOI_glmerModel.rds"))
+  saveRDS(first_aoi.per_fstlst.glmer.anova, paste0(save_path, "FirstAOI_glmerAnova.rds"))
+  saveRDS(first_aoi.per_fstlst.brms.model.3, paste0(save_path, "FirstAOI_brmsModel.rds"))
+  saveRDS(first_aoi.per_fstlst.brms.bayes_factors, paste0(save_path, "FirstAOI_brmsBF.rds"))
+}else{
+  ## Read all the results
+  first_aoi.per_fstlst.glmer.model <- readRDS(paste0(save_path, "FirstAOI_glmerModel.rds"))
+  first_aoi.per_fstlst.glmer.anova <- readRDS(paste0(save_path, "FirstAOI_glmerAnova.rds"))
+  first_aoi.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "FirstAOI_brmsModel.rds"))
+  first_aoi.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstAOI_brmsBF.rds"))
+}
