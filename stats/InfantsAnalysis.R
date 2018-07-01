@@ -918,31 +918,35 @@ if(run_model){
                                                 (1 + FstLst | Participant),
                                               data = LT.fam_switches,
                                               prior = prior.fam_switches.per_fstlst,
-                                              chains = 4, cores = 4, iter = 20000,
-                                              save_all_pars = T,
-                                              control = list(adapt_delta = .9999999))
+                                              family = poisson(),
+                                              chains = 4, cores = 4, iter = 4000,
+                                              control = list(adapt_delta = .95),
+                                              save_all_pars = T)
   fam_switches.per_fstlst.brms.model.2 <- brm(Switches ~ FstLst + Condition +
                                                 (1 + FstLst | Participant),
                                               data = LT.fam_switches,
                                               prior = prior.fam_switches.per_fstlst,
-                                              chains = 4, cores = 4, iter = 20000,
-                                              save_all_pars = T,
-                                              control = list(adapt_delta = .9999999))
+                                              family = poisson(),
+                                              chains = 4, cores = 4, iter = 4000,
+                                              control = list(adapt_delta = .95),
+                                              save_all_pars = T)
   fam_switches.per_fstlst.brms.model.1 <- brm(Switches ~ FstLst +
                                                 (1 + FstLst | Participant),
                                               data = LT.fam_switches,
                                               prior = prior.fam_switches.per_fstlst,
-                                              chains = 4, cores = 4, iter = 20000,
-                                              save_all_pars = T,
-                                              control = list(adapt_delta = .9999999))
+                                              family = poisson(),
+                                              chains = 4, cores = 4, iter = 4000,
+                                              control = list(adapt_delta = .95),
+                                              save_all_pars = T)
   fam_switches.per_fstlst.brms.model.0 <- brm(Switches ~ 1 +
                                                 (1 | Participant),
                                               data = LT.fam_switches,
                                               prior = set_prior("uniform(0,1.6)",
                                                                 class = "Intercept"),
-                                              chains = 4, cores = 4, iter = 20000,
-                                              save_all_pars = T,
-                                              control = list(adapt_delta = .9999999))
+                                              family = poisson(),
+                                              chains = 4, cores = 4, iter = 4000,
+                                              control = list(adapt_delta = .95),
+                                              save_all_pars = T)
   fam_switches.per_fstlst.brms.bf.3_2 <- bayes_factor(fam_switches.per_fstlst.brms.model.3,
                                                       fam_switches.per_fstlst.brms.model.2)
   fam_switches.per_fstlst.brms.bf.2_1 <- bayes_factor(fam_switches.per_fstlst.brms.model.2,
