@@ -906,14 +906,13 @@ LT.fam_switches <- LT.fam %>%
 # Testing Switches ~ Condition*FstLst
 run_model <- T
 if(run_model){
-  fam_switches.per_fstlst.lmer.model <- lmer(Switches ~ FstLst*Condition +
-                                               (1 + FstLst | Participant),
-                                             data = LT.fam_switches)
-  fam_switches.per_fstlst.lmer.anova <- anova(fam_switches.per_fstlst.lmer.model, type = 1)
+  fam_switches.per_fstlst.glmer.model <- glmer(Switches ~ FstLst*Condition +
+                                                 (1 + FstLst | Participant),
+                                               data = LT.fam_switches,
+                                               family = poisson())
+  fam_switches.per_fstlst.glmer.anova <- anova(fam_switches.per_fstlst.glmer.model, type = 1)
   ## Run brms
-  prior.fam_switches.per_fstlst <- c(set_prior("uniform(0,1.6)",
-                                               class = "Intercept"),
-                                     set_prior("normal(0,.5)", class = "b"))
+  prior.fam_switches.per_fstlst <- c(set_prior("normal(0,.5)", class = "b"))
   fam_switches.per_fstlst.brms.model.3 <- brm(Switches ~ FstLst*Condition +
                                                 (1 + FstLst | Participant),
                                               data = LT.fam_switches,
@@ -941,8 +940,6 @@ if(run_model){
   fam_switches.per_fstlst.brms.model.0 <- brm(Switches ~ 1 +
                                                 (1 | Participant),
                                               data = LT.fam_switches,
-                                              prior = set_prior("uniform(0,1.6)",
-                                                                class = "Intercept"),
                                               family = poisson(),
                                               chains = 4, cores = 4, iter = 4000,
                                               control = list(adapt_delta = .95),
@@ -957,14 +954,14 @@ if(run_model){
                                                      fam_switches.per_fstlst.brms.bf.2_1,
                                                      fam_switches.per_fstlst.brms.bf.3_2)
   ## Save all the results
-  saveRDS(fam_switches.per_fstlst.lmer.model, paste0(save_path, "lmerModel.rds"))
-  saveRDS(fam_switches.per_fstlst.lmer.anova, paste0(save_path, "lmerAnova.rds"))
+  saveRDS(fam_switches.per_fstlst.glmer.model, paste0(save_path, "glmerModel.rds"))
+  saveRDS(fam_switches.per_fstlst.glmer.anova, paste0(save_path, "glmerAnova.rds"))
   saveRDS(fam_switches.per_fstlst.brms.model.3, paste0(save_path, "brmsModel.rds"))
   saveRDS(fam_switches.per_fstlst.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
-  fam_switches.per_fstlst.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
-  fam_switches.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
+  fam_switches.per_fstlst.glmer.model <- readRDS(paste0(save_path, "glmerModel.rds"))
+  fam_switches.per_fstlst.glmer.anova <- readRDS(paste0(save_path, "glmerAnova.rds"))
   fam_switches.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "brmsModel.rds"))
   fam_switches.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
@@ -993,7 +990,7 @@ LT.first_tail <- LT.first_look %>%
   subset(AOI == "Tail", select = -AOI) # Discards trials with no Tail look: is it okay?
 
 # Testing (First)AOI ~ Condition*FstLst
-run_model <- T
+run_model <- F
 if(run_model){
   first_aoi.per_fstlst.glmer.model <- glmer(AOI ~ FstLst*Condition +
                                               (1 + FstLst | Participant),
