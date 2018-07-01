@@ -985,7 +985,8 @@ LT.first_aoi <- LT.first_look %>%
             Condition = first(Condition),
             FstLst = first(FstLst))
 LT.first_tail <- LT.first_look %>%
-  subset(AOI == "Tail", select = -AOI) # Discards trials with no Tail look: is it okay?
+  subset(AOI == "Tail", select = -AOI) %>% # Discards trials with no Tail look: is it okay?
+  mutate(logFirstAOILook = log(FirstAOILook))
 
 # Testing (First)AOI ~ Condition*FstLst
 run_model <- F
@@ -1042,4 +1043,58 @@ if(run_model){
   first_aoi.per_fstlst.glmer.model <- readRDS(paste0(save_path, "FirstAOI_glmerModel.rds"))
   first_aoi.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "FirstAOI_brmsModel.rds"))
   first_aoi.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstAOI_brmsBF.rds"))
+}
+# Testing FirstAOI(Tail)Look ~ Condition*FstLst
+run_model <- T
+if(run_model){
+  first_tail.per_fstlst.lmer.model <- lmer(logFirstAOILook ~ FstLst*Condition +
+                                               (1 + FstLst | Participant),
+                                             data = LT.first_tail)
+  first_tail.per_fstlst.lmer.anova <- anova(first_tail.per_fstlst.lmer.model, type = 1)
+  # Current p-values from summary may not be the best. Do something else?
+  ## Run brms
+  prior.first_tail.per_fstlst <- c(set_prior("normal(0,.5)", class = "b"))
+  first_tail.per_fstlst.brms.model.3 <- brm(logFirstAOILook ~ FstLst*Condition +
+                                             (1 + FstLst | Participant),
+                                           data = LT.first_tail,
+                                           prior = prior.first_tail.per_fstlst,
+                                           chains = 4, cores = 4,
+                                           save_all_pars = T)
+  first_tail.per_fstlst.brms.model.2 <- brm(logFirstAOILook ~ FstLst + Condition +
+                                             (1 + FstLst | Participant),
+                                           data = LT.first_tail,
+                                           prior = prior.first_tail.per_fstlst,
+                                           chains = 4, cores = 4,
+                                           save_all_pars = T)
+  first_tail.per_fstlst.brms.model.1 <- brm(logFirstAOILook ~ FstLst +
+                                             (1 + FstLst | Participant),
+                                           data = LT.first_tail,
+                                           prior = prior.first_tail.per_fstlst,
+                                           chains = 4, cores = 4,
+                                           save_all_pars = T)
+  first_tail.per_fstlst.brms.model.0 <- brm(logFirstAOILook ~ 1 +
+                                             (1 | Participant),
+                                           data = LT.first_tail,
+                                           chains = 4, cores = 4,
+                                           save_all_pars = T)
+  first_tail.per_fstlst.brms.bf.3_2 <- bayes_factor(first_tail.per_fstlst.brms.model.3,
+                                                   first_tail.per_fstlst.brms.model.2)
+  first_tail.per_fstlst.brms.bf.2_1 <- bayes_factor(first_tail.per_fstlst.brms.model.2,
+                                                   first_tail.per_fstlst.brms.model.1)
+  first_tail.per_fstlst.brms.bf.1_0 <- bayes_factor(first_tail.per_fstlst.brms.model.1,
+                                                   first_tail.per_fstlst.brms.model.0)
+  first_tail.per_fstlst.brms.bayes_factors <- list(first_tail.per_fstlst.brms.bf.1_0,
+                                                  first_tail.per_fstlst.brms.bf.2_1,
+                                                  first_tail.per_fstlst.brms.bf.3_2)
+  ## Save all the results
+  saveRDS(first_tail.per_fstlst.lmer.model, paste0(save_path, "FirstTail_lmerModel.rds"))
+  saveRDS(first_tail.per_fstlst.lmer.anova, paste0(save_path, "FirstTail_lmerAnova.rds"))
+  saveRDS(first_tail.per_fstlst.brms.model.3, paste0(save_path, "FirstTail_brmsModel.rds"))
+  saveRDS(first_tail.per_fstlst.brms.bayes_factors, paste0(save_path, "FirstTail_brmsBF.rds"))
+}else{
+  ## Read all the results
+  first_tail.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FirstTail_lmerModel.rds"))
+  first_tail.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FirstTail_lmerAnova.rds"))
+  first_tail.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "FirstTail_brmsModel.rds"))
+  first_tail.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstTail_brmsBF.rds"))
 }
