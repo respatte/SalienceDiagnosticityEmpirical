@@ -40,8 +40,8 @@ LT_data.import.adults <- function(participants="adults_2f"){
            TimeStamp = TimestampMicrosec*1e-3 + TimestampSec*1e3,
            AOI_type = 1) %>%
     group_by(Participant) %>%
-    mutate(Condition = if(first(StimLabel) == "NoLabelFeedback"){"NoLabel"}else{"Label"},
-           CategoryName = if(first(Condition) == "NoLabel"){"NoName"}else{
+    mutate(Condition = if(first(StimLabel) == "NoLabelFeedback"){"No Label"}else{"Label"},
+           CategoryName = if(first(Condition) == "No Label"){"NoName"}else{
              if((grepl("A",as.character(first(Stimulus))) &
                  first(StimLabel) == "Saldie")|
                 (grepl("B",as.character(first(Stimulus))) &
