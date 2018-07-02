@@ -18,7 +18,7 @@ LT_data.import.adults <- function(participants="adults_2f"){
   # Getting participant info
   participant_info <- read_csv(paste0(res.repo,"ParticipantInformation.csv"))
   # Reading all participant files
-  cl <- makeCluster(4)
+  cl <- makeCluster(8)
   registerDoSNOW(cl)
   file.names <- list.files(path=res.repo, pattern=".gazedata")
   df <- foreach(i=1:length(file.names),
