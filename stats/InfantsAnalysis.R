@@ -1062,7 +1062,7 @@ if(run_model){
   first_aoi.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstAOI_brmsBF.rds"))
 }
 # Testing FirstAOI(Tail)Look ~ Condition*FstLst
-run_model <- T
+run_model <- F
 if(run_model){
   first_tail.per_fstlst.lmer.model <- lmer(logFirstAOILook ~ FstLst*Condition +
                                                (1 + FstLst | Participant),
@@ -1117,7 +1117,7 @@ if(run_model){
 }
 
 # Plotting
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## First AOI (boxplot)
   first_aoi.per_fstlst.plot <- LT.first_aoi %>%
