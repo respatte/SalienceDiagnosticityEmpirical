@@ -2,9 +2,7 @@
 library(lme4);library(lmerTest)
 library(nortest)
 library(tidyverse); library(broom)
-library(jtools)
 library(eyetrackingR)
-#library(texreg)
 
 source("Routines.R")
 
@@ -29,20 +27,20 @@ LT.clean <- d[[4]] %>%
                          time_column = "TimeStamp",
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head", "Tail"),
-                         treat_non_aoi_looks_as_missing = T) %>%
-  subset_by_window(window_start_time = -1000, rezero = F)
+                         treat_non_aoi_looks_as_missing = T)
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 # DATA PREPARATION
 LT.time_course_tail.first_last <- LT.clean %>%
+  subset_by_window(window_start_time = -1000, rezero = F) %>%
+  drop_na(FstLst) %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = c("Tail"),
                           predictor_columns=c("Condition",
                                               "FstLst",
                                               "ACC",
                                               "Stimulus",
-                                              "StimLabel")) %>%
-  drop_na(FstLst)
+                                              "StimLabel"))
 # GROWTH CURVE ANALYSIS
 run_model <- F # Running the model takes around 40 minutes on a [check office CPU specs]
 if(run_model){
