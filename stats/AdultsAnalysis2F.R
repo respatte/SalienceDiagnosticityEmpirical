@@ -29,103 +29,6 @@ LT.clean <- d[[4]] %>%
                          aoi_columns = c("Head", "Tail"),
                          treat_non_aoi_looks_as_missing = T)
 
-# LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
-# DATA PREPARATION
-LT.time_course_tail.first_last <- LT.clean %>%
-  subset_by_window(window_start_time = -1000, rezero = F) %>%
-  drop_na(FstLst) %>%
-  make_time_sequence_data(time_bin_size = 50,
-                          aois = c("Tail"),
-                          predictor_columns=c("Condition",
-                                              "FstLst",
-                                              "ACC",
-                                              "Stimulus",
-                                              "StimLabel"))
-# GROWTH CURVE ANALYSIS
-run_model <- F # Running the model takes around 40 minutes on a [check office CPU specs]
-if(run_model){
-  ## Run and save the model
-  #- Analysing proportions => main effect of Condition or Part nonsensical,
-  #- we can only expect differences between AOIs, and between AOIs on different levels
-  t <- proc.time()
-  LT.time_course_tail.GCA <- lme4::lmer(ArcSin ~ (Condition*FstLst)*
-                                          (ot1 + ot2 + ot3 + ot4 + ot5 + ot6 + ot7) +
-                                          (1 + FstLst + ot1 + ot2 + ot3 +
-                                             ot4 + ot5 + ot6 + ot7 | Participant) +
-                                          (1 | Stimulus) +
-                                          (1| StimLabel),
-                                        data = LT.time_course_tail.first_last, REML = F,
-                                        control = lmerControl(optCtrl = list(maxfun = 100000)))
-  GCA.fit <- proc.time() - t # 1224.741
-  t <- proc.time()
-  LT.time_course_tail.GCA <- as_lmerModLmerTest(LT.time_course_tail.GCA)
-  GCA.derivatives <- proc.time() - t # 1267.300
-  saveRDS(LT.time_course_tail.GCA, file = "../results/adults_2f/GCA.rds")
-  ## Run and save the ANOVA for the model effects
-  t <- proc.time()
-  LT.time_course_tail.GCA.anova <- anova(LT.time_course_tail.GCA, type = 2)
-  GCA.anova <- proc.time() - t # 3.312
-  saveRDS(LT.time_course_tail.GCA.anova, file = "../results/adults_2f/GCA_anova.rds")
-}else{
-  LT.time_course_tail.GCA <- readRDS("../results/adults_2f/GCA.rds")
-  LT.time_course_tail.GCA.anova <- readRDS("../results/adults_2f/GCA_anova.rds")
-}
-# BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- F # Running the model takes around 12 hours on a [check office CPU specs]
-if(run_model){
-  t <- proc.time()
-  ## Determine clusters
-  LT.time_cluster_tail.first_last <- LT.time_course_tail.first_last %>%
-    split(.$FstLst) %>%
-    lapply(make_time_cluster_data,
-           predictor_column = "Condition",
-           treatment_level = "NoLabel",
-           aoi = "Tail",
-           test = "lmer",
-           threshold = 1.5,
-           formula = ArcSin ~ Condition +
-             (1 | Participant) +
-             (1 | Stimulus))
-  ## Run the analysis
-  LT.time_cluster_tail.first_last.analysis <- LT.time_cluster_tail.first_last %>%
-    lapply(analyze_time_clusters,
-           formula = ArcSin ~ Condition +
-             (1 | Participant) +
-             (1 | Stimulus),
-           within_subj = T,
-           parallel = T)
-  bcbp.time <- proc.time() - t
-  ## Save results
-  saveRDS(LT.time_cluster_tail.first_last,
-          "../results/adults_2f/BCBP_clusters.rds")
-  saveRDS(LT.time_cluster_tail.first_last.analysis,
-          "../results/adults_2f/BCBP_analysis.rds")
-}else{
-  ## Read the results
-  LT.time_cluster_tail.first_last <- readRDS("../results/adults_2f/BCBP_clusters.rds")
-  LT.time_cluster_tail.first_last.analysis <- readRDS("../results/adults_2f/BCBP_analysis.rds")
-}
-# PLOTTING
-## Plot eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
-intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
-                    x_int = c(0, 2000, 0, 2000))
-LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_tail.first_last,
-                                               aes(x = Time, y=Prop,
-                                                   colour=Condition,
-                                                   fill=Condition)) +
-  xlab('Time in Trial') + ylab("Looking to AOI (Prop)") + theme_apa(legend.pos = "top") +
-  scale_colour_discrete(labels = c("Label", "No Label")) +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  facet_grid(.~FstLst, scales = "free_x") + ylim(0,1) +
-  scale_x_continuous(breaks = c(-1000, 0, 1000, 2000, 3000)) +
-  geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5) +
-  stat_summary(fun.y='mean', geom='line', linetype = '61') +
-  stat_summary(fun.data=mean_se, geom='ribbon', alpha= .33, colour=NA) +
-  geom_hline(yintercept = .5)
-ggsave("../results/adults_2f/LookingTimeCourseFirstLast.pdf",
-       plot = LT.clean.time_course.first_last.plot,
-       width = 7, height = 3)
-
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY PART ===================================
 # DATA PREPARATION
 ## Prepare dataset with all blocks
@@ -185,6 +88,75 @@ LT.prop_tail.first_last.plot <- ggplot(LT.prop_tail.first_last,
 ggsave("../results/adults_2f/AOILookingFirstLast.pdf",
        LT.prop_tail.first_last.plot,
        width = 3.5, height = 3)
+
+# LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
+# DATA PREPARATION
+LT.time_course_tail.first_last <- LT.clean %>%
+  subset_by_window(window_start_time = -1000, rezero = F) %>%
+  drop_na(FstLst) %>%
+  make_time_sequence_data(time_bin_size = 50,
+                          aois = c("Tail"),
+                          predictor_columns=c("Condition",
+                                              "FstLst",
+                                              "ACC",
+                                              "Stimulus",
+                                              "StimLabel"))
+
+# BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
+run_model <- F # Running the model takes around 12 hours on a [check office CPU specs]
+if(run_model){
+  t <- proc.time()
+  ## Determine clusters
+  LT.time_cluster_tail.first_last <- LT.time_course_tail.first_last %>%
+    split(.$FstLst) %>%
+    lapply(make_time_cluster_data,
+           predictor_column = "Condition",
+           treatment_level = "NoLabel",
+           aoi = "Tail",
+           test = "lmer",
+           threshold = 1.5,
+           formula = ArcSin ~ Condition +
+             (1 | Participant) +
+             (1 | Stimulus))
+  ## Run the analysis
+  LT.time_cluster_tail.first_last.analysis <- LT.time_cluster_tail.first_last %>%
+    lapply(analyze_time_clusters,
+           formula = ArcSin ~ Condition +
+             (1 | Participant) +
+             (1 | Stimulus),
+           within_subj = T,
+           parallel = T)
+  bcbp.time <- proc.time() - t
+  ## Save results
+  saveRDS(LT.time_cluster_tail.first_last,
+          "../results/adults_2f/BCBP_clusters.rds")
+  saveRDS(LT.time_cluster_tail.first_last.analysis,
+          "../results/adults_2f/BCBP_analysis.rds")
+}else{
+  ## Read the results
+  LT.time_cluster_tail.first_last <- readRDS("../results/adults_2f/BCBP_clusters.rds")
+  LT.time_cluster_tail.first_last.analysis <- readRDS("../results/adults_2f/BCBP_analysis.rds")
+}
+# PLOTTING
+## Plot eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
+intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
+                    x_int = c(0, 2000, 0, 2000))
+LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_tail.first_last,
+                                               aes(x = Time, y=Prop,
+                                                   colour=Condition,
+                                                   fill=Condition)) +
+  xlab('Time in Trial') + ylab("Looking to AOI (Prop)") + theme_apa(legend.pos = "top") +
+  scale_colour_discrete(labels = c("Label", "No Label")) +
+  scale_fill_discrete(labels = c("Label", "No Label")) +
+  facet_grid(.~FstLst, scales = "free_x") + ylim(0,1) +
+  scale_x_continuous(breaks = c(-1000, 0, 1000, 2000, 3000)) +
+  geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5) +
+  stat_summary(fun.y='mean', geom='line', linetype = '61') +
+  stat_summary(fun.data=mean_se, geom='ribbon', alpha= .33, colour=NA) +
+  geom_hline(yintercept = .5)
+ggsave("../results/adults_2f/LookingTimeCourseFirstLast.pdf",
+       plot = LT.clean.time_course.first_last.plot,
+       width = 7, height = 3)
 
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS ====================================================
 # Get how many participants for each block, and make a bar plot
