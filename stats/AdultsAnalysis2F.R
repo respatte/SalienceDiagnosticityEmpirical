@@ -12,7 +12,7 @@ d <- LT_data.gather("adults_2f")
 # number of blocks before learning (graphically, from boxplot)
 behaviour <- d[[2]] %>%
   subset((Condition == "Label" & NBlocks < 8) |
-           (Condition == "NoLabel" & NBlocks < 5))
+           (Condition == "No Label" & NBlocks < 5))
 rote_learning_check <- behaviour %>%
   subset(Phase == "Test") %>%
   group_by(Participant, Stimulus) %>%
@@ -21,7 +21,7 @@ rote_learning_check <- behaviour %>%
 # No rote learners
 LT.clean <- d[[4]] %>%
   subset((Condition == "Label" & NBlocks < 8) |
-           (Condition == "NoLabel" & NBlocks < 5)) %>%
+           (Condition == "No Label" & NBlocks < 5)) %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
@@ -90,73 +90,69 @@ ggsave("../results/adults_2f/AOILookingFirstLast.pdf",
        width = 3.5, height = 3)
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
+save_path <- "../results/adults_2f/PropTail/TimeCourse_"
 # DATA PREPARATION
-LT.time_course_tail.first_last <- LT.clean %>%
+prop_tail.time_course.per_fstlst <- LT.clean %>%
   subset_by_window(window_start_time = -1000, rezero = F) %>%
   drop_na(FstLst) %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = c("Tail"),
                           predictor_columns=c("Condition",
-                                              "FstLst",
-                                              "ACC",
-                                              "Stimulus",
-                                              "StimLabel"))
+                                              "FstLst"),
+                          summarize_by = "Participant")
 
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- F # Running the model takes around 12 hours on a [check office CPU specs]
+run_model <- T # Running the model takes around 111 seconds on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
+  ## Determine threshold based on alpha = .05 two-tailed
+  num_sub = length(unique((prop_tail.time_course.per_fstlst$Participant)))
+  threshold_t = qt(p = 1 - .05/2,
+                   df = num_sub-1)
   ## Determine clusters
-  LT.time_cluster_tail.first_last <- LT.time_course_tail.first_last %>%
+  prop_tail.time_cluster.per_fstlst <- prop_tail.time_course.per_fstlst %>%
     split(.$FstLst) %>%
     lapply(make_time_cluster_data,
            predictor_column = "Condition",
-           treatment_level = "NoLabel",
+           treatment_level = "No Label",
            aoi = "Tail",
-           test = "lmer",
-           threshold = 1.5,
-           formula = ArcSin ~ Condition +
-             (1 | Participant) +
-             (1 | Stimulus))
+           test = "t.test",
+           threshold = threshold_t)
   ## Run the analysis
-  LT.time_cluster_tail.first_last.analysis <- LT.time_cluster_tail.first_last %>%
+  prop_tail.time_cluster.per_fstlst.analysis <- prop_tail.time_cluster.per_fstlst %>%
     lapply(analyze_time_clusters,
-           formula = ArcSin ~ Condition +
-             (1 | Participant) +
-             (1 | Stimulus),
-           within_subj = T,
+           within_subj = F,
            parallel = T)
-  bcbp.time <- proc.time() - t
+  prop_tail.bcbp.time <- proc.time() - t
   ## Save results
-  saveRDS(LT.time_cluster_tail.first_last,
-          "../results/adults_2f/BCBP_clusters.rds")
-  saveRDS(LT.time_cluster_tail.first_last.analysis,
-          "../results/adults_2f/BCBP_analysis.rds")
+  saveRDS(prop_tail.time_cluster.per_fstlst, paste0(save_path, "FstLst_bcbpClusters.rds"))
+  saveRDS(prop_tail.time_cluster.per_fstlst.analysis, paste0(save_path, "FstLst_bcbpAnalysis.rds"))
 }else{
   ## Read the results
-  LT.time_cluster_tail.first_last <- readRDS("../results/adults_2f/BCBP_clusters.rds")
-  LT.time_cluster_tail.first_last.analysis <- readRDS("../results/adults_2f/BCBP_analysis.rds")
+  prop_tail.time_cluster.per_fstlst <- readRDS(paste0(save_path, "FstLst_bcbpClusters.rds"))
+  prop_tail.time_cluster.analysis <- readRDS(paste0(save_path, "FstLst_bcbpAnalysis.rds"))
 }
 # PLOTTING
-## Plot eye-tracking data and GCA predictions for all AOIs, for first block, last block, and test
-intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
-                    x_int = c(0, 2000, 0, 2000))
-LT.clean.time_course.first_last.plot <- ggplot(LT.time_course_tail.first_last,
-                                               aes(x = Time, y=Prop,
-                                                   colour=Condition,
-                                                   fill=Condition)) +
-  xlab('Time in Trial') + ylab("Looking to AOI (Prop)") + theme_apa(legend.pos = "top") +
-  scale_colour_discrete(labels = c("Label", "No Label")) +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  facet_grid(.~FstLst, scales = "free_x") + ylim(0,1) +
-  scale_x_continuous(breaks = c(-1000, 0, 1000, 2000, 3000)) +
-  geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5) +
-  stat_summary(fun.y='mean', geom='line', linetype = '61') +
-  stat_summary(fun.data=mean_se, geom='ribbon', alpha= .33, colour=NA) +
-  geom_hline(yintercept = .5)
-ggsave("../results/adults_2f/LookingTimeCourseFirstLast.pdf",
-       plot = LT.clean.time_course.first_last.plot,
-       width = 7, height = 3)
+## Plot prop_tail time-course for first block and last block
+generate_plots <- T
+if(generate_plots){
+  intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
+                      x_int = c(0, 2000, 0, 2000))
+  prop_tail.time_course.per_fstlst.plot <- ggplot(prop_tail.time_course.per_fstlst,
+                                                  aes(x = Time, y=Prop,
+                                                      colour=Condition,
+                                                      fill=Condition)) +
+    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") + theme(legend.pos = "top") +
+    facet_grid(.~FstLst) + ylim(0,1) +
+    scale_x_continuous(breaks = c(-1000, 0, 1000, 2000, 3000)) +
+    geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5) +
+    stat_summary(fun.y='mean', geom='line', linetype = '61') +
+    stat_summary(fun.data="mean_se", geom='ribbon', alpha= .33, colour=NA) +
+    geom_hline(yintercept = .5)
+  ggsave(paste0(save_path, "FstLst_data.pdf"),
+         plot = prop_tail.time_course.per_fstlst.plot,
+         width = 7, height = 3)
+}
 
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS ====================================================
 # Get how many participants for each block, and make a bar plot
