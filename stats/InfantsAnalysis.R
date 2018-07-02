@@ -904,7 +904,7 @@ LT.fam_switches <- LT.fam %>%
             FstLst = first(FstLst),
             Condition = first(Condition))
 # Testing Switches ~ Condition*FstLst
-run_model <- T
+run_model <- F
 if(run_model){
   fam_switches.per_fstlst.glmer.model <- glmer(Switches ~ FstLst*Condition +
                                                  (1 + FstLst | Participant),
@@ -962,6 +962,23 @@ if(run_model){
   fam_switches.per_fstlst.glmer.model <- readRDS(paste0(save_path, "glmerModel.rds"))
   fam_switches.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "brmsModel.rds"))
   fam_switches.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
+}
+
+# Plotting boxplots
+generate_plots <- T
+if(generate_plots){
+  fam_switches.per_fstlst.plot <- LT.fam_switches %>%
+    drop_na(FstLst) %>%
+    ggplot(aes(y = Switches,
+               x = FstLst,
+               fill = Condition)) +
+    theme(legend.position = "top",
+          axis.title.x = element_blank()) +
+    ylab("Switches between AOIs") +
+    geom_boxplot()
+  ggsave(paste0(save_path, "data.pdf"),
+         fam_switches.per_fstlst.plot,
+         width = 3.5, height = 3.5)
 }
 
 # FAMILIARISATION: FIRST LOOK ======================================================================
@@ -1097,4 +1114,39 @@ if(run_model){
   first_tail.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FirstTail_lmerAnova.rds"))
   first_tail.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "FirstTail_brmsModel.rds"))
   first_tail.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstTail_brmsBF.rds"))
+}
+
+# Plotting
+generate_plots <- T
+if(generate_plots){
+  ## First AOI (boxplot)
+  first_aoi.per_fstlst.plot <- LT.first_aoi %>%
+    drop_na(FstLst) %>%
+    group_by(Participant, FstLst, AOI) %>%
+    summarise(N = n(),
+              Condition = first(Condition)) %>%
+    ggplot(aes(y = N,
+               x = AOI,
+               fill = Condition)) +
+    theme(legend.position = "top",
+          axis.title.x = element_blank()) +
+    ylab("Number of first look to AOI") +
+    facet_grid(.~FstLst) +
+    geom_boxplot()
+  ggsave(paste0(save_path, "FirstAOI_data.pdf"),
+         first_aoi.per_fstlst.plot,
+         width = 7, height = 3.5)
+  ## Time to first tail look (boxplot)
+  first_tail.per_fstlst.plot <- LT.first_tail %>%
+    drop_na(FstLst) %>%
+    ggplot(aes(y = FirstAOILook,
+               x = FstLst,
+               fill = Condition)) +
+    theme(legend.position = "top",
+          axis.title.x = element_blank()) +
+    ylab("Time to first Tail look") +
+    geom_boxplot()
+  ggsave(paste0(save_path, "FirstTail_data.pdf"),
+         first_tail.per_fstlst.plot,
+         width = 3.5, height = 3.5)
 }
