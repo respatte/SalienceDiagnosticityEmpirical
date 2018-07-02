@@ -1,5 +1,6 @@
 # LIBRARY IMPORTS ==================================================================================
 library(lme4);library(lmerTest)
+library(brms)
 library(nortest)
 library(tidyverse); library(broom)
 library(eyetrackingR)
@@ -8,6 +9,9 @@ source("Routines.R")
 
 # GATHER DATA ======================================================================================
 d <- LT_data.gather("adults_2f")
+# Unload snow packages so that parallel works for brms
+detach("package:doSNOW")
+detach("package:snow")
 # Get behavioural and LT data, excluding outliers in terms of
 # number of blocks before learning (graphically, from boxplot)
 behaviour <- d[[2]] %>%
@@ -30,71 +34,128 @@ LT.clean <- d[[4]] %>%
                          treat_non_aoi_looks_as_missing = T)
 
 # LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY PART ===================================
+save_path <- "../results/adults_2f/PropTail/TrialAverage_"
 # DATA PREPARATION
-## Prepare dataset with all blocks
-LT.prop_tail.per_block <- make_time_window_data(LT.clean,
-                                                aois="Tail",
-                                                predictor_columns=c("Condition",
-                                                                    "Block",
-                                                                    "FstLst",
-                                                                    "ACC",
-                                                                    "Stimulus",
-                                                                    "StimLabel"))
-## Comparing first block against last block
-LT.prop_tail.first_last <- LT.prop_tail.per_block %>%
-  drop_na(FstLst)
-# MIXED-EFFECTS MODEL FOR PROP ~ CONDITION*PART
-run_model <- F # Running the model takes around half a second on a [check office CPU specs]
+prop_tail.per_fstlst <- LT.clean %>%
+  drop_na(FstLst) %>%
+  make_time_window_data(aois="Tail",
+                        predictor_columns=c("Condition",
+                                            "FstLst",
+                                            "ACC",
+                                            "Stimulus",
+                                            "StimLabel"))
+
+# Testing ArcSin ~ FstLst*Condition
+run_model <- T # Running the models takes around XXX minutes on a 4.40GHz 12-core
 if(run_model){
-  ## Run and save the model
+  ## Run lmer (Sampling Theory Based)
   t <- proc.time()
-  LT.prop_tail.first_last.lmer <- lmer(ArcSin ~ FstLst*Condition +
-                                         (1 + FstLst | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StimLabel),
-                                       data = LT.prop_tail.first_last)
-  saveRDS(LT.prop_tail.first_last.lmer, "../results/adults_2f/PropAOI.rds")
-  ## Run and save the ANOVA for model effects
-  LT.prop_tail.first_last.lmer.anova <- anova(LT.prop_tail.first_last.lmer, type = 2)
-  saveRDS(LT.prop_tail.first_last.lmer.anova, "../results/adults_2f/PropAOI_anova.rds")
+  prop_tail.per_fstlst.lmer.model <- lmer(ArcSin ~ FstLst*Condition +
+                                            (1 + FstLst | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
+                                          data = prop_tail.per_fstlst)
+  prop_tail.per_fstlst.lmer.anova <- anova(prop_tail.per_fstlst.lmer.model, type = 1)
+  ## Run brms (Bayesian)
+  prior.prop_tail.per_fstlst <- c(set_prior("uniform(0,1.6)",
+                                            class = "Intercept"),
+                                  set_prior("normal(0,.5)", class = "b"))
+  prop_tail.per_fstlst.brms.model.3 <- brm(ArcSin ~ FstLst*Condition +
+                                             (1 + FstLst | Participant) +
+                                             (1 | Stimulus) +
+                                             (1 | StimLabel),
+                                           data = prop_tail.per_fstlst,
+                                           prior = prior.prop_tail.per_fstlst,
+                                           chains = 4, cores = 4,
+                                           control = list(adapt_delta = 0.999999999999999,
+                                                          max_treedepth = 15),
+                                           save_all_pars = T)
+  prop_tail.per_fstlst.brms.model.2 <- brm(ArcSin ~ FstLst + Condition +
+                                             (1 + FstLst | Participant) +
+                                             (1 | Stimulus) +
+                                             (1 | StimLabel),
+                                           data = prop_tail.per_fstlst,
+                                           prior = prior.prop_tail.per_fstlst,
+                                           chains = 4, cores = 4,
+                                           control = list(adapt_delta = 0.999999999999999,
+                                                          max_treedepth = 15),
+                                           save_all_pars = T)
+  prop_tail.per_fstlst.brms.model.1 <- brm(ArcSin ~ FstLst +
+                                             (1 + FstLst | Participant) +
+                                             (1 | Stimulus) +
+                                             (1 | StimLabel),
+                                           data = prop_tail.per_fstlst,
+                                           prior = prior.prop_tail.per_fstlst,
+                                           chains = 4, cores = 4,
+                                           control = list(adapt_delta = 0.999999999999999,
+                                                          max_treedepth = 15),
+                                           save_all_pars = T)
+  prop_tail.per_fstlst.brms.model.0 <- brm(ArcSin ~ 1 +
+                                             (1 | Participant) +
+                                             (1 | Stimulus) +
+                                             (1 | StimLabel),
+                                           data = prop_tail.per_fstlst,
+                                           prior = set_prior("uniform(0,1.6)",
+                                                             class = "Intercept"),
+                                           chains = 4, cores = 4,
+                                           control = list(adapt_delta = 0.999999999999999,
+                                                          max_treedepth = 15),
+                                           save_all_pars = T)
+  prop_tail.per_fstlst.brms.bf.3_2 <- bayes_factor(prop_tail.per_fstlst.brms.model.3,
+                                                   prop_tail.per_fstlst.brms.model.2)
+  prop_tail.per_fstlst.brms.bf.2_1 <- bayes_factor(prop_tail.per_fstlst.brms.model.2,
+                                                   prop_tail.per_fstlst.brms.model.1)
+  prop_tail.per_fstlst.brms.bf.1_0 <- bayes_factor(prop_tail.per_fstlst.brms.model.1,
+                                                   prop_tail.per_fstlst.brms.model.0)
+  prop_tail.per_fstlst.brms.bayes_factors <- list(prop_tail.per_fstlst.brms.bf.1_0,
+                                                  prop_tail.per_fstlst.brms.bf.2_1,
+                                                  prop_tail.per_fstlst.brms.bf.3_2)
   prop_tail.time <- proc.time() - t
+  ## Save all the results
+  saveRDS(prop_tail.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
+  saveRDS(prop_tail.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
+  saveRDS(prop_tail.per_fstlst.brms.model.3, paste0(save_path, "FstLst_brmsModel.rds"))
+  saveRDS(prop_tail.per_fstlst.brms.bayes_factors, paste0(save_path, "FstLst_brmsBF.rds"))
 }else{
-  LT.prop_tail.first_last.lmer <- readRDS("../results/adults_2f/PropAOI.rds")
-  LT.prop_tail.first_last.lmer.anova <- readRDS("../results/adults_2f/PropAOI_anova.rds")
+  prop_tail.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FstLst_lmerModel.rds"))
+  prop_tail.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FstLst_lmerAnova.rds"))
+  prop_tail.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "FstLst_brmsModel.rds"))
+  prop_tail.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FstLst_brmsBF.rds"))
 }
 # PLOTTING
 ## Plot jitter + mean&se + lines
-LT.prop_tail.first_last.plot <- ggplot(LT.prop_tail.first_last,
-                                       aes(x = FstLst, y = Prop,
-                                           colour = Condition,
-                                           fill = Condition)) +
-  theme_apa(legend.pos = "top") + ylab("Looking to AOI (Prop)") +
-  scale_colour_discrete(labels = c("Label", "No Label")) +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_point(size = 1,
-             position = position_jitterdodge(dodge.width = .8,
-                                             jitter.width = .2),
-             alpha = .25) +
-  geom_errorbar(stat = "summary",
-                width = .2, colour = "black",
-                position = position_dodge(.1)) +
-  geom_line(aes(x = FstLst, y = Prop, group = Condition),
-            stat = "summary", fun.y = "mean",
-            colour = "black",
-            position = position_dodge(.1)) +
-  geom_point(stat = "summary", fun.y = "mean",
-             shape = 18, size = 2,
-             position = position_dodge(.1))
-ggsave("../results/adults_2f/AOILookingFirstLast.pdf",
-       LT.prop_tail.first_last.plot,
-       width = 3.5, height = 3)
+generate_plots <- F
+if(generate_plots){
+  prop_tail.per_fstlst.plot <- ggplot(prop_tail.per_fstlst,
+                                         aes(x = FstLst, y = Prop,
+                                             colour = Condition,
+                                             fill = Condition)) +
+    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
+    geom_point(size = 1,
+               position = position_jitterdodge(dodge.width = .8,
+                                               jitter.width = .2),
+               alpha = .25) +
+    geom_errorbar(stat = "summary", fun.data = "mean_se",
+                  width = .2, colour = "black",
+                  position = position_dodge(.1)) +
+    geom_line(aes(x = FstLst, y = Prop, group = Condition),
+              stat = "summary", fun.y = "mean",
+              colour = "black",
+              position = position_dodge(.1)) +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 2,
+               position = position_dodge(.1))
+  ggsave(paste0(save_path, "FstLst_data.pdf"),
+         prop_tail.per_fstlst.plot,
+         width = 3.5, height = 3)
+}
 
 # LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
 save_path <- "../results/adults_2f/PropTail/TimeCourse_"
 # DATA PREPARATION
 prop_tail.time_course.per_fstlst <- LT.clean %>%
-  subset_by_window(window_start_time = -1000, rezero = F) %>%
   drop_na(FstLst) %>%
+  subset_by_window(window_start_time = -1000, rezero = F) %>%
   make_time_sequence_data(time_bin_size = 50,
                           aois = c("Tail"),
                           predictor_columns=c("Condition",
@@ -102,7 +163,7 @@ prop_tail.time_course.per_fstlst <- LT.clean %>%
                           summarize_by = "Participant")
 
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T # Running the model takes around 111 seconds on a 4.40GHz 12-core
+run_model <- T # Running the model takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
