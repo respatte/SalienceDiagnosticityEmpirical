@@ -354,8 +354,7 @@ LT_data.gather <- function(participants, verbose = F, graphs = F){
   {if(grepl("adults_[23]f", participants)){
     group_by(., Participant, CurrentObject)
   }else{group_by(., Participant, Condition)}}%>%
-    summarise(TrackLossRatio = sum(TrackLoss)/n(),
-              NonAOIRatio = sum(NonAOI, na.rm = T)/(n()-sum(TrackLoss)))
+    summarise(TrackLossRatio = sum(TrackLoss)/n())
   # Save diagnostic plot if necessary
   if(graphs){
     # Select aesthetics for plot depending on available variables
