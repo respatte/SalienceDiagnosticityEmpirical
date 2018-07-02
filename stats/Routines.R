@@ -183,12 +183,10 @@ LT_data.to_eyetrackingR <- function(df, participants, AOIs){
   # TODO/GOAL - Get list of AOIs (one df per AOI), all defined with AOI_type specific values
   # Transform dfname into string with deparse(substitute(dfname))
   # Add AOIs to data frame, one by one
-  df <- mutate(df, NonAOI = !TrackLoss)
   for (AOI in names(AOIs)){
     AOI.name <- sub("infants\\.|adults_[23]f\\.", "", AOI)
     df %<>% left_join(AOIs[[AOI]]) %>%
-      mutate(!!AOI.name := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom,
-             NonAOI = xor(NonAOI, CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom)) %>%
+      mutate(!!AOI.name := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom) %>%
       select(-one_of("Left", "Right", "Top", "Bottom"))
   }
   # Set starting time of all trials to 0
@@ -365,32 +363,21 @@ LT_data.gather <- function(participants, verbose = F, graphs = F){
       LT.AOI_summary.plot.TrackLossRatio <- ggplot(LT.AOI_summary,
                                                    aes(x = CurrentObject, y = TrackLossRatio,
                                                        fill = CurrentObject))
-      LT.AOI_summary.plot.NonAOIRatio <- ggplot(LT.AOI_summary,
-                                                aes(x = CurrentObject, y = NonAOIRatio,
-                                                    fill = CurrentObject))
     }else{
       LT.AOI_summary.plot.TrackLossRatio <- ggplot(LT.AOI_summary,
                                                    aes(x = Condition, y = TrackLossRatio,
                                                        fill = Condition))
-      LT.AOI_summary.plot.NonAOIRatio <- ggplot(LT.AOI_summary,
-                                                aes(x = Condition, y = NonAOIRatio,
-                                                    fill = Condition))
     }
     # Finishing plots with layers
     LT.AOI_summary.plot.TrackLossRatio <- LT.AOI_summary.plot.TrackLossRatio +
       geom_violin() +
       geom_boxplot(alpha=0, width=.2, outlier.alpha = 1) +
       guides(fill = "none")
-    LT.AOI_summary.plot.NonAOIRatio <- LT.AOI_summary.plot.NonAOIRatio +
-      geom_violin() +
-      geom_boxplot(alpha=0, width=.2, outlier.alpha = 1) +
-      guides(fill = "none")
     # Saving plots
     ggsave(paste0("../results/", participants, "/cleaning/TrackLossRatio.png"),
            plot = LT.AOI_summary.plot.TrackLossRatio)
-    ggsave(paste0("../results/", participants, "/cleaning/NonAOIRatio.png"),
-           plot = LT.AOI_summary.plot.NonAOIRatio)
   }
+  print(summary(LT.AOI_summary))
   # Make clean, with inclusion criteria dependent on participants tested
   if(grepl("adults_[23]f", participants)){
     LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants,
