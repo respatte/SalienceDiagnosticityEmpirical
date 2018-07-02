@@ -376,7 +376,6 @@ LT_data.gather <- function(participants, verbose = F, graphs = F){
     ggsave(paste0("../results/", participants, "/cleaning/TrackLossRatio.png"),
            plot = LT.AOI_summary.plot.TrackLossRatio)
   }
-  print(summary(LT.AOI_summary))
   # Make clean, with inclusion criteria dependent on participants tested
   if(grepl("adults_[23]f", participants)){
     LT.clean <- LT_data.trackloss_clean(LT.raw_data, participants,
