@@ -33,7 +33,7 @@ LT.clean <- d[[4]] %>%
                          aoi_columns = c("Head", "Tail"),
                          treat_non_aoi_looks_as_missing = T)
 
-# LOOKING TIME ANALYSIS: PROP AOI LOOKING BY PARTICIPANT BY PART ===================================
+# TRAINING LT ANALYSIS: PROP TAIL LOOKING BY PARTICIPANT ===========================================
 save_path <- "../results/adults_2f/PropTail/TrialAverage_"
 # DATA PREPARATION
 prop_tail.per_fstlst <- LT.clean %>%
@@ -150,7 +150,140 @@ if(generate_plots){
          width = 3.5, height = 3)
 }
 
-# LOOKING TIME ANALYSIS: TIME COURSE ===============================================================
+# TRAINING LT ANALYSIS: PROP TAIL LOOKING BY TRIAL PART ============================================
+save_path <- "../results/adults_2f/PropTail/TrialParts_"
+# DATA PREPARATION
+trial_parts.per_fstlst <- LT.clean %>%
+  drop_na(FstLst) %>%
+  make_time_window_data(aois="Tail",
+                        predictor_columns=c("Condition",
+                                            "FstLst",
+                                            "CurrentObject",
+                                            "Stimulus",
+                                            "StimLabel"))
+
+# Testing ArcSin ~ FstLst*CurrentObject(TrialParts)*Condition
+run_model <- T # Running the models takes around XXX minutes on a 4.40GHz 12-core
+if(run_model){
+  ## Run lmer (Sampling Theory Based)
+  t <- proc.time()
+  trial_parts.per_fstlst.lmer.model <- lmer(ArcSin ~ FstLst*CurrentObject*Condition +
+                                                     (1 + FstLst*CurrentObject | Participant) +
+                                                     (1 | Stimulus) +
+                                                     (1 | StimLabel),
+                                                   data = trial_parts.per_fstlst)
+  trial_parts.per_fstlst.lmer.anova <- anova(trial_parts.per_fstlst.lmer.model, type = 1)
+  ## Run brms (Bayesian)
+  ### Set priors for models other than intercept-only
+  prior.trial_parts.per_fstlst <- c(set_prior("uniform(0,1.6)",
+                                              class = "Intercept"),
+                                    set_prior("normal(0,.5)", class = "b"))
+  ### Set all nested formulas for model comparisons
+  formulas.trial_parts.per_fstlst <- list(ArcSin ~ 1 +
+                                            (1 | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
+                                          ArcSin ~ 1 + FstLst +
+                                            (1 + FstLst | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
+                                          ArcSin ~ 1 + FstLst + CurrentObject +
+                                            (1 + FstLst + CurrentObject | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
+                                          ArcSin ~ 1 + FstLst + CurrentObject + Condition +
+                                            (1 + FstLst + CurrentObject | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
+                                          ArcSin ~ 1 + FstLst + CurrentObject + Condition +
+                                            FstLst:CurrentObject +
+                                            (1 + FstLst*CurrentObject | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
+                                          ArcSin ~ 1 + FstLst + CurrentObject + Condition +
+                                            FstLst:CurrentObject + FstLst:Condition +
+                                            (1 + FstLst*CurrentObject | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
+                                          ArcSin ~ 1 + FstLst + CurrentObject + Condition +
+                                            FstLst:CurrentObject + FstLst:Condition +
+                                            CurrentObject:Condition +
+                                            (1 + FstLst*CurrentObject | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
+                                          ArcSin ~ 1 + FstLst + CurrentObject + Condition +
+                                            FstLst:CurrentObject + FstLst:Condition +
+                                            CurrentObject:Condition +
+                                            FstLst:CurrentObject:Condition +
+                                            (1 + FstLst*CurrentObject | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel))
+  ### Run all Bayesian models
+  trial_parts.per_fstlst.brms.models <- lapply(seq_along(formulas.trial_parts.per_fstlst),
+                                               function(i){
+                                                 brm(formulas.trial_parts.per_fstlst[[i]],
+                                                     data = trial_parts.per_fstlst,
+                                                     prior = if(i == 1){
+                                                       # Intercept-only model, no slope priors
+                                                       set_prior("uniform(0,1.6)",
+                                                                 class = "Intercept")
+                                                     }else{
+                                                       # Slope priors
+                                                       prior.trial_parts.per_fstlst
+                                                     },
+                                                     chains = 4, cores = 4,
+                                                     control = list(adapt_delta = .999999999999999,
+                                                                    max_treedepth = 15),
+                                                     save_all_pars = T)
+                                               })
+  ### Compute all Bayes fators
+  n_models <- length(formulas.trial_parts.per_fstlst)
+  trial_parts.per_fstlst.brms.BF <- lapply(2:n_models,
+                                           function(i){
+                                             bayes_factor(trial_parts.per_fstlst.bmrs.models[[i]],
+                                                          trial_parts.per_fstlst.brms.models[[i-1]])
+                                           })
+  trial_parts.trl_prts.time <- proc.time() - t
+  ## Save all the results
+  saveRDS(trial_parts.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
+  saveRDS(trial_parts.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
+  saveRDS(trial_parts.per_fstlst.brms.models, paste0(save_path, "FstLst_brmsModel.rds"))
+  saveRDS(trial_parts.per_fstlst.brms.bayes_factors, paste0(save_path, "FstLst_brmsBF.rds"))
+}else{
+  trial_parts.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FstLst_lmerModel.rds"))
+  trial_parts.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FstLst_lmerAnova.rds"))
+  trial_parts.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "FstLst_brmsModel.rds"))
+  trial_parts.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FstLst_brmsBF.rds"))
+}
+# PLOTTING
+## Plot jitter + mean&se + lines
+generate_plots <- F
+if(generate_plots){
+  prop_tail.per_fstlst.plot <- ggplot(prop_tail.per_fstlst,
+                                      aes(x = FstLst, y = Prop,
+                                          colour = Condition,
+                                          fill = Condition)) +
+    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
+    geom_point(size = 1,
+               position = position_jitterdodge(dodge.width = .8,
+                                               jitter.width = .2),
+               alpha = .25) +
+    geom_errorbar(stat = "summary", fun.data = "mean_se",
+                  width = .2, colour = "black",
+                  position = position_dodge(.1)) +
+    geom_line(aes(x = FstLst, y = Prop, group = Condition),
+              stat = "summary", fun.y = "mean",
+              colour = "black",
+              position = position_dodge(.1)) +
+    geom_point(stat = "summary", fun.y = "mean",
+               shape = 18, size = 2,
+               position = position_dodge(.1))
+  ggsave(paste0(save_path, "FstLst_data.pdf"),
+         prop_tail.per_fstlst.plot,
+         width = 3.5, height = 3)
+}
+
+# TRAINING LT ANALYSIS: TAIL LOOKING TIME COURSE ===================================================
 save_path <- "../results/adults_2f/PropTail/TimeCourse_"
 # DATA PREPARATION
 prop_tail.time_course.per_fstlst <- LT.clean %>%
