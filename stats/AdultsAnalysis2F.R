@@ -6,6 +6,7 @@ library(tidyverse); library(broom)
 library(eyetrackingR)
 
 source("Routines.R")
+source("StatTools.R")
 
 # GATHER DATA ======================================================================================
 d <- LT_data.gather("adults_2f")
@@ -265,7 +266,7 @@ if(run_model){
 }
 # PLOTTING
 ## Plot prop_tail time-course for first block and last block
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
                       x_int = c(0, 2000, 0, 2000))
@@ -286,83 +287,87 @@ if(generate_plots){
 }
 
 # BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS ====================================================
-# Get how many participants for each block, and make a bar plot
-behaviour.parts_per_block <- behaviour %>%
-  subset(Block > 0) %>%
-  group_by(Block, Condition) %>%
-  summarise(N_Participants = n_distinct(Participant))
-behaviour.parts_per_block.plot <- ggplot(behaviour.parts_per_block,
-                                         aes(x = Block, y = N_Participants, fill = Condition)) +
-  theme_apa(legend.pos = "topright") + scale_fill_discrete(labels = c("Label", "No Label")) +
-  scale_x_continuous(breaks = 1:10) + ylab("Participants") +
-  geom_col(position = "dodge")
-ggsave("../results/adults_2f/ParticipantsPerBlock.pdf", plot = behaviour.parts_per_block.plot,
-       width = 3.5, height = 2.7)
-# Get number of blocks to learning per participant, plot a violin
-behaviour.blocks_per_part <- behaviour %>%
-  select(c(Participant, Condition, NBlocks)) %>%
-  unique()
-behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
-                                         aes(x = Condition, y = NBlocks, fill = Condition)) +
-  theme_apa(legend.pos = "topright") + ylab("Blocks") +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_violin() +
-  geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15)
-ggsave("../results/adults_2f/BlocksPerParticipant.pdf", plot = behaviour.blocks_per_part.plot,
-       width = 3.5, height = 2.9)
-# Stats for the number of blocks per participant
-behaviour.blocks_per_part.normality <- ad.test(behaviour.blocks_per_part$NBlocks)
-behaviour.blocks_per_part.freq_test <- wilcox.test(NBlocks ~ Condition,
-                                                   data = behaviour.blocks_per_part)
-
+run_behavioural <- F
+if(run_behavioural){
+  # Get how many participants for each block, and make a bar plot
+  behaviour.parts_per_block <- behaviour %>%
+    subset(Block > 0) %>%
+    group_by(Block, Condition) %>%
+    summarise(N_Participants = n_distinct(Participant))
+  behaviour.parts_per_block.plot <- ggplot(behaviour.parts_per_block,
+                                           aes(x = Block, y = N_Participants, fill = Condition)) +
+    theme_apa(legend.pos = "topright") + scale_fill_discrete(labels = c("Label", "No Label")) +
+    scale_x_continuous(breaks = 1:10) + ylab("Participants") +
+    geom_col(position = "dodge")
+  ggsave("../results/adults_2f/ParticipantsPerBlock.pdf", plot = behaviour.parts_per_block.plot,
+         width = 3.5, height = 2.7)
+  # Get number of blocks to learning per participant, plot a violin
+  behaviour.blocks_per_part <- behaviour %>%
+    select(c(Participant, Condition, NBlocks)) %>%
+    unique()
+  behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
+                                           aes(x = Condition, y = NBlocks, fill = Condition)) +
+    theme_apa(legend.pos = "topright") + ylab("Blocks") +
+    scale_fill_discrete(labels = c("Label", "No Label")) +
+    geom_violin() +
+    geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15)
+  ggsave("../results/adults_2f/BlocksPerParticipant.pdf", plot = behaviour.blocks_per_part.plot,
+         width = 3.5, height = 2.9)
+  # Stats for the number of blocks per participant
+  behaviour.blocks_per_part.normality <- ad.test(behaviour.blocks_per_part$NBlocks)
+  behaviour.blocks_per_part.freq_test <- wilcox.test(NBlocks ~ Condition,
+                                                     data = behaviour.blocks_per_part)
+}
 # BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*RT) ===================================================
-# Get datasets for training and test
-behaviour.training <- behaviour %>%
-  subset(Phase == "Familiarisation")
-behaviour.test <- behaviour %>%
-  subset(Phase == "Test")
-# Run binomial glmer
-## During training
-ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*zLogRT +
-                                            (1 + zLogRT | Participant) +
-                                            (1 | Stimulus) +
-                                            (1 | StimLabel),
-                                          family = binomial,
-                                          control = glmerControl(optimizer = "bobyqa"),
-                                          data = behaviour.training)
-## At test
-ACC_by_diag_by_RT.test.glmer <- glmer(ACC ~ Condition +
-                                  (1 | Participant),
-                                family = binomial,
-                                data = behaviour.test)
-# Prepare and plot data
-## During training
-ACC_by_diag_by_RT.training <- behaviour.training %>%
-  group_by(Participant, Condition) %>%
-  summarise(Accuracy = sum(ACC == 1)/n())
-ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
-                                          aes(x = Condition,
-                                              y = Accuracy,
-                                              fill = Condition)) +
-  ylim(0,1) + theme_apa(legend.pos = "bottomright") +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_violin() +
-  geom_boxplot(alpha = 0, outlier.alpha = 1,
-               width = .15, position = position_dodge(.9))
-ggsave("../results/adults_2f/ACCbyRTbyBlock_training.pdf", plot = ACC_by_diag_by_RT.training.plot,
-       width = 3.5, height = 2.7)
-## At test
-ACC_by_diag_by_RT.test <- behaviour.test %>%
-  group_by(Participant, Condition) %>%
-  summarise(Accuracy = sum(ACC == 1)/n())
-ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
-                                      aes(x = Condition,
-                                          y = Accuracy,
-                                          fill = Condition)) +
-  ylim(0,1) + theme_apa(legend.pos = "bottomright") +
-  scale_x_discrete(labels = c("Label", "No Label")) +
-  geom_violin() +
-  geom_boxplot(alpha = 0, outlier.alpha = 1,
-               width = .15, position = position_dodge(.9))
-ggsave("../results/adults_2f/ACCbyRT_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
-       width = 3.5, height = 2.7)
+if(run_behavioural){
+  # Get datasets for training and test
+  behaviour.training <- behaviour %>%
+    subset(Phase == "Familiarisation")
+  behaviour.test <- behaviour %>%
+    subset(Phase == "Test")
+  # Run binomial glmer
+  ## During training
+  ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*zLogRT +
+                                              (1 + zLogRT | Participant) +
+                                              (1 | Stimulus) +
+                                              (1 | StimLabel),
+                                            family = binomial,
+                                            control = glmerControl(optimizer = "bobyqa"),
+                                            data = behaviour.training)
+  ## At test
+  ACC_by_diag_by_RT.test.glmer <- glmer(ACC ~ Condition +
+                                          (1 | Participant),
+                                        family = binomial,
+                                        data = behaviour.test)
+  # Prepare and plot data
+  ## During training
+  ACC_by_diag_by_RT.training <- behaviour.training %>%
+    group_by(Participant, Condition) %>%
+    summarise(Accuracy = sum(ACC == 1)/n())
+  ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
+                                            aes(x = Condition,
+                                                y = Accuracy,
+                                                fill = Condition)) +
+    ylim(0,1) + theme_apa(legend.pos = "bottomright") +
+    scale_fill_discrete(labels = c("Label", "No Label")) +
+    geom_violin() +
+    geom_boxplot(alpha = 0, outlier.alpha = 1,
+                 width = .15, position = position_dodge(.9))
+  ggsave("../results/adults_2f/ACCbyRTbyBlock_training.pdf", plot = ACC_by_diag_by_RT.training.plot,
+         width = 3.5, height = 2.7)
+  ## At test
+  ACC_by_diag_by_RT.test <- behaviour.test %>%
+    group_by(Participant, Condition) %>%
+    summarise(Accuracy = sum(ACC == 1)/n())
+  ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
+                                        aes(x = Condition,
+                                            y = Accuracy,
+                                            fill = Condition)) +
+    ylim(0,1) + theme_apa(legend.pos = "bottomright") +
+    scale_x_discrete(labels = c("Label", "No Label")) +
+    geom_violin() +
+    geom_boxplot(alpha = 0, outlier.alpha = 1,
+                 width = .15, position = position_dodge(.9))
+  ggsave("../results/adults_2f/ACCbyRT_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
+         width = 3.5, height = 2.7)
+}
