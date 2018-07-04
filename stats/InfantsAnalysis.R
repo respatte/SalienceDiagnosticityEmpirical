@@ -365,6 +365,7 @@ if(run_model){
                                             data = prop_tail.pre_post.fstlst)
   pre_post.per_fstlst.lmer.anova <- anova(pre_post.per_fstlst.lmer.model, type = 1)
   ## Run brms
+  ### Set priors for models other than intercept-only
   priors.pre_post.per_fstlst <- list(set_prior("uniform(0,1.6)",
                                                class = "Intercept"),
                                      c(set_prior("uniform(0,1.6)",
@@ -415,7 +416,7 @@ if(run_model){
                                          prop_tail.pre_post.fstlst,
                                          priors.pre_post.per_fstlst)
   pre_post.per_fstlst.brms.models <- brms.results[[1]]
-  trial_parts.per_fstlst.brms.bayes_factors <- brms.results[[2]]
+  pre_post.per_fstlst.brms.bayes_factors <- brms.results[[2]]
   ## Save all the results
   saveRDS(pre_post.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
   saveRDS(pre_post.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
@@ -459,14 +460,14 @@ if(generate_plots){
 # CONTRAST TEST ANALYSIS: PROP NEW FEATURE BY HEAD/TAIL CONTRAST TEST ==============================
 save_path <- "../results/infants/OldNew/TrialAverage_"
 # Prepare dataset
-LT.new_old <- LT.test.ctr %>%
+new_old <- LT.test.ctr %>%
   subset(ContrastType %in% c("Tail", "Head")) %>%
   make_time_window_data(aois = "NewFeature",
                         predictor_columns = c("Condition",
                                               "ContrastType")) %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5)))
 ## Check for amount of data available
-participants.new_old <- LT.new_old %>%
+participants.new_old <- new_old %>%
   group_by(Participant, Condition) %>%
   summarise(nTrials = n_distinct(TrialId)) %>%
   group_by(Condition, nTrials) %>%
@@ -475,67 +476,46 @@ participants.new_old <- LT.new_old %>%
 run_model <- F
 if(run_model){
   ## Run lmer
-  LT.new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
+  new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
                                   (1 | Participant),
-                                data = LT.new_old)
-  LT.new_old.lmer.anova <- anova(LT.new_old.lmer.model, type = 1)
+                                data = new_old)
+  new_old.lmer.anova <- anova(new_old.lmer.model, type = 1)
   ## Run brm
-  prior.new_old <- c(set_prior("uniform(-0.8,0.8)",
-                               class = "Intercept"),
-                     set_prior("normal(0,.5)", class = "b"))
-  LT.new_old.brms.model.4 <- brm(ChanceArcsin ~ ContrastType*Condition +
-                                   (1 | Participant),
-                                 data = LT.new_old,
-                                 prior = prior.new_old,
-                                 chains = 4, cores = 4,
-                                 save_all_pars = T)
-  LT.new_old.brms.model.3 <- brm(ChanceArcsin ~ ContrastType + Condition +
-                                   (1 | Participant),
-                                 data = LT.new_old,
-                                 prior = prior.new_old,
-                                 chains = 4, cores = 4,
-                                 save_all_pars = T)
-  LT.new_old.brms.model.2 <- brm(ChanceArcsin ~ ContrastType +
-                                   (1 | Participant),
-                                 data = LT.new_old,
-                                 prior = prior.new_old,
-                                 chains = 4, cores = 4,
-                                 save_all_pars = T)
-  LT.new_old.brms.model.1 <- brm(ChanceArcsin ~ 1 +
-                                   (1 | Participant),
-                                 data = LT.new_old,
-                                 prior = set_prior("uniform(-.8,.8)",
-                                                   class = "Intercept"),
-                                 chains = 4, cores = 4,
-                                 save_all_pars = T)
-  LT.new_old.brms.model.0 <- brm(ChanceArcsin ~ 0 +
-                                   (1 | Participant),
-                                 data = LT.new_old,
-                                 chains = 4, cores = 4,
-                                 save_all_pars = T)
-  LT.new_old.brms.bf.4_3 <- bayes_factor(LT.new_old.brms.model.4,
-                                         LT.new_old.brms.model.3)
-  LT.new_old.brms.bf.3_2 <- bayes_factor(LT.new_old.brms.model.3,
-                                         LT.new_old.brms.model.2)
-  LT.new_old.brms.bf.2_1 <- bayes_factor(LT.new_old.brms.model.2,
-                                         LT.new_old.brms.model.1)
-  LT.new_old.brms.bf.1_0 <- bayes_factor(LT.new_old.brms.model.1,
-                                         LT.new_old.brms.model.0)
-  LT.new_old.brms.bayes_factors <- list(LT.new_old.brms.bf.1_0,
-                                        LT.new_old.brms.bf.2_1,
-                                        LT.new_old.brms.bf.3_2,
-                                        LT.new_old.brms.bf.4_3)
+  ### Set priors for models other than intercept-only
+  priors.new_old <- list(set_prior("uniform(-.8,.8)",
+                                   class = "Intercept"),
+                         c(set_prior("uniform(-.8,.8)",
+                                     class = "Intercept"),
+                           set_prior("normal(0,.5)", class = "b")))
+  ### Set all nested formulas for model comparisons
+  formulas.new_old <- list(ChanceArcsin ~ 0 +
+                             (1 | Participant),
+                           ChanceArcsin ~ 1 +
+                             (1 | Participant),
+                           ChanceArcsin ~ ContrastType +
+                             (1 | Participant),
+                           ChanceArcsin ~ ContrastType + Condition +
+                             (1 | Participant),
+                           ChanceArcsin ~ ContrastType + Condition +
+                             ContrastType:Condition +
+                             (1 | Participant))
+  ### Get brms results
+  brms.results <- bayes_factor.brm_fixef(formulas.new_old,
+                                         new_old,
+                                         priors.new_old)
+  new_old.brms.models <- brms.results[[1]]
+  new_old.brms.bayes_factors <- brms.results[[2]]
   ## Save all the results
-  saveRDS(LT.new_old.lmer.model, paste0(save_path, "lmerModel.rds"))
-  saveRDS(LT.new_old.lmer.anova, paste0(save_path, "lmerAnova.rds"))
-  saveRDS(LT.new_old.brms.model.4, paste0(save_path, "brmsModel.rds"))
-  saveRDS(LT.new_old.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
+  saveRDS(new_old.lmer.model, paste0(save_path, "lmerModel.rds"))
+  saveRDS(new_old.lmer.anova, paste0(save_path, "lmerAnova.rds"))
+  saveRDS(new_old.brms.models, paste0(save_path, "brmsModels.rds"))
+  saveRDS(new_old.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
-  LT.new_old.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
-  LT.new_old.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
-  LT.new_old.brms.model.4 <- readRDS(paste0(save_path, "brmsModel.rds"))
-  LT.new_old.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
+  new_old.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
+  new_old.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
+  new_old.brms.modes <- readRDS(paste0(save_path, "brmsModels.rds"))
+  new_old.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 # Plot jitter + mean&se
 generate_plots <- F
