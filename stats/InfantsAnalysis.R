@@ -208,8 +208,9 @@ prop_tail.fstlst <- LT.fam %>%
                                             "Stimulus",
                                             "CategoryName"))
 # Testing Prop ~ FstLst*Condition
-run_model <- F
+run_model <- T
 if(run_model){
+  t <- proc.time()
   ## Run lmer
   prop_tail.per_fstlst.lmer.model <- lmer(ArcSin ~ FstLst*Condition +
                                             (1 + FstLst | Participant) +
@@ -243,6 +244,7 @@ if(run_model){
                                          priors.prop_tail.per_fstlst)
   prop_tail.per_fstlst.brms.models <- brms.results[[1]]
   prop_tail.per_fstlst.brms.bayes_factors <- brms.results[[2]]
+  prop_tail.time <- proc.time() - t
   ## Save all the results
   saveRDS(prop_tail.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
   saveRDS(prop_tail.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
@@ -356,8 +358,9 @@ prop_tail.pre_post.fstLst <- LT.fam %>%
                                             "Stimulus",
                                             "CategoryName")) %>%
 # Testing Prop ~ FstLst*Condition
-run_model <- F
+run_model <- T
 if(run_model){
+  t <- proc.time()
   ## Run lmer
   pre_post.per_fstlst.lmer.model <- lmer(ArcSin ~ FstLst*PrePost*Condition +
                                               (1 + FstLst | Participant) +
@@ -417,6 +420,7 @@ if(run_model){
                                          priors.pre_post.per_fstlst)
   pre_post.per_fstlst.brms.models <- brms.results[[1]]
   pre_post.per_fstlst.brms.bayes_factors <- brms.results[[2]]
+  pre_post.time <- proc.time() - t
   ## Save all the results
   saveRDS(pre_post.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
   saveRDS(pre_post.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
@@ -473,8 +477,9 @@ participants.new_old <- new_old %>%
   group_by(Condition, nTrials) %>%
   summarise(Participants = n_distinct(Participant))
 # Testing Prop ~ ContrastType*Condition
-run_model <- F
+run_model <- T
 if(run_model){
+  t <- proc.time()
   ## Run lmer
   new_old.lmer.model <- lmer(ChanceArcsin ~ ContrastType*Condition +
                                   (1 | Participant),
@@ -506,6 +511,7 @@ if(run_model){
                                          no_intercept = 1)
   new_old.brms.models <- brms.results[[1]]
   new_old.brms.bayes_factors <- brms.results[[2]]
+  new_old.time <- proc.time() - t
   ## Save all the results
   saveRDS(new_old.lmer.model, paste0(save_path, "lmerModel.rds"))
   saveRDS(new_old.lmer.anova, paste0(save_path, "lmerAnova.rds"))
@@ -587,8 +593,9 @@ participants <- prop_target %>%
   group_by(Participant) %>%
   summarise(nTrials = n_distinct(TrialId))
 # Testing in general
-run_model <- F
+run_model <- T
 if(run_model){
+  t <- proc.time()
   ## Run lmer
   prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant),
                                     data = prop_target)
@@ -612,19 +619,20 @@ if(run_model){
                                                   max_treedepth = 20),
                                   save_all_pars = T)
   prop_target.brms.models <- list(prop_target.brms.null, prop_target.brms.model)
-  LT.prop_target.brms.bayes_factor <- bayes_factor(LT.prop_target.brms.model,
-                                                   LT.prop_target.brms.null)
+  prop_target.brms.bayes_factor <- bayes_factor(prop_target.brms.model,
+                                                prop_target.brms.null)
+  prop_target.time <- proc.time() - t
   ## Save all the results
-  saveRDS(LT.prop_target.lmer.model, paste0(save_path, "lmerModel.rds"))
-  saveRDS(LT.prop_target.lmer.anova, paste0(save_path, "lmerAnova.rds"))
-  saveRDS(LT.prop_target.brms.models, paste0(save_path, "brmsModels.rds"))
-  saveRDS(LT.prop_target.brms.bayes_factor, paste0(save_path, "brmsBF.rds"))
+  saveRDS(prop_target.lmer.model, paste0(save_path, "lmerModel.rds"))
+  saveRDS(prop_target.lmer.anova, paste0(save_path, "lmerAnova.rds"))
+  saveRDS(prop_target.brms.models, paste0(save_path, "brmsModels.rds"))
+  saveRDS(prop_target.brms.bayes_factor, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
-  LT.prop_target.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
-  LT.prop_target.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
-  LT.prop_target.brms.models <- readRDS(paste0(save_path, "brmsModels.rds"))
-  LT.prop_target.brms.bayes_factor <- readRDS(paste0(save_path, "brmsBF.rds"))
+  prop_target.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
+  prop_target.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
+  prop_target.brms.models <- readRDS(paste0(save_path, "brmsModels.rds"))
+  prop_target.brms.bayes_factor <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 
 # Plot jitter + mean&se
@@ -716,8 +724,10 @@ fam_switches.fstlst <- LT.fam %>%
             FstLst = first(FstLst),
             Condition = first(Condition))
 # Testing Switches ~ Condition*FstLst
-run_model <- F
+run_model <- T
 if(run_model){
+  t <- proc.time()
+  ## Run (g)lmer
   fam_switches.per_fstlst.glmer.model <- glmer(Switches ~ FstLst*Condition +
                                                  (1 + FstLst | Participant),
                                                data = fam_switches.fstlst,
@@ -747,6 +757,7 @@ if(run_model){
 
   fam_switches.per_fstlst.brms.models <- brms.results[[1]]
   fam_switches.per_fstlst.brms.bayes_factors <- brms.results[[2]]
+  fam_switches.time <- proc.time() - t
   ## Save all the results
   saveRDS(fam_switches.per_fstlst.glmer.model, paste0(save_path, "glmerModel.rds"))
   saveRDS(fam_switches.per_fstlst.brms.models, paste0(save_path, "brmsModels.rds"))
@@ -800,8 +811,10 @@ first_tail <- first_look %>%
   mutate(logFirstAOILook = log(FirstAOILook))
 
 # Testing (First)AOI ~ Condition*FstLst
-run_model <- F
+run_model <- T
 if(run_model){
+  t <- proc.time()
+  ## Run (g)lmer
   first_aoi.per_fstlst.glmer.model <- glmer(AOI ~ FstLst*Condition +
                                               (1 + FstLst | Participant),
                                             data = first_aoi,
@@ -828,6 +841,7 @@ if(run_model){
                                          family = bernoulli())
   first_aoi.per_fstlst.brms.models <- brms.results[[1]]
   first_aoi.per_fstlst.brms.bayes_factors <- brms.results[[2]]
+  first_aoi.time <- proc.time() - t
   ## Save all the results
   saveRDS(first_aoi.per_fstlst.glmer.model, paste0(save_path, "FirstAOI_glmerModel.rds"))
   saveRDS(first_aoi.per_fstlst.brms.models, paste0(save_path, "FirstAOI_brmsModels.rds"))
@@ -839,8 +853,10 @@ if(run_model){
   first_aoi.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstAOI_brmsBF.rds"))
 }
 # Testing FirstAOI(Tail)Look ~ Condition*FstLst
-run_model <- F
+run_model <- T
 if(run_model){
+  t <- proc.time()
+  ## Run lmer
   first_tail.per_fstlst.lmer.model <- lmer(logFirstAOILook ~ FstLst*Condition +
                                                (1 + FstLst | Participant),
                                              data = first_tail)
@@ -866,6 +882,7 @@ if(run_model){
                                          priors.first_tail.per_fstlst)
   first_tail.per_fstlst.brms.models <- brms.results[[1]]
   first_tail.per_fstlst.brms.bayes_factors <- brms.results[[2]]
+  first_tail.time <- proc.time() - t
   ## Save all the results
   saveRDS(first_tail.per_fstlst.lmer.model, paste0(save_path, "FirstTail_lmerModel.rds"))
   saveRDS(first_tail.per_fstlst.lmer.anova, paste0(save_path, "FirstTail_lmerAnova.rds"))
