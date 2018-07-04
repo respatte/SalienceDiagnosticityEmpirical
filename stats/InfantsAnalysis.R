@@ -645,6 +645,7 @@ prop_target <- LT.test.wl %>%
                    window_end_col = "TrialEnd") %>%
   make_time_window_data(aois = "Target",
                         predictor_columns = "CategoryName") %>%
+  drop_na(ArcSin) %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5))) # Value centered on chance looking, useful for test
 ## Check for amount of data available
 participants <- prop_target %>%
@@ -696,24 +697,56 @@ if(run_model){
 # Plot jitter + mean&se
 generate_plots <- F
 if(generate_plots){
-  LT.prop_target.plot.data <- ggplot(LT.prop_target,
-                                 aes(x = AOI, y = Prop)) +
-    theme(legend.pos = "top") + ylab("Looking to New Feature (Prop)") +
-    geom_jitter(alpha = .25) +
-    geom_errorbar(stat = "summary",
-                  width = .2, colour = "black") +
-    geom_point(stat = "summary", fun.y = "mean",
-               shape = 18, size = 3) +
-    geom_hline(yintercept = 0.5)
+  ## Get brm predicted values
+  prop_target.raw_predictions <- last(prop_target.brms.models) %>%
+    predict(summary = F,
+            transform = function(x){sin(x + asin(sqrt(.5)))^2}) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:nrow(.))
+  prop_target.predicted <- prop_target %>%
+    mutate(RowNames = 1:nrow(.)) %>%
+    select(RowNames, AOI) %>%
+    inner_join(prop_target.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = Predicted, -AOI)
+  prop_target.predicted.summary <- prop_target.predicted %>%
+    summarise(Mean = mean(Predicted), StdDev = sd(Predicted), AOI = first(AOI)) %>%
+    mutate(lb = Mean - StdDev,
+           ub = Mean + StdDev)
+  ## Plot raincloud + predicted mean&sd per FstLst
+  prop_target.plot <- ggplot(prop_target,
+                         aes(x = AOI, y = Prop,
+                             colour = AOI,
+                             fill = AOI)) +
+    theme_bw() + ylab("Looking to New Feature (Prop)") +
+    theme(axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    geom_hline(yintercept = .5, colour = "black", linetype = 2) +
+    coord_flip() + guides(fill = F, colour = F) +
+    geom_flat_violin(position = position_nudge(x = .2),
+                     colour = "black", alpha = .5, width = .5) +
+    geom_point(position = position_jitter(width = .15),
+               size = 1, alpha = .6) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+    geom_pointrange(data = prop_target.predicted.summary,
+                    aes(y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = 1.5, size = 1,
+                    position = position_nudge(x = -.2)) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
-         LT.prop_target.plot.data,
-         width = 7, height = 5.4)
+         prop_target.plot,
+         width = 5, height = 2)
 }
 
 # WORD LEARNING TEST ANALYSIS: PROP TARGET TIME COURSE FOR LABEL CONDITION  ========================
 save_path <- "../results/infants/WordLearning/TimeCourse_"
 # Data preparation
-LT.prop_target.time_course <- LT.test.wl %>%
+prop_target.time_course <- test.wl %>%
   subset_by_window(window_start_col = "LabelOnset",
                    window_end_col = "TrialEnd") %>%
   mutate(Chance = F) %>%
@@ -721,53 +754,53 @@ LT.prop_target.time_course <- LT.test.wl %>%
                           aois = "Target",
                           predictor_columns=c("Chance"),
                           summarize_by = "Participant")
-LT.prop_target.time_course.chance <- LT.prop_target.time_course %>%
+prop_target.time_course.chance <- prop_target.time_course %>%
   mutate(Chance = T,
          Participant = paste0("Chance", Participant),
          Prop = .5)
-LT.prop_target.time_course.chance_test <- rbind(LT.prop_target.time_course,
-                                                LT.prop_target.time_course.chance) %>%
+prop_target.time_course.chance_test <- rbind(prop_target.time_course,
+                                             prop_target.time_course.chance) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 run_model <- F
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
-  num_sub = length(unique((LT.prop_target.time_course.chance_test$Participant)))
+  num_sub = length(unique((prop_target.time_course.chance_test$Participant)))
   threshold_t = qt(p = 1 - .05/2,
                    df = num_sub-1)
   ## Determine clusters
-  LT.prop_target.time_cluster <- LT.prop_target.time_course.chance_test %>%
+  prop_target.time_cluster <- prop_target.time_course.chance_test %>%
     make_time_cluster_data(predictor_column = "Chance",
                            aoi = "Target",
                            test = "t.test",
                            threshold = threshold_t)
   ## Run analysis
-  LT.prop_target.time_cluster.analysis <- LT.prop_target.time_cluster %>%
+  prop_target.time_cluster.analysis <- prop_target.time_cluster %>%
     analyze_time_clusters(within_subj = F,
                           parallel = T)
   bcbp.time <- proc.time() - t
   ## Save clusters and analysis
-  saveRDS(LT.prop_target.time_cluster, paste0(save_path, "bcbpClusters.rds"))
-  saveRDS(LT.prop_target.time_cluster.analysis, paste0(save_path, "bcbpAnalysis.rds"))
+  saveRDS(prop_target.time_cluster, paste0(save_path, "bcbpClusters.rds"))
+  saveRDS(prop_target.time_cluster.analysis, paste0(save_path, "bcbpAnalysis.rds"))
 }else{
   ## Read the results
-  LT.prop_target.time_cluster <- readRDS(paste0(save_path, "bcbpClusters.rds"))
-  LT.prop_target.time_cluster.analysis <- readRDS(paste0(save_path, "bcbpAnalysis.rds"))
+  prop_target.time_cluster <- readRDS(paste0(save_path, "bcbpClusters.rds"))
+  prop_target.time_cluster.analysis <- readRDS(paste0(save_path, "bcbpAnalysis.rds"))
 }
 
 # PLOT
 generate_plots <- F
 if(generate_plots){
-  LT.prop_target.time_course.plot <- ggplot(LT.prop_target.time_course,
-                                            aes(x = Time, y=Prop)) +
+  prop_target.time_course.plot <- ggplot(prop_target.time_course,
+                                         aes(x = Time, y=Prop)) +
     xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
     theme(legend.position = "top") + ylim(0,1) +
     stat_summary(fun.y='mean', geom='line', linetype = '61') +
     stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
     geom_hline(yintercept = .5)
   ggsave(paste0(save_path, "data.pdf"),
-         plot = LT.prop_target.time_course.plot,
+         plot = prop_target.time_course.plot,
          width = 3.5, height = 2.5)
 }
 
