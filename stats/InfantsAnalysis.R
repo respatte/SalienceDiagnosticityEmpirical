@@ -708,8 +708,8 @@ if(generate_plots){
 # FAMILIARISATION: NUMBER OF SWITCHES ==============================================================
 save_path <- "../results/infants/FamSwitches/FstLst_"
 # Prepare dataset
-LT.fam_switches <- LT.fam %>%
-  drop_na(Tail) %>%
+fam_switches.fstlst <- LT.fam %>%
+  drop_na(Tail, FstLst) %>%
   group_by(Participant, TrialId) %>%
   summarise(Switches = sum(Tail != lag(Tail), na.rm = T), # Count switches per trial per participant
             # Keep columns for analysis (only one value per trial per participant)
@@ -720,64 +720,46 @@ run_model <- F
 if(run_model){
   fam_switches.per_fstlst.glmer.model <- glmer(Switches ~ FstLst*Condition +
                                                  (1 + FstLst | Participant),
-                                               data = LT.fam_switches,
+                                               data = fam_switches.fstlst,
                                                family = poisson())
   # Current p-values from summary may not be the best. Do something else?
   ## Run brms
-  prior.fam_switches.per_fstlst <- c(set_prior("normal(0,.5)", class = "b"))
-  fam_switches.per_fstlst.brms.model.3 <- brm(Switches ~ FstLst*Condition +
-                                                (1 + FstLst | Participant),
-                                              data = LT.fam_switches,
-                                              prior = prior.fam_switches.per_fstlst,
-                                              family = poisson(),
-                                              chains = 4, cores = 4, iter = 4000,
-                                              control = list(adapt_delta = .95),
-                                              save_all_pars = T)
-  fam_switches.per_fstlst.brms.model.2 <- brm(Switches ~ FstLst + Condition +
-                                                (1 + FstLst | Participant),
-                                              data = LT.fam_switches,
-                                              prior = prior.fam_switches.per_fstlst,
-                                              family = poisson(),
-                                              chains = 4, cores = 4, iter = 4000,
-                                              control = list(adapt_delta = .95),
-                                              save_all_pars = T)
-  fam_switches.per_fstlst.brms.model.1 <- brm(Switches ~ FstLst +
-                                                (1 + FstLst | Participant),
-                                              data = LT.fam_switches,
-                                              prior = prior.fam_switches.per_fstlst,
-                                              family = poisson(),
-                                              chains = 4, cores = 4, iter = 4000,
-                                              control = list(adapt_delta = .95),
-                                              save_all_pars = T)
-  fam_switches.per_fstlst.brms.model.0 <- brm(Switches ~ 1 +
-                                                (1 | Participant),
-                                              data = LT.fam_switches,
-                                              family = poisson(),
-                                              chains = 4, cores = 4, iter = 4000,
-                                              control = list(adapt_delta = .95),
-                                              save_all_pars = T)
-  fam_switches.per_fstlst.brms.bf.3_2 <- bayes_factor(fam_switches.per_fstlst.brms.model.3,
-                                                      fam_switches.per_fstlst.brms.model.2)
-  fam_switches.per_fstlst.brms.bf.2_1 <- bayes_factor(fam_switches.per_fstlst.brms.model.2,
-                                                      fam_switches.per_fstlst.brms.model.1)
-  fam_switches.per_fstlst.brms.bf.1_0 <- bayes_factor(fam_switches.per_fstlst.brms.model.1,
-                                                      fam_switches.per_fstlst.brms.model.0)
-  fam_switches.per_fstlst.brms.bayes_factors <- list(fam_switches.per_fstlst.brms.bf.1_0,
-                                                     fam_switches.per_fstlst.brms.bf.2_1,
-                                                     fam_switches.per_fstlst.brms.bf.3_2)
+  ### Set priors for models other than intercept-only
+  priors.fam_switches.per_fstlst <- list(NULL,
+                                         set_prior("normal(0,.5)", class = "b"))
+  ### Set all nested formulas for model comparisons
+  formulas.fam_switches.per_fstlst <- list(Switches ~ 1 +
+                                             (1 | Participant),
+                                           Switches ~ FstLst +
+                                             (1 + FstLst | Participant),
+                                           Switches ~ FstLst + Condition +
+                                             (1 + FstLst | Participant),
+                                           Switches ~ FstLst + Condition +
+                                             FstLst:Condition +
+                                             (1 + FstLst | Participant))
+  ### Get brms results
+  brms.results <- bayes_factor.brm_fixef(formulas.fam_switches.per_fstlst,
+                                         fam_switches.fstlst,
+                                         priors.fam_switches.per_fstlst,
+                                         family = poisson(),
+                                         iter = 4000,
+                                         controls = list(adapt_delta = .95))
+
+  fam_switches.per_fstlst.brms.models <- brms.results[[1]]
+  fam_switches.per_fstlst.brms.bayes_factors <- brms.results[[2]]
   ## Save all the results
   saveRDS(fam_switches.per_fstlst.glmer.model, paste0(save_path, "glmerModel.rds"))
-  saveRDS(fam_switches.per_fstlst.brms.model.3, paste0(save_path, "brmsModel.rds"))
+  saveRDS(fam_switches.per_fstlst.brms.models, paste0(save_path, "brmsModels.rds"))
   saveRDS(fam_switches.per_fstlst.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
   fam_switches.per_fstlst.glmer.model <- readRDS(paste0(save_path, "glmerModel.rds"))
-  fam_switches.per_fstlst.brms.model.3 <- readRDS(paste0(save_path, "brmsModel.rds"))
+  fam_switches.per_fstlst.brms.models <- readRDS(paste0(save_path, "brmsModels.rds"))
   fam_switches.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 
 # Plotting boxplots
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   fam_switches.per_fstlst.plot <- LT.fam_switches %>%
     drop_na(FstLst) %>%
