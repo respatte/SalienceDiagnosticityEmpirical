@@ -206,7 +206,8 @@ prop_tail.fstlst <- LT.fam %>%
                         predictor_columns=c("Condition",
                                             "FstLst",
                                             "Stimulus",
-                                            "CategoryName"))
+                                            "CategoryName")) %>%
+  drop_na(ArcSin)
 # Testing Prop ~ FstLst*Condition
 run_model <- F
 if(run_model){
@@ -261,6 +262,19 @@ if(run_model){
 # Plot jitter + mean&se + lines
 generate_plots <- F
 if(generate_plots){
+  ## Get brm predicted values
+  prop_tail.raw_predictions <- last(prop_tail.per_fstlst.brms.models) %>%
+    predict(summary = F,
+            transform = function(x){sin(x)^2}) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:252)
+  prop_tail.predicted <- prop_tail.fstlst %>%
+    mutate(RowNames = 1:252) %>%
+    select(FstLst, Condition, RowNames) %>%
+    inner_join(prop_tail.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = Predicted, -c(FstLst, Condition))
   ## Plot per FstLst
   LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail.fstlst,
                                        aes(x = FstLst, y = Prop,
