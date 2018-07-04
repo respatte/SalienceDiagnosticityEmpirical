@@ -207,7 +207,7 @@ if(run_model){
                                                          max_treedepth = 15))
   trial_parts.per_fstlst.brms.models <- brms.results[[1]]
   trial_parts.per_fstlst.brms.bayes_factors <- brms.results[[2]]
-  trial_parts.trl_prts.time <- proc.time() - t
+  trial_parts.time <- proc.time() - t
   ## Save all the results
   saveRDS(trial_parts.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
   saveRDS(trial_parts.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
@@ -234,7 +234,7 @@ prop_tail.time_course.per_fstlst <- LT.clean %>%
                           summarize_by = "Participant")
 
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T # Running the model takes around 2 minutes on a 4.40GHz 12-core
+run_model <- F # Running the model takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
