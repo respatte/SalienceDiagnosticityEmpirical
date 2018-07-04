@@ -4,9 +4,11 @@ library(lme4)
 library(lmerTest)
 library(brms)
 library(tidyverse)
+library(RColorBrewer)
 
 source("Routines.R")
 source("StatTools.R")
+source("geom_flat_violin.R")
 
 # GATHER DATA ======================================================================================
 # Load data and run general checks
@@ -275,28 +277,33 @@ if(generate_plots){
     inner_join(prop_tail.raw_predictions) %>%
     select(-RowNames) %>%
     gather(key = Sample, value = Predicted, -c(FstLst, Condition))
-  ## Plot per FstLst
-  LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail.fstlst,
-                                       aes(x = FstLst, y = Prop,
-                                           colour = Condition,
-                                           fill = Condition)) +
-    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
-    geom_point(position = position_jitterdodge(dodge.width = .8,
-                                               jitter.width = .2),
-               alpha = .25) +
-    geom_errorbar(stat = "summary",
-                  width = .2, colour = "black",
-                  position = position_dodge(.1)) +
-    geom_line(aes(x = FstLst, y = Prop, group = Condition),
-              stat = "summary", fun.y = "mean",
-              colour = "black",
-              position = position_dodge(.1)) +
-    geom_point(stat = "summary", fun.y = "mean",
-               shape = 18, size = 3,
-               position = position_dodge(.1))
+  prop_tail.predicted.summary <- prop_tail.predicted %>%
+    group_by(FstLst, Condition) %>%
+    summarise(Mean = mean(Predicted), StdDev = sd(Predicted)) %>%
+    mutate(lb = Mean - StdDev,
+           ub = Mean + StdDev)
+  ## Plot raincloud + predicted mean&se per FstLst
+  prop_tail.per_part.plot <- ggplot(prop_tail.fstlst,
+                                    aes(x = Condition, y = Prop,
+                                        colour = Condition,
+                                        fill = Condition)) +
+    theme_bw() + ylab("Looking to Tail (Prop)") +
+    coord_flip() + facet_grid(FstLst~.) + guides(fill = F, colour = F) +
+    geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
+    geom_point(position = position_jitter(width = .15),
+               size = 1, alpha = .6) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+    geom_pointrange(data = prop_tail.predicted.summary,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = 1.5, size = 1,
+                    position = position_nudge(x = -.2)) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ## Save graph
   ggsave(paste0(save_path, "FstLst_data.pdf"),
-         LT.prop_tail.per_part.plot,
-         width = 7, height = 5.4)
+         prop_tail.per_part.plot,
+         width = 5, height = 5)
 }
 
 # FAMILIARISATION ANALYSIS: PROP TAIL LOOKING TIME COURSE BY FSTLST  ===============================
