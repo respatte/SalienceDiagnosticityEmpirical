@@ -2,7 +2,7 @@
 library(brms)
 library(tidyverse)
 
-# BRM FIXEF BAYES FACTOR 
+# BRM FIXEF BAYES FACTOR
 # Function computing all nested models in formulas nd computing Bayes factors for pairs of models
 # Formulas must be given with no-intercept formulas first, then intercept-only formulas, and
 # finally other formulas.
@@ -12,7 +12,7 @@ library(tidyverse)
 # (no prior for no-intercept models)
 bayes_factor.brm_fixef <- function(formulas, df, priors,
                                    no_intercept = 0, intercept_only = 1,
-                                   controls = NULL){
+                                   controls = NULL, iter = 2000, family = gaussian()){
   ## Run all Bayesian models
   models <- lapply(seq_along(formulas),
                    function(i){
@@ -29,7 +29,8 @@ bayes_factor.brm_fixef <- function(formulas, df, priors,
                              priors[[2]]
                            }
                          },
-                         chains = 4, cores = 4,
+                         family = family,
+                         chains = 4, cores = 4, iter = iter,
                          control = controls,
                          save_all_pars = T)
                    })
