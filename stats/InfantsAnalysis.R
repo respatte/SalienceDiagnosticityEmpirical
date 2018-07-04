@@ -502,7 +502,8 @@ if(run_model){
   ### Get brms results
   brms.results <- bayes_factor.brm_fixef(formulas.new_old,
                                          new_old,
-                                         priors.new_old)
+                                         priors.new_old,
+                                         no_intercept = 1)
   new_old.brms.models <- brms.results[[1]]
   new_old.brms.bayes_factors <- brms.results[[2]]
   ## Save all the results
@@ -514,7 +515,7 @@ if(run_model){
   ## Read all the results
   new_old.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
   new_old.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
-  new_old.brms.modes <- readRDS(paste0(save_path, "brmsModels.rds"))
+  new_old.brms.models <- readRDS(paste0(save_path, "brmsModels.rds"))
   new_old.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 # Plot jitter + mean&se
@@ -574,7 +575,7 @@ if(generate_plots){
 # WORD LEARNING TEST ANALYSIS: PROP TARGET FOR LABEL CONDITION =====================================
 save_path <- "../results/infants/WordLearning/TrialAverage_"
 # Prepare dataset
-LT.prop_target <- LT.test.wl %>%
+prop_target <- LT.test.wl %>%
   subset(Condition == "Label") %>%
   subset_by_window(window_start_col = "LabelOnset",
                    window_end_col = "TrialEnd") %>%
@@ -582,46 +583,47 @@ LT.prop_target <- LT.test.wl %>%
                         predictor_columns = "CategoryName") %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5))) # Value centered on chance looking, useful for test
 ## Check for amount of data available
-participants <- LT.prop_target %>%
+participants <- prop_target %>%
   group_by(Participant) %>%
   summarise(nTrials = n_distinct(TrialId))
 # Testing in general
 run_model <- F
 if(run_model){
   ## Run lmer
-  LT.prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant),
-                                    data = LT.prop_target)
-  LT.prop_target.lmer.null <- lmer(ChanceArcsin ~ 0 + (1 | Participant),
-                                   data = LT.prop_target)
-  LT.prop_target.lmer.anova <- anova(LT.prop_target.lmer.null,
-                                     LT.prop_target.lmer.model)
+  prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant),
+                                    data = prop_target)
+  prop_target.lmer.null <- lmer(ChanceArcsin ~ 0 + (1 | Participant),
+                                   data = prop_target)
+  prop_target.lmer.anova <- anova(prop_target.lmer.null,
+                                     prop_target.lmer.model)
   ## Run brms
-  LT.prop_target.brms.model <- brm(ChanceArcsin ~ 1 + (1 | Participant),
-                                   data = LT.prop_target,
+  prop_target.brms.model <- brm(ChanceArcsin ~ 1 + (1 | Participant),
+                                   data = prop_target,
                                    chains = 4, cores = 4, iter = 2000,
                                    prior = set_prior("uniform(-.8,.8)",
                                                      class = "Intercept"),
                                    control = list(adapt_delta = .999,
                                                   max_treedepth = 20),
                                    save_all_pars = T)
-  LT.prop_target.brms.null <- brm(ChanceArcsin ~ 0 + (1 | Participant),
-                                   data = LT.prop_target,
+  prop_target.brms.null <- brm(ChanceArcsin ~ 0 + (1 | Participant),
+                                   data = prop_target,
                                    chains = 4, cores = 4, iter = 2000,
                                    control = list(adapt_delta = .999,
                                                   max_treedepth = 20),
                                   save_all_pars = T)
+  prop_target.brms.models <- list(prop_target.brms.null, prop_target.brms.model)
   LT.prop_target.brms.bayes_factor <- bayes_factor(LT.prop_target.brms.model,
                                                    LT.prop_target.brms.null)
   ## Save all the results
   saveRDS(LT.prop_target.lmer.model, paste0(save_path, "lmerModel.rds"))
   saveRDS(LT.prop_target.lmer.anova, paste0(save_path, "lmerAnova.rds"))
-  saveRDS(LT.prop_target.brms.model, paste0(save_path, "brmsModel.rds"))
+  saveRDS(LT.prop_target.brms.models, paste0(save_path, "brmsModels.rds"))
   saveRDS(LT.prop_target.brms.bayes_factor, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
   LT.prop_target.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
   LT.prop_target.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
-  LT.prop_target.brms.model <- readRDS(paste0(save_path, "brmsModel.rds"))
+  LT.prop_target.brms.models <- readRDS(paste0(save_path, "brmsModels.rds"))
   LT.prop_target.brms.bayes_factor <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 
