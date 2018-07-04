@@ -270,9 +270,9 @@ if(generate_plots){
             transform = function(x){sin(x)^2}) %>%
     t() %>%
     as_tibble() %>%
-    mutate(RowNames = 1:252)
+    mutate(RowNames = 1:nrow(.))
   prop_tail.predicted <- prop_tail.fstlst %>%
-    mutate(RowNames = 1:252) %>%
+    mutate(RowNames = 1:nrow(.)) %>%
     select(FstLst, Condition, RowNames) %>%
     inner_join(prop_tail.raw_predictions) %>%
     select(-RowNames) %>%
@@ -283,7 +283,7 @@ if(generate_plots){
     mutate(lb = Mean - StdDev,
            ub = Mean + StdDev)
   ## Plot raincloud + predicted mean&se per FstLst
-  prop_tail.per_part.plot <- ggplot(prop_tail.fstlst,
+  prop_tail.per_fstlst.plot <- ggplot(prop_tail.fstlst,
                                     aes(x = Condition, y = Prop,
                                         colour = Condition,
                                         fill = Condition)) +
@@ -300,7 +300,7 @@ if(generate_plots){
                     position = position_nudge(x = -.2)) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
-  ## Save graph
+  ## Save plot
   ggsave(paste0(save_path, "FstLst_data.pdf"),
          prop_tail.per_part.plot,
          width = 5, height = 5)
@@ -377,7 +377,8 @@ prop_tail.pre_post.fstlst <- LT.fam %>%
                                             "FstLst",
                                             "PrePost",
                                             "Stimulus",
-                                            "CategoryName"))
+                                            "CategoryName")) %>%
+  drop_na(ArcSin)
 # Testing Prop ~ FstLst*Condition
 run_model <- F
 if(run_model){
@@ -450,28 +451,47 @@ if(run_model){
 # Plot jitter + mean&se + lines
 generate_plots <- F
 if(generate_plots){
-  ## Plot per FstLst
-  LT.pre_post.per_fstlst.plot <- ggplot(LT.pre_post.fstlst,
-                                        aes(x = PrePost, y = Prop,
-                                            colour = Condition,
-                                            fill = Condition)) +
-    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") + facet_grid(.~FstLst) +
-    geom_point(position = position_jitterdodge(dodge.width = .8,
-                                               jitter.width = .2),
-               alpha = .25) +
-    geom_errorbar(stat = "summary",
-                  width = .2, colour = "black",
-                  position = position_dodge(.1)) +
-    geom_line(aes(x = PrePost, y = Prop, group = Condition),
-              stat = "summary", fun.y = "mean",
-              colour = "black",
-              position = position_dodge(.1)) +
-    geom_point(stat = "summary", fun.y = "mean",
-               shape = 18, size = 3,
-               position = position_dodge(.1))
+  ## Get brm predicted values
+  pre_post.raw_predictions <- last(pre_post.per_fstlst.brms.models) %>%
+    predict(summary = F,
+            transform = function(x){sin(x)^2}) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:nrow(.))
+  pre_post.predicted <- prop_tail.pre_post.fstlst %>%
+    mutate(RowNames = 1:nrow(.)) %>%
+    select(FstLst, PrePost, Condition, RowNames) %>%
+    inner_join(pre_post.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = Predicted, -c(FstLst, PrePost, Condition))
+  pre_post.predicted.summary <- pre_post.predicted %>%
+    group_by(FstLst, PrePost, Condition) %>%
+    summarise(Mean = mean(Predicted), StdDev = sd(Predicted)) %>%
+    mutate(lb = Mean - StdDev,
+           ub = Mean + StdDev)
+  ## Plot raincloud + predicted mean&sd per FstLst
+  pre_post.per_fstlst.plot <- ggplot(prop_tail.pre_post.fstlst,
+                                    aes(x = Condition, y = Prop,
+                                        colour = Condition,
+                                        fill = Condition)) +
+    theme_bw() + ylab("Looking to Tail (Prop)") +
+    coord_flip() + facet_grid(FstLst~PrePost) + guides(fill = F, colour = F) +
+    geom_flat_violin(position = position_nudge(x = .2),
+                     colour = "black", alpha = .5, width = .7) +
+    geom_point(position = position_jitter(width = .15),
+               size = 1, alpha = .6) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+    geom_pointrange(data = pre_post.predicted.summary,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = 1.5, size = 1,
+                    position = position_nudge(x = -.2)) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ## Save plot
   ggsave(paste0(save_path, "FstLst_data.pdf"),
-         LT.pre_post.per_fstlst.plot,
-         width = 7, height = 3)
+         pre_post.per_fstlst.plot,
+         width = 7, height = 5)
 }
 
 # CONTRAST TEST ANALYSIS: PROP NEW FEATURE BY HEAD/TAIL CONTRAST TEST ==============================
