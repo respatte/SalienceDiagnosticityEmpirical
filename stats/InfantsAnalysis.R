@@ -502,6 +502,7 @@ new_old <- LT.test.ctr %>%
   make_time_window_data(aois = "NewFeature",
                         predictor_columns = c("Condition",
                                               "ContrastType")) %>%
+  drop_na(ArcSin) %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5)))
 ## Check for amount of data available
 participants.new_old <- new_old %>%
@@ -558,26 +559,50 @@ if(run_model){
   new_old.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 # Plot jitter + mean&se
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
-  LT.new_old.plot.data <- ggplot(LT.new_old,
-                            aes(x = ContrastType, y = Prop,
-                                colour = Condition,
-                                fill = Condition)) +
-    theme(legend.pos = "top") + ylab("Looking to New Feature (Prop)") +
-    geom_point(position = position_jitterdodge(dodge.width = .8,
-                                               jitter.width = .2),
-               alpha = .25) +
-    geom_errorbar(stat = "summary",
-                  width = .2, colour = "black",
-                  position = position_dodge(.1)) +
-    geom_point(stat = "summary", fun.y = "mean",
-               shape = 18, size = 3,
-               position = position_dodge(.1)) +
-    geom_hline(yintercept = 0.5)
+  ## Get brm predicted values
+  new_old.raw_predictions <- last(new_old.brms.models) %>%
+    predict(summary = F,
+            transform = function(x){sin(x + asin(sqrt(.5)))^2}) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:nrow(.))
+  new_old.predicted <- new_old %>%
+    mutate(RowNames = 1:nrow(.)) %>%
+    select(ContrastType, Condition, RowNames) %>%
+    inner_join(new_old.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = Predicted, -c(ContrastType, Condition))
+  new_old.predicted.summary <- new_old.predicted %>%
+    group_by(ContrastType, Condition) %>%
+    summarise(Mean = mean(Predicted), StdDev = sd(Predicted)) %>%
+    mutate(lb = Mean - StdDev,
+           ub = Mean + StdDev)
+  ## Plot raincloud + predicted mean&sd per FstLst
+  new_old.plot <- ggplot(new_old,
+                         aes(x = Condition, y = Prop,
+                             colour = Condition,
+                             fill = Condition)) +
+    theme_bw() + ylab("Looking to New Feature (Prop)") +
+    geom_hline(yintercept = .5, colour = "black", linetype = 2) +
+    coord_flip() + facet_grid(ContrastType~.) + guides(fill = F, colour = F) +
+    geom_flat_violin(position = position_nudge(x = .2),
+                     colour = "black", alpha = .5, width = .7) +
+    geom_point(position = position_jitter(width = .15),
+               size = 1, alpha = .6) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+    geom_pointrange(data = new_old.predicted.summary,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = 1.5, size = 1,
+                    position = position_nudge(x = -.2)) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
-         LT.new_old.plot.data,
-         width = 7, height = 5.4)
+         new_old.plot,
+         width = 5, height = 5)
 }
 
 # CONTRAST TEST ANALYSIS: PROP NEW FEATURE LOOKING TIME COURSE BY FSTLST  ==========================
