@@ -208,64 +208,6 @@ LT.prop_tail <- LT.fam %>%
                                             "FstLst",
                                             "Stimulus",
                                             "CategoryName"))
-# Testing Prop ~ Trial*Condition
-run_model <- F
-if(run_model){
-  ## Run lmer (Sampling Theory Based)
-  LT.prop_tail.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*Condition +
-                                              (1 | Participant) +
-                                              (1 | Stimulus),
-                                            data = LT.prop_tail)
-  LT.prop_tail.per_trial.lmer.anova <- anova(LT.prop_tail.per_trial.lmer.model, type = 1)
-  ## Run brms (Bayesian)
-  prior.prop_tail.per_trial <- c(set_prior("uniform(0,1.6)",
-                                           class = "Intercept"),
-                                 set_prior("normal(0,.5)", class = "b"))
-  LT.prop_tail.per_trial.brms.model <- brm(ArcSin ~ TrialNum*Condition +
-                                             (1 | Participant) +
-                                             (1 | Stimulus),
-                                           prior = prior.prop_tail.per_trial,
-                                           data = LT.prop_tail,
-                                           chains = 4, cores = 4)
-  ## Save all results
-  saveRDS(LT.prop_tail.per_trial.lmer.model, paste0(save_path, "Trials_lmerModel.rds"))
-  saveRDS(LT.prop_tail.per_trial.lmer.anova, paste0(save_path, "Trials_lmerAnova.rds"))
-  saveRDS(LT.prop_tail.per_trial.brms.model, paste0(save_path, "Trials_brmsModel.rds"))
-}else{
-  ## Read all the results
-  LT.prop_tail.per_trial.lmer.model <- readRDS(paste0(save_path, "Trials_lmerModel.rds"))
-  LT.prop_tail.per_trial.lmer.anova <- readRDS(paste0(save_path, "Trials_lmerAnova.rds"))
-  LT.prop_tail.per_trial.brms.model <- readRDS(paste0(save_path, "Trials_brmsModel.rds"))
-}
-# Testing Prop ~ Part*Condition
-run_model <- F
-if(run_model){
-  ## Run lmer
-  LT.prop_tail.per_part.lmer.model <- lmer(ArcSin ~ FamPart*Condition +
-                                             (1 + FamPart | Participant) +
-                                             (1 | Stimulus),
-                                           data = LT.prop_tail)
-  LT.prop_tail.per_part.lmer.anova <- anova(LT.prop_tail.per_part.lmer.model, type = 1)
-  ## Run brms
-  prior.prop_tail.per_part <- c(set_prior("uniform(0,1.6)",
-                                          class = "Intercept"),
-                                set_prior("normal(0,.5)", class = "b"))
-  LT.prop_tail.per_part.brms.model <- brm(ArcSin ~ FamPart*Condition +
-                                            (1 + FamPart | Participant) +
-                                            (1 | Stimulus),
-                                          data = LT.prop_tail,
-                                          prior = prior.prop_tail.per_part,
-                                          chains = 4, cores = 4)
-  ## Save all the results
-  saveRDS(LT.prop_tail.per_part.lmer.model, "../results/infants/PropTail/Part_lmerModel.rds")
-  saveRDS(LT.prop_tail.per_part.lmer.anova, "../results/infants/PropTail/Part_lmerAnova.rds")
-  saveRDS(LT.prop_tail.per_part.brms.model, "../results/infants/PropTail/Part_brmsModel.rds")
-}else{
-  ## Read all the results
-  LT.prop_tail.per_part.lmer.model <- readRDS("../results/infants/PropTail/Part_lmerModel.rds")
-  LT.prop_tail.per_part.lmer.anova <- readRDS("../results/infants/PropTail/Part_lmerAnova.rds")
-  LT.prop_tail.per_part.brms.model <- readRDS("../results/infants/PropTail/Part_brmsModel.rds")
-}
 # Testing Prop ~ FstLst*Condition
 run_model <- F
 if(run_model){
@@ -337,50 +279,6 @@ if(run_model){
 # Plot jitter + mean&se + lines
 generate_plots <- F
 if(generate_plots){
-  ## Plot per trial
-  LT.prop_tail.per_trial.plot <- ggplot(LT.prop_tail,
-                                        aes(x = TrialId, y = Prop,
-                                            colour = Condition,
-                                            fill = Condition)) +
-    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
-    geom_point(position = position_jitterdodge(dodge.width = .8,
-                                               jitter.width = .2),
-               alpha = .25) +
-    geom_errorbar(stat = "summary",
-                  width = .2, colour = "black",
-                  position = position_dodge(.1)) +
-    geom_line(aes(x = TrialId, y = Prop, group = Condition),
-              stat = "summary", fun.y = "mean",
-              colour = "black",
-              position = position_dodge(.1)) +
-    geom_point(stat = "summary", fun.y = "mean",
-               shape = 18, size = 3,
-               position = position_dodge(.1))
-  ggsave("../results/infants/PropTail/TrialAverage_Trials.pdf",
-         LT.prop_tail.per_trial.plot,
-         width = 7, height = 5.4)
-  ## Plot per part
-  LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail,
-                                       aes(x = FamPart, y = Prop,
-                                           colour = Condition,
-                                           fill = Condition)) +
-    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") +
-    geom_point(position = position_jitterdodge(dodge.width = .8,
-                                               jitter.width = .2),
-               alpha = .25) +
-    geom_errorbar(stat = "summary",
-                  width = .2, colour = "black",
-                  position = position_dodge(.1)) +
-    geom_line(aes(x = FamPart, y = Prop, group = Condition),
-              stat = "summary", fun.y = "mean",
-              colour = "black",
-              position = position_dodge(.1)) +
-    geom_point(stat = "summary", fun.y = "mean",
-               shape = 18, size = 3,
-               position = position_dodge(.1))
-  ggsave("../results/infants/PropTail/TrialAverage_Parts.pdf",
-         LT.prop_tail.per_part.plot,
-         width = 7, height = 5.4)
   ## Plot per FstLst
   LT.prop_tail.per_part.plot <- ggplot(LT.prop_tail.fstlst,
                                        aes(x = FstLst, y = Prop,
@@ -416,8 +314,6 @@ LT.time_course_tail <- LT.fam %>%
                           predictor_columns=c("Condition",
                                               "FstLst"),
                           summarize_by = "Participant")
-# GROWTH CURVE ANALYSIS
-## TODO?
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 run_model <- F
 if(run_model){
@@ -482,64 +378,6 @@ LT.pre_post <- LT.fam %>%
                                             "Stimulus",
                                             "CategoryName")) %>%
   drop_na(PrePost)
-# Testing Prop ~ Trial*PrePost*Condition
-run_model <- F
-if(run_model){
-  ## Run lmer (Sampling Theory Based)
-  LT.pre_post.per_trial.lmer.model <- lmer(ArcSin ~ TrialNum*PrePost*Condition +
-                                             (1 | Participant) +
-                                             (1 | Stimulus),
-                                           data = LT.pre_post)
-  LT.pre_post.per_trial.lmer.anova <- anova(LT.prop_tail.per_trial.lmer.model, type = 1)
-  ## Run brms (Bayesian)
-  prior.pre_post.per_trial <- c(set_prior("uniform(0,1.6)",
-                                          class = "Intercept"),
-                                set_prior("normal(0,.5)", class = "b"))
-  LT.pre_post.per_trial.brms.model <- brm(ArcSin ~ TrialNum*PrePost*Condition +
-                                            (1 | Participant) +
-                                            (1 | Stimulus),
-                                          data = LT.pre_post,
-                                          prior = prior.pre_post.per_trial,
-                                          chains = 4, cores = 4)
-  ## Save all results
-  saveRDS(LT.pre_post.per_trial.lmer.model, paste0(save_path, "Trials_lmerModel.rds"))
-  saveRDS(LT.pre_post.per_trial.lmer.anova, paste0(save_path, "Trials_lmerAnova.rds"))
-  saveRDS(LT.pre_post.per_trial.brms.model, paste0(save_path, "Trials_brmsModel.rds"))
-}else{
-  ## Read all the results
-  LT.pre_post.per_trial.lmer.model <- readRDS(paste0(save_path, "Trials_lmerModel.rds"))
-  LT.pre_post.per_trial.lmer.anova <- readRDS(paste0(save_path, "Trials_lmerAnova.rds"))
-  LT.pre_post.per_trial.brms.model <- readRDS(paste0(save_path, "Trials_brmsModel.rds"))
-}
-# Testing Prop ~ Part*PrePost*Condition
-run_model <- F
-if(run_model){
-  ## Run lmer
-  LT.pre_post.per_part.lmer.model <- lmer(ArcSin ~ FamPart*PrePost*Condition +
-                                            (1 + FamPart | Participant) +
-                                            (1 | Stimulus),
-                                          data = LT.pre_post)
-  LT.pre_post.per_part.lmer.anova <- anova(LT.pre_post.per_part.lmer.model, type = 1)
-  ## Run brms
-  prior.pre_post.per_part <- c(set_prior("uniform(0,1.6)",
-                                         class = "Intercept"),
-                               set_prior("normal(0,.5)", class = "b"))
-  LT.pre_post.per_part.brms.model <- brm(ArcSin ~ FamPart*PrePost*Condition +
-                                           (1 + FamPart | Participant) +
-                                           (1 | Stimulus),
-                                         data = LT.pre_post,
-                                         prior = prior.pre_post.per_part,
-                                         chains = 4, cores = 4)
-  ## Save all the results
-  saveRDS(LT.pre_post.per_part.lmer.model, paste0(save_path, "Parts_lmerModel.rds"))
-  saveRDS(LT.pre_post.per_part.lmer.anova, paste0(save_path, "Parts_lmerAnova.rds"))
-  saveRDS(LT.pre_post.per_part.brms.model, paste0(save_path, "Parts_brmsModel.rds"))
-}else{
-  ## Read all the results
-  LT.pre_post.per_part.lmer.model <- readRDS(paste0(save_path, "Parts_lmerModel.rds"))
-  LT.pre_post.per_part.lmer.anova <- readRDS(paste0(save_path, "Parts_lmerAnova.rds"))
-  LT.pre_post.per_part.brms.model <- readRDS(paste0(save_path, "Parts_brmsModel.rds"))
-}
 # Testing Prop ~ FstLst*Condition
 run_model <- F
 if(run_model){
@@ -576,28 +414,6 @@ if(run_model){
 # Plot jitter + mean&se + lines
 generate_plots <- F
 if(generate_plots){
-  ## Plot per part
-  LT.pre_post.per_part.plot <- ggplot(LT.pre_post,
-                                      aes(x = PrePost, y = Prop,
-                                          colour = Condition,
-                                          fill = Condition)) +
-    theme(legend.pos = "top") + ylab("Looking to Tail (Prop)") + facet_grid(.~FamPart) +
-    geom_point(position = position_jitterdodge(dodge.width = .8,
-                                               jitter.width = .2),
-               alpha = .25) +
-    geom_errorbar(stat = "summary",
-                  width = .2, colour = "black",
-                  position = position_dodge(.1)) +
-    geom_line(aes(x = PrePost, y = Prop, group = Condition),
-              stat = "summary", fun.y = "mean",
-              colour = "black",
-              position = position_dodge(.1)) +
-    geom_point(stat = "summary", fun.y = "mean",
-               shape = 18, size = 3,
-               position = position_dodge(.1))
-  ggsave(paste0(save_path, "Parts_data.pdf"),
-         LT.pre_post.per_part.plot,
-         width = 7, height = 3)
   ## Plot per FstLst
   LT.pre_post.per_fstlst.plot <- ggplot(LT.pre_post.fstlst,
                                         aes(x = PrePost, y = Prop,
@@ -736,8 +552,6 @@ LT.new_old.time_course <- LT.test.ctr %>%
                           predictor_columns=c("Condition",
                                               "ContrastType"),
                           summarize_by = "Participant")
-# Run growth curve analysis
-#### NOT ENOUGH DATA
 # Run bootstrapped cluster-based permutation analysis
 #### NOT ENOuGH DATA
 
@@ -848,8 +662,6 @@ LT.prop_target.time_course.chance <- LT.prop_target.time_course %>%
 LT.prop_target.time_course.chance_test <- rbind(LT.prop_target.time_course,
                                                 LT.prop_target.time_course.chance) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
-# GROWTH CURVE ANALYSIS
-## TODO?
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 run_model <- T
 if(run_model){
