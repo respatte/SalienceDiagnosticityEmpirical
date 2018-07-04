@@ -240,7 +240,7 @@ if(run_model){
                                           (1 | Stimulus))
   ### Get brms results
   brms.results <- bayes_factor.brm_fixef(formulas.prop_tail.per_fstlst,
-                                         prop_tail.per_fstlst,
+                                         prop_tail.fstlst,
                                          priors.prop_tail.per_fstlst)
   prop_tail.per_fstlst.brms.models <- brms.results[[1]]
   prop_tail.per_fstlst.brms.bayes_factors <- brms.results[[2]]
@@ -349,14 +349,14 @@ if(generate_plots){
 # FAMILIARISATION ANALYSIS: PROP AOI LOOKING PRE/POST LABEL ONSET ==================================
 save_path <- "../results/infants/PrePost/TrialAverage_"
 # Prepare dataset
-prop_tail.pre_post.fstLst <- LT.fam %>%
+prop_tail.pre_post.fstlst <- LT.fam %>%
   drop_na(PrePost, FstLst) %>%
   make_time_window_data(aois=c("Tail"),
                         predictor_columns=c("Condition",
                                             "FstLst",
                                             "PrePost",
                                             "Stimulus",
-                                            "CategoryName")) %>%
+                                            "CategoryName"))
 # Testing Prop ~ FstLst*Condition
 run_model <- T
 if(run_model){
@@ -377,43 +377,35 @@ if(run_model){
   ### Set all nested formulas for model comparisons
   formulas.pre_post.per_fstlst <- list(ArcSin ~ 1 +
                                          (1 | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StimLabel),
+                                         (1 | Stimulus),
                                        ArcSin ~ 1 + FstLst +
                                          (1 + FstLst | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StimLabel),
+                                         (1 | Stimulus),
                                        ArcSin ~ 1 + FstLst + PrePost +
                                          (1 + FstLst | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StimLabel),
+                                         (1 | Stimulus),
                                        ArcSin ~ 1 + FstLst + PrePost + Condition +
                                          (1 + FstLst | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StimLabel),
+                                         (1 | Stimulus),
                                        ArcSin ~ 1 + FstLst + PrePost + Condition +
                                          FstLst:PrePost +
                                          (1 + FstLst | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StimLabel),
+                                         (1 | Stimulus),
                                        ArcSin ~ 1 + FstLst + PrePost + Condition +
                                          FstLst:PrePost + FstLst:Condition +
                                          (1 + FstLst | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StimLabel),
+                                         (1 | Stimulus),
                                        ArcSin ~ 1 + FstLst + PrePost + Condition +
                                          FstLst:PrePost + FstLst:Condition +
                                          PrePost:Condition +
                                          (1 + FstLst | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StimLabel),
+                                         (1 | Stimulus),
                                        ArcSin ~ 1 + FstLst + PrePost + Condition +
                                          FstLst:PrePost + FstLst:Condition +
                                          PrePost:Condition +
                                          FstLst:PrePost:Condition +
                                          (1 + FstLst | Participant) +
-                                         (1 | Stimulus) +
-                                         (1 | StimLabel))
+                                         (1 | Stimulus))
   ### Get brms results
   brms.results <- bayes_factor.brm_fixef(formulas.pre_post.per_fstlst,
                                          prop_tail.pre_post.fstlst,
