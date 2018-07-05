@@ -1,3 +1,0 @@
-results/adults_2f/PropTail/TrialParts_FstLst_brmsModels.rds filter=lfs diff=lfs merge=lfs -text
-results/infants/FamSwitches/FstLst_brmsModels.rds filter=lfs diff=lfs merge=lfs -text
-results/infants/PrePost/TrialAverage_FstLst_brmsModels.rds filter=lfs diff=lfs merge=lfs -text
