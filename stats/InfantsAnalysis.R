@@ -718,7 +718,11 @@ if(run_model){
   ## Read all the results
   prop_target.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
   prop_target.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
-  prop_target.brms.models <- readRDS(paste0(save_path, "brmsModels.rds"))
+  prop_target.brms.models <- lapply(1:2,
+                                    function(i){
+                                      readRDS(paste0(save_path,
+                                                     "brmsModel", i, ".rds"))
+                                    })
   prop_target.brms.bayes_factor <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 
@@ -880,12 +884,20 @@ if(run_model){
   fam_switches.time <- proc.time() - t
   ## Save all the results
   saveRDS(fam_switches.per_fstlst.glmer.model, paste0(save_path, "glmerModel.rds"))
-  saveRDS(fam_switches.per_fstlst.brms.models, paste0(save_path, "brmsModels.rds"))
+  lapply(seq_along(fam_switches.per_fstlst.brms.models),
+         function(i){
+           saveRDS(fam_switches.per_fstlst.brms.models[[i]],
+                   paste0(save_path, "brmsModel", i, ".rds"))
+         })
   saveRDS(fam_switches.per_fstlst.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
   fam_switches.per_fstlst.glmer.model <- readRDS(paste0(save_path, "glmerModel.rds"))
-  fam_switches.per_fstlst.brms.models <- readRDS(paste0(save_path, "brmsModels.rds"))
+  fam_switches.per_fstlst.brms.models <- lapply(1:4,
+                                                function(i){
+                                                  readRDS(paste0(save_path,
+                                                                 "brmsModel", i, ".rds"))
+                                                })
   fam_switches.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 
