@@ -918,7 +918,8 @@ first_look <- LT.fam %>%
             # Keep columns for analysis (only one value per trial per participant)
             Condition = first(Condition),
             FstLst = first(FstLst)) %>%
-  select(-Tail)
+  select(-Tail) %>%
+  ungroup()
 first_aoi.fstlst <- first_look %>%
   drop_na(FstLst) %>%
   group_by(Participant, TrialId) %>%
@@ -1078,16 +1079,45 @@ if(generate_plots){
          first_aoi.per_fstlst.plot,
          width = 7, height = 5)
   ## Time to first tail look (boxplot)
-  first_tail.per_fstlst.plot <- LT.first_tail %>%
-    drop_na(FstLst) %>%
-    ggplot(aes(y = FirstAOILook,
-               x = FstLst,
-               fill = Condition)) +
-    theme(legend.position = "top",
-          axis.title.x = element_blank()) +
-    ylab("Time to first Tail look") +
-    geom_boxplot()
+  ### Get brm predicted values
+  first_tail.raw_predictions <- last(first_tail.per_fstlst.brms.models) %>%
+    predict(summary = F,
+            transform = exp) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:nrow(.))
+  first_tail.predicted <- first_tail.fstlst %>%
+    mutate(RowNames = 1:nrow(.)) %>%
+    select(FstLst, Condition, RowNames) %>%
+    inner_join(first_tail.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = Predicted, -c(FstLst, Condition))
+  first_tail.predicted.summary <- first_tail.predicted %>%
+    group_by(FstLst, Condition) %>%
+    summarise(Mean = mean(Predicted), StdDev = sd(Predicted)) %>%
+    mutate(lb = Mean - .25*StdDev,
+           ub = Mean + .25*StdDev)
+  ### Plot raincloud + predicted mean&sd per FstLst
+  first_tail.per_fstlst.plot <- ggplot(first_tail.fstlst,
+                                         aes(x = Condition, y = FirstAOILook,
+                                             colour = Condition,
+                                             fill = Condition)) +
+    theme_bw() + ylab("Number of switches between AOIs") +
+    coord_flip() + facet_grid(FstLst~.) + guides(fill = F, colour = F) +
+    geom_flat_violin(position = position_nudge(x = .2),
+                     colour = "black", alpha = .5, width = .7) +
+    geom_point(position = position_jitter(width = 0.15, height = 0),
+               size = 1, alpha = .6) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+    geom_pointrange(data = first_tail.predicted.summary,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = 1.5, size = 1,
+                    position = position_nudge(x = -.2)) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ### Save plot
   ggsave(paste0(save_path, "FirstTail_data.pdf"),
          first_tail.per_fstlst.plot,
-         width = 3.5, height = 3.5)
+         width = 5, height = 5)
 }
