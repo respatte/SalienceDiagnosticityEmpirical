@@ -446,13 +446,21 @@ if(run_model){
   ## Save all the results
   saveRDS(pre_post.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
   saveRDS(pre_post.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
-  saveRDS(pre_post.per_fstlst.brms.models, paste0(save_path, "FstLst_brmsModels.rds"))
+  lapply(seq_along(pre_post.per_fstlst.brms.models),
+         function(i){
+           saveRDS(pre_post.per_fstlst.brms.models[[i]],
+                   paste0(save_path, "FstLst_brmsModel", i, ".rds"))
+         })
   saveRDS(pre_post.per_fstlst.brms.bayes_factors, paste0(save_path, "FstLst_brmsBF.rds"))
 }else{
   ## Read all the results
   pre_post.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FstLst_lmerModel.rds"))
   pre_post.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FstLst_lmerAnova.rds"))
-  pre_post.per_fstlst.brms.models <- readRDS(paste0(save_path, "FstLst_brmsModels.rds"))
+  pre_post.per_fstlst.brms.models <- lapply(1:8,
+                                             function(i){
+                                               readRDS(paste0(save_path,
+                                                              "FstLst_brmsModel", i, ".rds"))
+                                             })
   pre_post.per_fstlst.brms.BF <- readRDS(paste0(save_path, "FstLst_brmsBF.rds"))
 }
 
