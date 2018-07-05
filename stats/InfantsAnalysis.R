@@ -576,11 +576,10 @@ if(run_model){
   new_old.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
   new_old.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
   new_old.brms.models <- lapply(1:5,
-                                            function(i){
-                                              readRDS(paste0(save_path,
-                                                             "brmsModel", i, ".rds"))
-                                            })
-   <- readRDS(paste0(save_path, "brmsModels.rds"))
+                                function(i){
+                                  readRDS(paste0(save_path,
+                                                 "brmsModel", i, ".rds"))
+                                })
   new_old.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 # Plot jitter + mean&se
@@ -709,7 +708,11 @@ if(run_model){
   ## Save all the results
   saveRDS(prop_target.lmer.model, paste0(save_path, "lmerModel.rds"))
   saveRDS(prop_target.lmer.anova, paste0(save_path, "lmerAnova.rds"))
-  saveRDS(prop_target.brms.models, paste0(save_path, "brmsModels.rds"))
+  lapply(seq_along(prop_target.brms.models),
+         function(i){
+           saveRDS(prop_target.brms.models[[i]],
+                   paste0(save_path, "brmsModel", i, ".rds"))
+         })
   saveRDS(prop_target.brms.bayes_factor, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
