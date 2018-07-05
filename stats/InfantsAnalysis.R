@@ -251,13 +251,21 @@ if(run_model){
   ## Save all the results
   saveRDS(prop_tail.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
   saveRDS(prop_tail.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
-  saveRDS(prop_tail.per_fstlst.brms.models, paste0(save_path, "FstLst_brmsModels.rds"))
+  lapply(seq_along(prop_tail.per_fstlst.brms.models),
+         function(i){
+           saveRDS(prop_tail.per_fstlst.brms.models[[i]],
+                   paste0(save_path, "FstLst_brmsModel", i, ".rds"))
+         })
   saveRDS(prop_tail.per_fstlst.brms.bayes_factors, paste0(save_path, "FstLst_brmsBF.rds"))
 }else{
   ## Read all the results
   prop_tail.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FstLst_lmerModel.rds"))
   prop_tail.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FstLst_lmerAnova.rds"))
-  prop_tail.per_fstlst.brms.models <- readRDS(paste0(save_path, "FstLst_brmsModels.rds"))
+  prop_tail.per_fstlst.brms.models <- lapply(1:4,
+                                             function(i){
+                                               readRDS(paste0(save_path,
+                                                              "FstLst_brmsModel", i, ".rds"))
+                                             })
   prop_tail.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FstLst_brmsBF.rds"))
 }
 
@@ -559,7 +567,7 @@ if(run_model){
   new_old.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 # Plot jitter + mean&se
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   new_old.raw_predictions <- last(new_old.brms.models) %>%
@@ -746,7 +754,7 @@ if(generate_plots){
 # WORD LEARNING TEST ANALYSIS: PROP TARGET TIME COURSE FOR LABEL CONDITION  ========================
 save_path <- "../results/infants/WordLearning/TimeCourse_"
 # Data preparation
-prop_target.time_course <- test.wl %>%
+prop_target.time_course <- LT.test.wl %>%
   subset_by_window(window_start_col = "LabelOnset",
                    window_end_col = "TrialEnd") %>%
   mutate(Chance = F) %>%
