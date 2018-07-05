@@ -47,7 +47,7 @@ prop_tail.per_fstlst <- LT.clean %>%
                                             "StimLabel"))
 
 # Testing ArcSin ~ FstLst*Condition
-run_model <- T # Running the models takes around 17 minutes on a 4.40GHz 12-core
+run_model <- T # Running the models takes around 20 minutes on a 4.40GHz 12-core
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   t <- proc.time()
@@ -93,12 +93,20 @@ if(run_model){
   ## Save all the results
   saveRDS(prop_tail.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
   saveRDS(prop_tail.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
-  saveRDS(prop_tail.per_fstlst.brms.models, paste0(save_path, "FstLst_brmsModels.rds"))
+  lapply(seq_along(prop_tail.per_fstlst.brms.models),
+         function(i){
+           saveRDS(prop_tail.per_fstlst.brms.models[[i]],
+                   paste0(save_path, "FstLst_brmsModel", i, ".rds"))
+         })
   saveRDS(prop_tail.per_fstlst.brms.bayes_factors, paste0(save_path, "FstLst_brmsBF.rds"))
 }else{
   prop_tail.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FstLst_lmerModel.rds"))
   prop_tail.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FstLst_lmerAnova.rds"))
-  prop_tail.per_fstlst.brms.models <- readRDS(paste0(save_path, "FstLst_brmsModels.rds"))
+  prop_tail.per_fstlst.brms.models <- lapply(1:4,
+                                             function(i){
+                                               readRDS(paste0(save_path,
+                                                              "FstLst_brmsModel", i, ".rds"))
+                                             })
   prop_tail.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FstLst_brmsBF.rds"))
 }
 # PLOTTING
@@ -142,7 +150,7 @@ trial_parts.per_fstlst <- LT.clean %>%
                                             "StimLabel"))
 
 # Testing ArcSin ~ FstLst*CurrentObject(TrialParts)*Condition
-run_model <- T # Running the models takes around XXX minutes on a 4.40GHz 12-core
+run_model <- T # Running the models takes around 4h30 on a 4.40GHz 12-core
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   t <- proc.time()
@@ -211,13 +219,21 @@ if(run_model){
   ## Save all the results
   saveRDS(trial_parts.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
   saveRDS(trial_parts.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
-  saveRDS(trial_parts.per_fstlst.brms.models, paste0(save_path, "FstLst_brmsModels.rds"))
+  lapply(seq_along(trial_parts.per_fstlst.brms.models),
+         function(i){
+           saveRDS(trial_parts.per_fstlst.brms.models[[i]],
+                   paste0(save_path, "FstLst_brmsModel", i, ".rds"))
+         })
   saveRDS(trial_parts.per_fstlst.brms.bayes_factors, paste0(save_path, "FstLst_brmsBF.rds"))
 }else{
   ## Read all the results
   trial_parts.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FstLst_lmerModel.rds"))
   trial_parts.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FstLst_lmerAnova.rds"))
-  trial_parts.per_fstlst.brms.models <- readRDS(paste0(save_path, "FstLst_brmsModels.rds"))
+  trial_parts.per_fstlst.brms.models <- lapply(1:8,
+                                             function(i){
+                                               readRDS(paste0(save_path,
+                                                              "FstLst_brmsModel", i, ".rds"))
+                                             })
   trial_parts.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FstLst_brmsBF.rds"))
 }
 
