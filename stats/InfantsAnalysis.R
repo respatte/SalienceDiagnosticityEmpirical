@@ -919,14 +919,17 @@ first_look <- LT.fam %>%
             Condition = first(Condition),
             FstLst = first(FstLst)) %>%
   select(-Tail)
-first_aoi <- first_look %>%
+first_aoi.fstlst <- first_look %>%
+  drop_na(FstLst) %>%
   group_by(Participant, TrialId) %>%
   arrange(FirstAOILook) %>%
   summarise(AOI = first(AOI),
             # Keep columns for analysis (only one value per trial per participant)
             Condition = first(Condition),
-            FstLst = first(FstLst))
-first_tail <- first_look %>%
+            FstLst = first(FstLst)) %>%
+  ungroup()
+first_tail.fstlst <- first_look %>%
+  drop_na(FstLst) %>%
   subset(AOI == "Tail", select = -AOI) %>% # Discards trials with no Tail look: is it okay?
   mutate(logFirstAOILook = log(FirstAOILook))
 
@@ -937,7 +940,7 @@ if(run_model){
   ## Run (g)lmer
   first_aoi.per_fstlst.glmer.model <- glmer(AOI ~ FstLst*Condition +
                                               (1 + FstLst | Participant),
-                                            data = first_aoi,
+                                            data = first_aoi.fstlst,
                                             family = binomial())
   # Current p-values from summary may not be the best. Do something else?
   ## Run brms
@@ -956,7 +959,7 @@ if(run_model){
                                           (1 + FstLst | Participant))
   ### Get brms results
   brms.results <- bayes_factor.brm_fixef(formulas.first_aoi.per_fstlst,
-                                         first_aoi,
+                                         first_aoi.fstlst,
                                          priors.first_aoi.per_fstlst,
                                          family = bernoulli())
   first_aoi.per_fstlst.brms.models <- brms.results[[1]]
@@ -979,7 +982,7 @@ if(run_model){
   ## Run lmer
   first_tail.per_fstlst.lmer.model <- lmer(logFirstAOILook ~ FstLst*Condition +
                                                (1 + FstLst | Participant),
-                                             data = first_tail)
+                                             data = first_tail.fstlst)
   first_tail.per_fstlst.lmer.anova <- anova(first_tail.per_fstlst.lmer.model, type = 1)
   # Current p-values from summary may not be the best. Do something else?
   ## Run brms
@@ -998,7 +1001,7 @@ if(run_model){
                                            (1 + FstLst | Participant))
   ### Get brms results
   brms.results <- bayes_factor.brm_fixef(formulas.first_tail.per_fstlst,
-                                         first_tail,
+                                         first_tail.fstlst,
                                          priors.first_tail.per_fstlst)
   first_tail.per_fstlst.brms.models <- brms.results[[1]]
   first_tail.per_fstlst.brms.bayes_factors <- brms.results[[2]]
@@ -1020,22 +1023,60 @@ if(run_model){
 generate_plots <- F
 if(generate_plots){
   ## First AOI (boxplot)
-  first_aoi.per_fstlst.plot <- LT.first_aoi %>%
+  ### Get data for plot
+  first_aoi.fstlst.to_plot <- first_aoi.fstlst %>%
     drop_na(FstLst) %>%
     group_by(Participant, FstLst, AOI) %>%
     summarise(N = n(),
               Condition = first(Condition)) %>%
-    ggplot(aes(y = N,
-               x = AOI,
-               fill = Condition)) +
-    theme(legend.position = "top",
-          axis.title.x = element_blank()) +
-    ylab("Number of first look to AOI") +
-    facet_grid(.~FstLst) +
-    geom_boxplot()
+    ungroup()
+  ### Get brm predicted values
+  first_aoi.raw_predictions <- last(first_aoi.per_fstlst.brms.models) %>%
+    predict(summary = F) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:nrow(.))
+  first_aoi.predicted <- first_aoi.fstlst %>%
+    mutate(RowNames = 1:nrow(.)) %>%
+    select(Participant, FstLst, Condition, RowNames) %>%
+    inner_join(first_aoi.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = AOI, -c(FstLst, Condition, Participant)) %>%
+    mutate(AOI = ifelse(AOI == 0, "Head", "Tail"),
+           AOI = parse_factor(AOI, levels = NULL))
+  first_aoi.predicted.summary <- first_aoi.predicted %>%
+    group_by(FstLst, Participant, Sample, AOI) %>%
+    summarise(N = n(),
+              Condition = first(Condition)) %>%
+    group_by(FstLst, Condition, AOI) %>%
+    summarise(Mean = mean(N),
+              StdDev = sd(N)) %>%
+    mutate(lb = Mean - StdDev,
+           ub = Mean + StdDev)
+  ### Plot raincloud + predicted mean&sd per FstLst
+  first_aoi.per_fstlst.plot <- ggplot(first_aoi.fstlst.to_plot,
+                                      aes(x = Condition, y = N,
+                                          colour = Condition,
+                                          fill = Condition)) +
+    theme_bw() + ylab("Number of first look to AOI") +
+    coord_flip() + facet_grid(AOI~FstLst) + guides(fill = F, colour = F) +
+    geom_flat_violin(position = position_nudge(x = .2),
+                     colour = "black", alpha = .5, width = .7) +
+    geom_point(position = position_jitter(width = 0.15, height = 0),
+               size = 1, alpha = .6) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+    geom_pointrange(data = first_aoi.predicted.summary,
+                    aes(x = Condition,
+                        y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = 1.5, size = 1,
+                    position = position_nudge(x = -.2)) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ### Save plot
   ggsave(paste0(save_path, "FirstAOI_data.pdf"),
          first_aoi.per_fstlst.plot,
-         width = 7, height = 3.5)
+         width = 7, height = 5)
   ## Time to first tail look (boxplot)
   first_tail.per_fstlst.plot <- LT.first_tail %>%
     drop_na(FstLst) %>%
