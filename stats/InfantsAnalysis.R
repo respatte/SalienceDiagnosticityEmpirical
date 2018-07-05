@@ -813,7 +813,8 @@ fam_switches.fstlst <- LT.fam %>%
   summarise(Switches = sum(Tail != lag(Tail), na.rm = T), # Count switches per trial per participant
             # Keep columns for analysis (only one value per trial per participant)
             FstLst = first(FstLst),
-            Condition = first(Condition))
+            Condition = first(Condition)) %>%
+  ungroup()
 # Testing Switches ~ Condition*FstLst
 run_model <- F # Running the models takes around 5 minutes on a 4.40GHz 12-core
 if(run_model){
@@ -863,18 +864,46 @@ if(run_model){
 # Plotting boxplots
 generate_plots <- F
 if(generate_plots){
-  fam_switches.per_fstlst.plot <- LT.fam_switches %>%
-    drop_na(FstLst) %>%
-    ggplot(aes(y = Switches,
-               x = FstLst,
-               fill = Condition)) +
-    theme(legend.position = "top",
-          axis.title.x = element_blank()) +
-    ylab("Switches between AOIs") +
-    geom_boxplot()
+  ## Get brm predicted values
+  fam_switches.raw_predictions <- last(fam_switches.per_fstlst.brms.models) %>%
+    predict(summary = F) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:nrow(.))
+  fam_switches.predicted <- fam_switches.fstlst %>%
+    mutate(RowNames = 1:nrow(.)) %>%
+    select(FstLst, Condition, RowNames) %>%
+    inner_join(fam_switches.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = Predicted, -c(FstLst, Condition))
+  fam_switches.predicted.summary <- fam_switches.predicted %>%
+    group_by(FstLst, Condition) %>%
+    summarise(Mean = mean(Predicted), StdDev = sd(Predicted)) %>%
+    mutate(lb = Mean - StdDev,
+           ub = Mean + StdDev)
+  ## Plot raincloud + predicted mean&sd per FstLst
+  fam_switches.per_fstlst.plot <- ggplot(fam_switches.fstlst,
+                                         aes(x = Condition, y = Switches,
+                                             colour = Condition,
+                                             fill = Condition)) +
+    theme_bw() + ylab("Number of switches between AOIs") +
+    coord_flip() + facet_grid(FstLst~.) + guides(fill = F, colour = F) +
+    geom_flat_violin(position = position_nudge(x = .2),
+                     colour = "black", alpha = .5, width = .7) +
+    geom_point(position = position_jitter(width = 0.15, height = 0),
+               size = 1, alpha = .6) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+    geom_pointrange(data = fam_switches.predicted.summary,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = 1.5, size = 1,
+                    position = position_nudge(x = -.2)) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
          fam_switches.per_fstlst.plot,
-         width = 3.5, height = 3.5)
+         width = 5, height = 5)
 }
 
 # FAMILIARISATION: FIRST LOOK ======================================================================
