@@ -211,7 +211,7 @@ prop_tail.fstlst <- LT.fam %>%
                                             "CategoryName")) %>%
   drop_na(ArcSin)
 # Testing Prop ~ FstLst*Condition
-run_model <- F
+run_model <- F # Running the models takes around 4 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -380,7 +380,7 @@ prop_tail.pre_post.fstlst <- LT.fam %>%
                                             "CategoryName")) %>%
   drop_na(ArcSin)
 # Testing Prop ~ FstLst*Condition
-run_model <- F
+run_model <- F # Running the models takes around 8 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -511,7 +511,7 @@ participants.new_old <- new_old %>%
   group_by(Condition, nTrials) %>%
   summarise(Participants = n_distinct(Participant))
 # Testing Prop ~ ContrastType*Condition
-run_model <- F
+run_model <- F # Running the models takes around 5 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -652,7 +652,7 @@ participants <- prop_target %>%
   group_by(Participant) %>%
   summarise(nTrials = n_distinct(TrialId))
 # Testing in general
-run_model <- F
+run_model <- F # Running the models takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -815,7 +815,7 @@ fam_switches.fstlst <- LT.fam %>%
             FstLst = first(FstLst),
             Condition = first(Condition))
 # Testing Switches ~ Condition*FstLst
-run_model <- F
+run_model <- F # Running the models takes around 5 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run (g)lmer
@@ -902,7 +902,7 @@ first_tail <- first_look %>%
   mutate(logFirstAOILook = log(FirstAOILook))
 
 # Testing (First)AOI ~ Condition*FstLst
-run_model <- F
+run_model <- F # Running the models takes around 5 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run (g)lmer
@@ -944,7 +944,7 @@ if(run_model){
   first_aoi.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstAOI_brmsBF.rds"))
 }
 # Testing FirstAOI(Tail)Look ~ Condition*FstLst
-run_model <- F
+run_model <- F # Running the models takes around 4 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
