@@ -1008,12 +1008,20 @@ if(run_model){
   first_aoi.time <- proc.time() - t
   ## Save all the results
   saveRDS(first_aoi.per_fstlst.glmer.model, paste0(save_path, "FirstAOI_glmerModel.rds"))
-  saveRDS(first_aoi.per_fstlst.brms.models, paste0(save_path, "FirstAOI_brmsModels.rds"))
+  lapply(seq_along(first_aoi.per_fstlst.brms.models),
+         function(i){
+           saveRDS(first_aoi.per_fstlst.brms.models[[i]],
+                   paste0(save_path, "FirstAOI_brmsModel", i, ".rds"))
+         })
   saveRDS(first_aoi.per_fstlst.brms.bayes_factors, paste0(save_path, "FirstAOI_brmsBF.rds"))
 }else{
   ## Read all the results
   first_aoi.per_fstlst.glmer.model <- readRDS(paste0(save_path, "FirstAOI_glmerModel.rds"))
-  first_aoi.per_fstlst.brms.models <- readRDS(paste0(save_path, "FirstAOI_brmsModels.rds"))
+  first_aoi.per_fstlst.brms.models <- lapply(1:4,
+                                             function(i){
+                                               readRDS(paste0(save_path,
+                                                              "FirstAOI_brmsModel", i, ".rds"))
+                                             })
   first_aoi.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstAOI_brmsBF.rds"))
 }
 # Testing FirstAOI(Tail)Look ~ Condition*FstLst
@@ -1050,13 +1058,21 @@ if(run_model){
   ## Save all the results
   saveRDS(first_tail.per_fstlst.lmer.model, paste0(save_path, "FirstTail_lmerModel.rds"))
   saveRDS(first_tail.per_fstlst.lmer.anova, paste0(save_path, "FirstTail_lmerAnova.rds"))
-  saveRDS(first_tail.per_fstlst.brms.models, paste0(save_path, "FirstTail_brmsModels.rds"))
+  lapply(seq_along(first_tail.per_fstlst.brms.models),
+         function(i){
+           saveRDS(first_tail.per_fstlst.brms.models[[i]],
+                   paste0(save_path, "FirstTail_brmsModel", i, ".rds"))
+         })
   saveRDS(first_tail.per_fstlst.brms.bayes_factors, paste0(save_path, "FirstTail_brmsBF.rds"))
 }else{
   ## Read all the results
   first_tail.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FirstTail_lmerModel.rds"))
   first_tail.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FirstTail_lmerAnova.rds"))
-  first_tail.per_fstlst.brms.models <- readRDS(paste0(save_path, "FirstTail_brmsModels.rds"))
+  first_tail.per_fstlst.brms.models <- lapply(1:4,
+                                             function(i){
+                                               readRDS(paste0(save_path,
+                                                              "FirstTail_brmsModel", i, ".rds"))
+                                             })
   first_tail.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstTail_brmsBF.rds"))
 }
 
