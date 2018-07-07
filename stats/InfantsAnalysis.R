@@ -362,24 +362,24 @@ if(generate_plots){
 # FAMILIARISATION ANALYSIS: PROP TAIL LOOKING TIME COURSE BY FSTLST  ===============================
 save_path <- "../results/infants/PropTail/TimeCourse_"
 # Data preparation
-LT.time_course_tail <- LT.fam %>%
+prop_tail.time_course <- LT.fam %>%
   drop_na(FstLst) %>%
   subset_by_window(window_start_col = "LabelOnset") %>%
-  make_time_sequence_data(time_bin_size = 50,
+  make_time_sequence_data(time_bin_size = 100,
                           aois = "Tail",
                           predictor_columns=c("Condition",
                                               "FstLst"),
                           summarize_by = "Participant")
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- F
+run_model <- T
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
-  num_sub = length(unique((LT.time_course_tail$Participant)))
+  num_sub = length(unique((prop_tail.time_course$Participant)))
   threshold_t = qt(p = 1 - .05/2,
                    df = num_sub-1)
   ## Determine clusters
-  LT.time_cluster_tail <- LT.time_course_tail %>%
+  prop_tail.time_cluster <- prop_tail.time_course %>%
     split(.$FstLst) %>%
     lapply(make_time_cluster_data,
            predictor_column = "Condition",
@@ -388,40 +388,40 @@ if(run_model){
            test = "t.test",
            threshold = threshold_t)
   ## Run analysis
-  LT.time_cluster_tail.analysis <- LT.time_cluster_tail %>%
+  prop_tail.time_cluster.analysis <- prop_tail.time_cluster %>%
     lapply(analyze_time_clusters,
            within_subj = F,
            parallel = T)
-  bcbp.time <- proc.time() - t
+  prop_tail.time_course.time <- proc.time() - t
   ## Save clusters and analysis
-  saveRDS(LT.time_cluster_tail, paste0(save_path, "FstLst_bcbpClusters.rds"))
-  saveRDS(LT.time_cluster_tail.analysis, paste0(save_path, "FstLst_bcbpAnalysis.rds"))
+  saveRDS(prop_tail.time_cluster, paste0(save_path, "FstLst_bcbpClusters.rds"))
+  saveRDS(prop_tail.time_cluster.analysis, paste0(save_path, "FstLst_bcbpAnalysis.rds"))
 }else{
   ## Read the results
-  LT.time_cluster_tail <- readRDS(paste0(save_path, "FstLst_bcbpClusters.rds"))
-  LT.time_cluster_tail.analysis <- readRDS(paste0(save_path, "FstLst_bcbpAnalysis.rds"))
+  prop_tail.time_cluster <- readRDS(paste0(save_path, "FstLst_bcbpClusters.rds"))
+  prop_tail.time_cluster.analysis <- readRDS(paste0(save_path, "FstLst_bcbpAnalysis.rds"))
 }
 
 # PLOT
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
-  LT.fam.time_course.clusters <- LT.time_cluster_tail %>%
+  prop_tail.time_course.plot.clusters <- prop_tail.time_cluster %>%
     {lapply(seq_along(.),
             function(i){
-              df <- attr(LT.time_cluster_tail[[i]], "eyetrackingR")$clusters %>%
+              df <- attr(prop_tail.time_cluster[[i]], "eyetrackingR")$clusters %>%
                 mutate(FstLst = if(i == 1){"First Trials"}else{"Last Trials"})
             })} %>%
     bind_rows()
-  LT.fam.time_course.plot.per_fstlst <- ggplot(LT.time_course_tail,
-                                           aes(x = Time, y=Prop,
-                                               colour=Condition,
-                                               fill=Condition)) +
+  prop_tail.time_course.plot.per_fstlst <- ggplot(prop_tail.time_course,
+                                                  aes(x = Time, y=Prop,
+                                                      colour=Condition,
+                                                      fill=Condition)) +
     xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
-    facet_grid(FstLst~.) +
+    facet_grid(.~FstLst) +
     theme(legend.position = "top") + ylim(0,1) +
     stat_summary(fun.y='mean', geom='line', linetype = '61') +
     stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
-    geom_rect(data = LT.fam.time_course.clusters,
+    geom_rect(data = prop_tail.time_course.plot.clusters,
               inherit.aes = F,
               aes(xmin = StartTime, xmax = EndTime,
                   ymin = 0, ymax = 1),
@@ -431,8 +431,8 @@ if(generate_plots){
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ggsave(paste0(save_path, "FstLst_data.pdf"),
-         plot = LT.fam.time_course.plot.per_fstlst,
-         width = 3.5, height = 5)
+         plot = prop_tail.time_course.plot.per_fstlst,
+         width = 5.5, height = 2.5)
 }
 
 # FAMILIARISATION ANALYSIS: PROP AOI LOOKING PRE/POST LABEL ONSET ==================================
