@@ -106,7 +106,7 @@ LT.gaze_offset.data.correction <- d[[4]] %>%
                              T ~ as.double(CursorY))) %>%
   select(-c(Head, Tail, NewTail, OldTail, NewHead, OldHead, Centre, Target, Distractor))
   # Removing AOIs as they need updating
-## Saving heatmaps per participant pre-correction
+## Saving heatmaps per participant post-correction
 generate_plots <- F
 if(generate_plots){
   head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
@@ -371,7 +371,7 @@ prop_tail.time_course <- LT.fam %>%
                                               "FstLst"),
                           summarize_by = "Participant")
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T
+run_model <- F # Running the model takes around 50 seconds on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -403,7 +403,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   prop_tail.time_course.plot.clusters <- prop_tail.time_cluster %>%
     {lapply(seq_along(.),
