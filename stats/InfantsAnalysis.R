@@ -3,6 +3,7 @@ library(eyetrackingR)
 library(lme4)
 library(lmerTest)
 library(brms)
+library(coda)
 library(tidyverse)
 library(RColorBrewer)
 
@@ -404,7 +405,14 @@ if(run_model){
 # PLOT
 generate_plots <- F
 if(generate_plots){
-  LT.fam.time_course.plot.blocks <- ggplot(LT.time_course_tail,
+  LT.fam.time_course.clusters <- LT.time_cluster_tail %>%
+    {lapply(seq_along(.),
+            function(i){
+              df <- attr(LT.time_cluster_tail[[i]], "eyetrackingR")$clusters %>%
+                mutate(FstLst = if(i == 1){"First Trials"}else{"Last Trials"})
+            })} %>%
+    bind_rows()
+  LT.fam.time_course.plot.per_fstlst <- ggplot(LT.time_course_tail,
                                            aes(x = Time, y=Prop,
                                                colour=Condition,
                                                fill=Condition)) +
@@ -413,9 +421,17 @@ if(generate_plots){
     theme(legend.position = "top") + ylim(0,1) +
     stat_summary(fun.y='mean', geom='line', linetype = '61') +
     stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
-    geom_hline(yintercept = .5)
+    geom_rect(data = LT.fam.time_course.clusters,
+              inherit.aes = F,
+              aes(xmin = StartTime, xmax = EndTime,
+                  ymin = 0, ymax = 1),
+              alpha = 0.5,
+              fill = brewer.pal(3, "Dark2")[[3]]) +
+    geom_hline(yintercept = .5) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
   ggsave(paste0(save_path, "FstLst_data.pdf"),
-         plot = LT.fam.time_course.plot.blocks,
+         plot = LT.fam.time_course.plot.per_fstlst,
          width = 3.5, height = 5)
 }
 
@@ -683,7 +699,7 @@ if(run_model){
   new_old.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 # Plot jitter + mean&se
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   new_old.raw_predictions <- last(new_old.brms.models) %>%
@@ -1094,7 +1110,7 @@ if(run_model){
 }
 
 # Plotting boxplots
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   fam_switches.raw_predictions <- last(fam_switches.per_fstlst.brms.models) %>%
@@ -1313,7 +1329,7 @@ if(run_model){
 }
 
 # Plotting
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## First AOI (boxplot)
   ### Get data for plot
