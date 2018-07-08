@@ -331,32 +331,41 @@ if(generate_plots){
                                         colour = Condition,
                                         fill = Condition)) +
     theme_bw() + ylab("Looking to Tail (Prop)") +
-    coord_flip() + facet_grid(.~FstLst) + guides(fill = F, colour = F) +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() + facet_grid(.~FstLst) +
     geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
     geom_point(position = position_jitter(width = .15),
-               size = 1, alpha = .6) +
-    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
     geom_pointrange(data = prop_tail.predicted.hpdi.67,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = prop_tail.predicted.hpdi.89,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = prop_tail.predicted.hpdi.97,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ## Save plot
   ggsave(paste0(save_path, "FstLst_data.pdf"),
          prop_tail.per_fstlst.plot,
-         width = 5.5, height = 2.5)
+         width = 5.5, height = 3)
 }
 
 # FAMILIARISATION ANALYSIS: PROP TAIL LOOKING TIME COURSE BY FSTLST  ===============================
@@ -416,7 +425,7 @@ if(generate_plots){
                                                   aes(x = Time, y=Prop,
                                                       colour=Condition,
                                                       fill=Condition)) +
-    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
+    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") + theme_bw() +
     facet_grid(.~FstLst) +
     theme(legend.position = "top") + ylim(0,1) +
     stat_summary(fun.y='mean', geom='line', linetype = '61') +
@@ -772,33 +781,42 @@ if(generate_plots){
                              fill = Condition)) +
     theme_bw() + ylab("Looking to New Feature (Prop)") +
     geom_hline(yintercept = .5, colour = "black", linetype = 2) +
-    coord_flip() + facet_grid(.~ContrastType) + guides(fill = F, colour = F) +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() + facet_grid(.~ContrastType) +
     geom_flat_violin(position = position_nudge(x = .2),
                      colour = "black", alpha = .5, width = .7) +
     geom_point(position = position_jitter(width = .15),
-               size = 1, alpha = .6) +
-    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
     geom_pointrange(data = new_old.predicted.hpdi.67,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = new_old.predicted.hpdi.89,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = new_old.predicted.hpdi.97,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
          new_old.plot,
-         width = 5.5, height = 2.5)
+         width = 5.5, height = 3)
 }
 
 # CONTRAST TEST ANALYSIS: PROP NEW FEATURE LOOKING TIME COURSE BY FSTLST  ==========================
@@ -1169,33 +1187,42 @@ if(generate_plots){
                                              colour = Condition,
                                              fill = Condition)) +
     theme_bw() + ylab("Number of switches between AOIs") +
-    coord_flip() + facet_grid(.~FstLst) + guides(fill = F, colour = F) +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() + facet_grid(.~FstLst) +
     geom_flat_violin(position = position_nudge(x = .2),
                      colour = "black", alpha = .5, width = .7) +
     geom_point(position = position_jitter(width = 0.15, height = 0),
-               size = 1, alpha = .6) +
-    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
     geom_pointrange(data = fam_switches.predicted.hpdi.67,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = fam_switches.predicted.hpdi.89,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = fam_switches.predicted.hpdi.97,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
          fam_switches.per_fstlst.plot,
-         width = 5.5, height = 2.5)
+         width = 5.5, height = 3)
 }
 
 # FAMILIARISATION: FIRST LOOK ======================================================================
@@ -1410,30 +1437,39 @@ if(generate_plots){
                                           colour = Condition,
                                           fill = Condition)) +
     theme_bw() + ylab("Number of first look to AOI") +
-    coord_flip() + facet_grid(AOI~FstLst) + guides(fill = F, colour = F) +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() + facet_grid(AOI~FstLst) +
     geom_flat_violin(position = position_nudge(x = .2),
                      colour = "black", alpha = .5, width = .7) +
     geom_point(position = position_jitter(width = 0.15, height = 0),
-               size = 1, alpha = .6) +
-    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
     geom_pointrange(data = first_aoi.predicted.hpdi.67,
                     aes(x = Condition,
                         y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = first_aoi.predicted.hpdi.89,
                     aes(x = Condition,
                         y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = first_aoi.predicted.hpdi.97,
                     aes(x = Condition,
                         y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ### Save plot
@@ -1499,31 +1535,40 @@ if(generate_plots){
                                              colour = Condition,
                                              fill = Condition)) +
     theme_bw() + ylab("Time to first look to Tail") + ylim(0, 5000) +
-    coord_flip() + facet_grid(.~FstLst) + guides(fill = F, colour = F) +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() + facet_grid(.~FstLst) +
     geom_flat_violin(position = position_nudge(x = .2),
                      colour = "black", alpha = .5, width = .7) +
     geom_point(position = position_jitter(width = 0.15, height = 0),
-               size = 1, alpha = .6) +
-    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
     geom_pointrange(data = first_tail.predicted.hpdi.67,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = first_tail.predicted.hpdi.89,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = first_tail.predicted.hpdi.97,
                     aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ### Save plot
   ggsave(paste0(save_path, "FirstTail_data.pdf"),
          first_tail.per_fstlst.plot,
-         width = 5.5, height = 2.5)
+         width = 5.5, height = 3)
 }
