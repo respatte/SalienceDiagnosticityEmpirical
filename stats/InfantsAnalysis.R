@@ -331,7 +331,7 @@ if(generate_plots){
                                         colour = Condition,
                                         fill = Condition)) +
     theme_bw() + ylab("Looking to Tail (Prop)") +
-    coord_flip() + facet_grid(FstLst~.) + guides(fill = F, colour = F) +
+    coord_flip() + facet_grid(.~FstLst) + guides(fill = F, colour = F) +
     geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
     geom_point(position = position_jitter(width = .15),
                size = 1, alpha = .6) +
@@ -356,7 +356,7 @@ if(generate_plots){
   ## Save plot
   ggsave(paste0(save_path, "FstLst_data.pdf"),
          prop_tail.per_fstlst.plot,
-         width = 5, height = 5)
+         width = 5.5, height = 2.5)
 }
 
 # FAMILIARISATION ANALYSIS: PROP TAIL LOOKING TIME COURSE BY FSTLST  ===============================
@@ -772,7 +772,7 @@ if(generate_plots){
                              fill = Condition)) +
     theme_bw() + ylab("Looking to New Feature (Prop)") +
     geom_hline(yintercept = .5, colour = "black", linetype = 2) +
-    coord_flip() + facet_grid(ContrastType~.) + guides(fill = F, colour = F) +
+    coord_flip() + facet_grid(.~ContrastType) + guides(fill = F, colour = F) +
     geom_flat_violin(position = position_nudge(x = .2),
                      colour = "black", alpha = .5, width = .7) +
     geom_point(position = position_jitter(width = .15),
@@ -798,7 +798,7 @@ if(generate_plots){
   ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
          new_old.plot,
-         width = 5, height = 5)
+         width = 5.5, height = 2.5)
 }
 
 # CONTRAST TEST ANALYSIS: PROP NEW FEATURE LOOKING TIME COURSE BY FSTLST  ==========================
@@ -980,7 +980,7 @@ if(generate_plots){
   ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
          prop_target.plot,
-         width = 5, height = 2)
+         width = 5.5, height = 2.5)
 }
 
 # WORD LEARNING TEST ANALYSIS: PROP TARGET TIME COURSE FOR LABEL CONDITION  ========================
@@ -1169,7 +1169,7 @@ if(generate_plots){
                                              colour = Condition,
                                              fill = Condition)) +
     theme_bw() + ylab("Number of switches between AOIs") +
-    coord_flip() + facet_grid(FstLst~.) + guides(fill = F, colour = F) +
+    coord_flip() + facet_grid(.~FstLst) + guides(fill = F, colour = F) +
     geom_flat_violin(position = position_nudge(x = .2),
                      colour = "black", alpha = .5, width = .7) +
     geom_point(position = position_jitter(width = 0.15, height = 0),
@@ -1195,7 +1195,7 @@ if(generate_plots){
   ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
          fam_switches.per_fstlst.plot,
-         width = 5, height = 5)
+         width = 5.5, height = 2.5)
 }
 
 # FAMILIARISATION: FIRST LOOK ======================================================================
@@ -1439,7 +1439,7 @@ if(generate_plots){
   ### Save plot
   ggsave(paste0(save_path, "FirstAOI_data.pdf"),
          first_aoi.per_fstlst.plot,
-         width = 7, height = 5)
+         width = 5.5, height = 5)
   ## Time to first tail look (boxplot)
   ### Get brm predicted values
   first_tail.raw_predictions <- last(first_tail.per_fstlst.brms.models) %>%
@@ -1499,7 +1499,7 @@ if(generate_plots){
                                              colour = Condition,
                                              fill = Condition)) +
     theme_bw() + ylab("Time to first look to Tail") + ylim(0, 5000) +
-    coord_flip() + facet_grid(FstLst~.) + guides(fill = F, colour = F) +
+    coord_flip() + facet_grid(.~FstLst) + guides(fill = F, colour = F) +
     geom_flat_violin(position = position_nudge(x = .2),
                      colour = "black", alpha = .5, width = .7) +
     geom_point(position = position_jitter(width = 0.15, height = 0),
@@ -1525,5 +1525,5 @@ if(generate_plots){
   ### Save plot
   ggsave(paste0(save_path, "FirstTail_data.pdf"),
          first_tail.per_fstlst.plot,
-         width = 5, height = 5)
+         width = 5.5, height = 2.5)
 }
