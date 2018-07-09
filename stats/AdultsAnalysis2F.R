@@ -1,6 +1,6 @@
 # LIBRARY IMPORTS ==================================================================================
 library(lme4);library(lmerTest)
-library(brms)
+library(brms); library(coda)
 library(nortest)
 library(tidyverse); library(broom)
 library(eyetrackingR)
@@ -16,6 +16,7 @@ detach("package:snow")
 # Get behavioural and LT data, excluding outliers in terms of
 # number of blocks before learning (graphically, from boxplot)
 behaviour <- d[[2]] %>%
+  mutate(Condition = relevel(Condition, ref = "No Label")) %>%
   subset((Condition == "Label" & NBlocks < 8) |
            (Condition == "No Label" & NBlocks < 5))
 rote_learning_check <- behaviour %>%
@@ -25,6 +26,7 @@ rote_learning_check <- behaviour %>%
   subset(a == 0) # Participants with mistakes at test (including missed item)
 # No rote learners
 LT.clean <- d[[4]] %>%
+  mutate(Condition = relevel(Condition, ref = "No Label")) %>%
   subset((Condition == "Label" & NBlocks < 8) |
            (Condition == "No Label" & NBlocks < 5)) %>%
   make_eyetrackingr_data(participant_column = "Participant",
@@ -302,25 +304,57 @@ if(generate_plots){
          width = 7, height = 3)
 }
 
-# BEHAVIOURAL ANALYSIS: PARTICIPANTS AND BLOCKS ====================================================
-run_behavioural <- F
-if(run_behavioural){
-  # Get how many participants for each block, and make a bar plot
-  behaviour.parts_per_block <- behaviour %>%
-    subset(Block > 0) %>%
-    group_by(Block, Condition) %>%
-    summarise(N_Participants = n_distinct(Participant))
-  behaviour.parts_per_block.plot <- ggplot(behaviour.parts_per_block,
-                                           aes(x = Block, y = N_Participants, fill = Condition)) +
-    theme_apa(legend.pos = "topright") + scale_fill_discrete(labels = c("Label", "No Label")) +
-    scale_x_continuous(breaks = 1:10) + ylab("Participants") +
-    geom_col(position = "dodge")
-  ggsave("../results/adults_2f/ParticipantsPerBlock.pdf", plot = behaviour.parts_per_block.plot,
-         width = 3.5, height = 2.7)
-  # Get number of blocks to learning per participant, plot a violin
-  behaviour.blocks_per_part <- behaviour %>%
-    select(c(Participant, Condition, NBlocks)) %>%
-    unique()
+# BEHAVIOURAL ANALYSIS: BLOCKS PER PARTICIPANTS ====================================================
+save_path <- "../results/adults_2f/nBlocks/"
+# Get number of blocks to learning per participant
+blocks_per_part <- behaviour %>%
+  select(c(Participant, Condition, NBlocks)) %>%
+  unique()
+# Test NBlocks ~ Condition
+run_model <- T
+if(run_model){
+  t <- proc.time()
+  ## STB stats
+  blocks_per_part.normality <- ad.test(blocks_per_part$NBlocks)
+  blocks_per_part.wilcox <- wilcox.test(NBlocks ~ Condition,
+                                        data = blocks_per_part)
+  ## brm
+  ### Set priors for models other than intercept-only
+  priors.blocks_per_part <- list(NULL,
+                                 set_prior("normal(0,.5)", class = "b"))
+  ### Set all nested formulas for model comparisons
+  formulas.blocks_per_part <- list(NBlocks ~ 1,
+                                   NBlocks ~ 1 + Condition)
+  ### Get brms results
+  brms.results <- bayes_factor.brm_fixef(formulas.blocks_per_part,
+                                         blocks_per_part,
+                                         priors.blocks_per_part)
+  blocks_per_part.brms.models <- brms.results[[1]]
+  blocks_per_part.brms.bayes_factors <- brms.results[[2]]
+  blocks_per_part.time <- proc.time() - t
+  ## Save all the results
+  saveRDS(blocks_per_part.normality, paste0(save_path, "normality.rds"))
+  saveRDS(blocks_per_part.wilcox, paste0(save_path, "wilcox.rds"))
+  lapply(seq_along(blocks_per_part.brms.models),
+         function(i){
+           saveRDS(blocks_per_part.brms.models[[i]],
+                   paste0(save_path, "brmsModel", i, ".rds"))
+         })
+  saveRDS(blocks_per_part.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
+}else{
+  ## Read all the results
+  blocks_per_part.normality <- readRDS(paste0(save_path, "normality.rds"))
+  blocks_per_part.wilcox <- readRDS(paste0(save_path, "wilcox.rds"))
+  blocks_per_part.brms.models <- lapply(1:2,
+                                        function(i){
+                                          readRDS(paste0(save_path, "brmsModel", i, ".rds"))
+                                        })
+  blocks_per_part.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
+}
+
+# Plotting
+generate_plots <- T
+if(generate_plots){
   behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
                                            aes(x = Condition, y = NBlocks, fill = Condition)) +
     theme_apa(legend.pos = "topright") + ylab("Blocks") +
@@ -329,10 +363,6 @@ if(run_behavioural){
     geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15)
   ggsave("../results/adults_2f/BlocksPerParticipant.pdf", plot = behaviour.blocks_per_part.plot,
          width = 3.5, height = 2.9)
-  # Stats for the number of blocks per participant
-  behaviour.blocks_per_part.normality <- ad.test(behaviour.blocks_per_part$NBlocks)
-  behaviour.blocks_per_part.freq_test <- wilcox.test(NBlocks ~ Condition,
-                                                     data = behaviour.blocks_per_part)
 }
 # BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*RT) ===================================================
 if(run_behavioural){
