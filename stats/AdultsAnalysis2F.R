@@ -47,7 +47,7 @@ prop_tail.per_fstlst <- LT.clean %>%
                                             "StimLabel"))
 
 # Testing ArcSin ~ FstLst*Condition
-run_model <- T # Running the models takes around 20 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 20 minutes on a 4.40GHz 12-core
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   t <- proc.time()
@@ -150,7 +150,7 @@ trial_parts.per_fstlst <- LT.clean %>%
                                             "StimLabel"))
 
 # Testing ArcSin ~ FstLst*CurrentObject(TrialParts)*Condition
-run_model <- T # Running the models takes around 4h30 on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 4h30 on a 4.40GHz 12-core
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   t <- proc.time()
