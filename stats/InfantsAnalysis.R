@@ -861,10 +861,13 @@ prop_target <- LT.test.wl %>%
                         predictor_columns = "CategoryName") %>%
   drop_na(ArcSin) %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5))) # Value centered on chance looking, useful for test
-## Check for amount of data available
-participants <- prop_target %>%
+## Check for amount of data available, and word-learning score
+prop_target.participants <- prop_target %>%
   group_by(Participant) %>%
-  summarise(nTrials = n_distinct(TrialId))
+  summarise(nTrials = n_distinct(TrialId),
+            Score = sum(SamplesInAOI/SamplesTotal)/nTrials,
+            nCorrect = sum((SamplesInAOI/SamplesTotal) > .5),
+            Perfect = nTrials == nCorrect)
 # Testing in general
 run_model <- F # Running the models takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
