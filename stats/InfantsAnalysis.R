@@ -2,6 +2,7 @@
 library(eyetrackingR)
 library(lme4)
 library(lmerTest)
+library(emmeans)
 library(brms)
 library(coda)
 library(tidyverse)
@@ -646,7 +647,7 @@ new_old <- LT.test.ctr %>%
   drop_na(ArcSin) %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5)))
 ## Check for amount of data available
-participants.new_old <- new_old %>%
+new_old.participants <- new_old %>%
   group_by(Participant, Condition) %>%
   summarise(nTrials = n_distinct(TrialId)) %>%
   group_by(Condition, nTrials) %>%
@@ -660,6 +661,9 @@ if(run_model){
                                   (1 | Participant),
                                 data = new_old)
   new_old.lmer.anova <- anova(new_old.lmer.model, type = 1)
+  new_old.lmer.emmeans <- emmeans(new_old.lmer.model, ~ ContrastType | Condition,
+                                  options = list(infer = c(T, T), null = 0,
+                                                 level = .89))
   ## Run brm
   ### Set priors for models other than intercept-only
   priors.new_old <- list(set_prior("uniform(-.8,.8)",
@@ -686,26 +690,44 @@ if(run_model){
                                          no_intercept = 1)
   new_old.brms.models <- brms.results[[1]]
   new_old.brms.bayes_factors <- brms.results[[2]]
+  new_old.brms.emmeans <- emmeans(last(new_old.brms.models), ~ ContrastType | Condition,
+                                  options = list(level = .89))
+  new_old.brms.emmeans.bayes_factor <- hypothesis(last(new_old.brms.models),
+                                                  c("Intercept > 0",                 # No Label Head
+                                                    "Intercept + ContrastTypeTail > 0", # NL Tail
+                                                    "Intercept + ConditionLabel > 0",   # Label Head
+                                                    paste("Intercept +",                # Label Tail
+                                                          "ConditionLabel +",
+                                                          "ContrastTypeTail +",
+                                                          "ContrastTypeTail:ConditionLabel",
+                                                          "> 0")),
+                                                  alpha = .11)
   new_old.time <- proc.time() - t
   ## Save all the results
   saveRDS(new_old.lmer.model, paste0(save_path, "lmerModel.rds"))
   saveRDS(new_old.lmer.anova, paste0(save_path, "lmerAnova.rds"))
+  saveRDS(new_old.lmer.emmeans, paste0(save_path, "lmerEMmeans.rds"))
   lapply(seq_along(new_old.brms.models),
          function(i){
            saveRDS(new_old.brms.models[[i]],
                    paste0(save_path, "brmsModel", i, ".rds"))
          })
   saveRDS(new_old.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
+  saveRDS(new_old.brms.emmeans, paste0(save_path, "brmsEMmeans.rds"))
+  saveRDS(new_old.brms.emmeans.bayes_factor, paste0(save_path, "brmsEMmeansBF.rds"))
 }else{
   ## Read all the results
   new_old.lmer.model <- readRDS(paste0(save_path, "lmerModel.rds"))
   new_old.lmer.anova <- readRDS(paste0(save_path, "lmerAnova.rds"))
+  new_old.lmer.emmeans <- readRDS(paste0(save_path, "lmerEMmeans.rds"))
   new_old.brms.models <- lapply(1:5,
                                 function(i){
                                   readRDS(paste0(save_path,
                                                  "brmsModel", i, ".rds"))
                                 })
   new_old.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
+  new_old.brms.emmeans <- readRDS(paste0(save_path, "brmsEMmeans.rds"))
+  new_old.brms.emmeans.bayes_factors <- readRDS(paste0(save_path, "brmsEMmeansBF.rds"))
 }
 # Plot jitter + mean&se
 generate_plots <- F
