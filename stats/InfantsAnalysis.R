@@ -992,7 +992,7 @@ if(generate_plots){
                          aes(x = AOI, y = Prop,
                              colour = AOI,
                              fill = AOI)) +
-    theme_bw() + ylab("Looking to New Feature (Prop)") +
+    theme_bw() + ylab("Looking to Target (Prop)") +
     theme(axis.title.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.text.y = element_blank()) +
