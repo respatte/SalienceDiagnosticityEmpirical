@@ -26,9 +26,10 @@ stb.analysis <- function(df.list){
                           options = list(infer = c(T, T), null = 0,
                                          level = .89)) %>%
                   as_tibble()
-                return(sum(t$p.value < .05))
+                #return(sum(t$p.value < .05))
+                return(t)
               })
-  return(unlist(e))
+  return(bind_rows(e))
 }
 
 # Define Bayesian analysis function, returning emmeans bf
@@ -56,9 +57,10 @@ bayesian.analysis <- function(df.list){
                                        alpha = .11)
                       return(as_tibble(bf$hypothesis))
                     })
-  e <- lapply(bf.list,
-              function(bf){sum(bf$Evid.Ratio > 3)})
-  return(unlist(e))
+  #e <- lapply(bf.list,
+  #            function(bf){sum(bf$Evid.Ratio > 3)})
+  bf <- bind_rows(bf.list)
+  return(bf)
 }
 
 # Get evidence summary from simulations
@@ -68,3 +70,22 @@ stb.time <- proc.time() - t
 t <- proc.time()
 new_old.sims.bayesian.evid <- bayesian.analysis(new_old.sims)
 bayesian.time <- proc.time() - t
+
+# Plot p-values
+new_old.sims.stb.plot <- ggplot(new_old.sims.stb.evid,
+                                aes(y = p.value,
+                                    x = ContrastType:Condition,
+                                    colour = ContrastType:Condition)) +
+  geom_violin(width=2) +
+  geom_boxplot(width=.1) +
+  geom_jitter(width = .1, height = 0, alpha = .2) +
+  theme(legend.position = "top")
+# Plot b-values
+new_old.sims.bayesian.plot <- ggplot(new_old.sims.bayesian.evid,
+                                     aes(y = Evid.Ratio,
+                                         x = Hypothesis,
+                                         colour = Hypothesis)) +
+  geom_violin(width=2) +
+  geom_boxplot(width=.1) +
+  geom_jitter(width = .1, height = 0, alpha = .2) +
+  theme(legend.position = "top")
