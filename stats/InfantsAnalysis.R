@@ -648,9 +648,9 @@ new_old <- LT.test.ctr %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5)))
 ## Check for amount of data available
 new_old.participants <- new_old %>%
-  group_by(Participant, Condition) %>%
+  group_by(Participant, Condition, ContrastType) %>%
   summarise(nTrials = n_distinct(TrialId)) %>%
-  group_by(Condition, nTrials) %>%
+  group_by(Condition, ContrastType, nTrials) %>%
   summarise(Participants = n_distinct(Participant))
 # Testing Prop ~ ContrastType*Condition
 run_model <- F # Running the models takes around 5 minutes on a 4.40GHz 12-core
@@ -888,6 +888,7 @@ prop_target.participants <- prop_target %>%
   group_by(Participant) %>%
   summarise(nTrials = n_distinct(TrialId),
             Score = sum(SamplesInAOI/SamplesTotal)/nTrials,
+            ScoreAboveChance = Score > .5,
             nCorrect = sum((SamplesInAOI/SamplesTotal) > .5),
             Perfect = nTrials == nCorrect)
 # Testing in general
