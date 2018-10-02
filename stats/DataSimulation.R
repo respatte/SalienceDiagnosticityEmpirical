@@ -16,7 +16,7 @@ H_naught.test <- function(N){
                                                          times = N/2, each = 2)),
                                   ContrastType = factor(rep(c("Head", "Tail"), times = N)))),
                       times = 100)
-  
+
   # Define STB analysis function, returning emmeans analysis
   stb.analysis <- function(df.list){
     e <- lapply(df.list,
@@ -33,7 +33,7 @@ H_naught.test <- function(N){
                 })
     return(bind_rows(e))
   }
-  
+
   # Define Bayesian analysis function, returning emmeans bf
   bayesian.analysis <- function(df.list){
     p <- c(set_prior("uniform(-.8,.8)",
@@ -64,7 +64,7 @@ H_naught.test <- function(N){
     bf <- bind_rows(bf.list)
     return(bf)
   }
-  
+
   # Get evidence summary from simulations
   t <- proc.time()
   new_old.sims.stb.evid <- stb.analysis(new_old.sims)
@@ -74,7 +74,7 @@ H_naught.test <- function(N){
     mutate(Condition = factor(ifelse(grepl("NoLabel", Hypothesis), "No Label", "Label")),
            ContrastType = factor(ifelse(grepl("Tail", Hypothesis), "Tail", "Head")))
   bayesian.time <- proc.time() - t
-  
+
   # Plot p-values
   new_old.sims.stb.plot <- ggplot(new_old.sims.stb.evid,
                                   aes(y = p.value,
@@ -100,4 +100,4 @@ H_naught.test <- function(N){
 }
 
 new_old.sims.results.42 <- H_naught.test(N = 42)
-new_old.sims.results.1000 <- H_naught.test(N = 1000)
+new_old.sims.results.200 <- H_naught.test(N = 200)
