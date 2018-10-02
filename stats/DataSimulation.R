@@ -10,12 +10,12 @@ library(tidyverse)
 H_naught.test <- function(N){
   # Generate random data
   # n=42 * 2trials from real data, mean to 0, sd=.5 from real data
-  new_old.sims <- rep(list(tibble(ChanceArcsin = rnorm(N*2, 0, .5),
-                                  Participant = rep(1:N, each = 2),
-                                  Condition = factor(rep(c("Label", "No Label"),
-                                                         times = N/2, each = 2)),
-                                  ContrastType = factor(rep(c("Head", "Tail"), times = N)))),
-                      times = 100)
+  new_old.sims <- replicate(100,
+                            list(tibble(ChanceArcsin = rnorm(N*2, 0, .5),
+                                        Participant = rep(1:N, each = 2),
+                                        Condition = factor(rep(c("Label", "No Label"),
+                                                               times = N/2, each = 2)),
+                                        ContrastType = factor(rep(c("Head", "Tail"), times = N)))))
 
   # Define STB analysis function, returning emmeans analysis
   stb.analysis <- function(df.list){
