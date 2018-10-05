@@ -427,7 +427,7 @@ prop_tail.time_course.per_fstlst <- LT.clean %>%
                           summarize_by = "Participant")
 
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T # Running the model takes around 2 minutes on a 4.40GHz 12-core
+run_model <- F # Running the model takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -470,13 +470,15 @@ if(generate_plots){
     xlab('Time in Trial') + ylab("Looking to Tail (Prop)") + theme(legend.pos = "top") +
     facet_grid(.~FstLst) + ylim(0,1) +
     scale_x_continuous(breaks = c(-1000, 0, 1000, 2000, 3000)) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2") +
     geom_vline(data = intercept, aes(xintercept = x_int), linetype = "62", alpha = .5) +
     stat_summary(fun.y='mean', geom='line', linetype = '61') +
     stat_summary(fun.data="mean_se", geom='ribbon', alpha= .33, colour=NA) +
     geom_hline(yintercept = .5)
   ggsave(paste0(save_path, "FstLst_data.pdf"),
          plot = prop_tail.time_course.per_fstlst.plot,
-         width = 7, height = 3)
+         width = 7, height = 3, dpi = 600)
 }
 
 # TRAINING LT ANALYSIS: AOI SWITCHES ===============================================================
