@@ -420,14 +420,14 @@ save_path <- "../results/adults_2f/PropTail/TimeCourse_"
 prop_tail.time_course.per_fstlst <- LT.clean %>%
   drop_na(FstLst) %>%
   subset_by_window(window_start_time = -1000, rezero = F) %>%
-  make_time_sequence_data(time_bin_size = 50,
+  make_time_sequence_data(time_bin_size = 100,
                           aois = c("Tail"),
                           predictor_columns=c("Condition",
                                               "FstLst"),
                           summarize_by = "Participant")
 
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- F # Running the model takes around 2 minutes on a 4.40GHz 12-core
+run_model <- T # Running the model takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
