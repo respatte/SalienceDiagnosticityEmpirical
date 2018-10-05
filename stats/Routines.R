@@ -130,8 +130,6 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                   grepl("_S2", MediaName) ~ 3400,
                                   grepl("WLG", MediaName) ~ 2300,
                                   grepl("WLS", MediaName) ~ 2050),
-           PrePost = case_when(TimeStamp <= LabelOnset ~ "Pre Label Onset",
-                               TimeStamp >= LabelOnset+360 ~ "Post Label Onset"),
            TrialEnd = LabelOnset + 3000,
            Stimulus = ifelse(Phase == "Familiarisation",
                              sapply(strsplit(as.character(MediaName), "_"), "[", 2),
@@ -191,7 +189,9 @@ LT_data.to_eyetrackingR <- function(df, participants, AOIs){
   }
   # Set starting time of all trials to 0
   df %<>% group_by(Participant, TrialId) %>%
-    mutate(TimeStamp = TimeStamp - min(TimeStamp))
+    mutate(TimeStamp = TimeStamp - min(TimeStamp),
+           PrePost = case_when(TimeStamp <= LabelOnset ~ "Pre Label Onset",
+                               TimeStamp >= LabelOnset+360 ~ "Post Label Onset"))
   # Additional useful variable depending on participants
   if(grepl("adults_[23]f", participants)){
     df %<>% subset(CurrentObject == "Stimulus") %>%

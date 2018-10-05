@@ -458,7 +458,7 @@ prop_tail.pre_post.fstlst <- LT.fam %>%
                                             "CategoryName")) %>%
   drop_na(ArcSin)
 # Testing Prop ~ FstLst*PrePost*Condition
-run_model <- F # Running the models takes around 8 minutes on a 4.40GHz 12-core
+run_model <- T # Running the models takes around 8 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -535,7 +535,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
   pre_post.raw_predictions <- last(pre_post.per_fstlst.brms.models) %>%
