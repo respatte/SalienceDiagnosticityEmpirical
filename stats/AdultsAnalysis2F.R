@@ -119,7 +119,7 @@ if(run_model){
 }
 
 # PLOTTING
-generate_plots <- T
+generate_plots <- F
 ## Plot jitter + mean&se + lines
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
@@ -315,6 +315,103 @@ if(run_model){
                                                               "FstLst_brmsModel", i, ".rds"))
                                              })
   trial_parts.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FstLst_brmsBF.rds"))
+}
+
+generate_plots <- F
+if(generate_plots){
+  ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
+  trial_parts.raw_predictions <- last(trial_parts.per_fstlst.brms.models) %>%
+    predict(summary = F,
+            transform = function(x){sin(x)^2}) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:nrow(.))
+  trial_parts.predicted <- trial_parts.per_fstlst %>%
+    mutate(RowNames = 1:nrow(.)) %>%
+    select(CurrentObject, FstLst, Condition, RowNames) %>%
+    inner_join(trial_parts.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = Predicted, -c(CurrentObject, FstLst, Condition))
+  trial_parts.predicted.hpdi.97 <- trial_parts.predicted %>%
+    select(-Sample) %>%
+    split(list(.$CurrentObject, .$FstLst, .$Condition)) %>%
+    lapply(function(df){
+      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
+      df.summary <- df %>%
+        group_by(CurrentObject, FstLst, Condition) %>%
+        summarise(Mean = mean(df$Predicted)) %>%
+        mutate(lb = hpdi[1,"lower"],
+               ub = hpdi[1,"upper"])
+      return(df.summary)
+    }) %>%
+    bind_rows()
+  trial_parts.predicted.hpdi.89 <- trial_parts.predicted %>%
+    select(-Sample) %>%
+    split(list(.$CurrentObject, .$FstLst, .$Condition)) %>%
+    lapply(function(df){
+      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
+      df.summary <- df %>%
+        group_by(CurrentObject, FstLst, Condition) %>%
+        summarise(Mean = mean(df$Predicted)) %>%
+        mutate(lb = hpdi[1,"lower"],
+               ub = hpdi[1,"upper"])
+      return(df.summary)
+    }) %>%
+    bind_rows()
+  trial_parts.predicted.hpdi.67 <- trial_parts.predicted %>%
+    select(-Sample) %>%
+    split(list(.$CurrentObject, .$FstLst, .$Condition)) %>%
+    lapply(function(df){
+      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
+      df.summary <- df %>%
+        group_by(CurrentObject, FstLst, Condition) %>%
+        summarise(Mean = mean(df$Predicted)) %>%
+        mutate(lb = hpdi[1,"lower"],
+               ub = hpdi[1,"upper"])
+      return(df.summary)
+    }) %>%
+    bind_rows()
+  ## Plot raincloud + predicted mean&HPDIs per FstLst
+  trial_parts.per_fstlst.plot <- ggplot(trial_parts.per_fstlst,
+                                      aes(x = Condition, y = Prop,
+                                          colour = Condition,
+                                          fill = Condition)) +
+    theme_bw() + ylab("Looking to Tail (Prop)") +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() + facet_grid(CurrentObject~FstLst) +
+    geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
+    geom_point(position = position_jitter(width = .15),
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
+    geom_pointrange(data = trial_parts.predicted.hpdi.67,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = 1.5, size = 1.5,
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
+    geom_pointrange(data = trial_parts.predicted.hpdi.89,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = .5, size = 1,
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
+    geom_pointrange(data = trial_parts.predicted.hpdi.97,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = .5, size = .5,
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ## Save plot
+  ggsave(paste0(save_path, "FstLst_data.pdf"),
+         trial_parts.per_fstlst.plot,
+         width = 5.5, height = 7)
 }
 
 # TRAINING LT ANALYSIS: TAIL LOOKING TIME COURSE ===================================================
