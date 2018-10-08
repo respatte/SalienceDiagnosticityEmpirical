@@ -569,7 +569,8 @@ if(run_model){
   ### Get brms results
   brms.results <- bayes_factor.brm_fixef(formulas.blocks_per_part,
                                          blocks_per_part,
-                                         priors.blocks_per_part)
+                                         priors.blocks_per_part,
+                                         family = poisson())
   blocks_per_part.brms.models <- brms.results[[1]]
   blocks_per_part.brms.bayes_factors <- brms.results[[2]]
   blocks_per_part.time <- proc.time() - t
@@ -593,17 +594,100 @@ if(run_model){
   blocks_per_part.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 
-# Plotting
 generate_plots <- T
 if(generate_plots){
-  behaviour.blocks_per_part.plot <- ggplot(behaviour.blocks_per_part,
-                                           aes(x = Condition, y = NBlocks, fill = Condition)) +
-    theme_apa(legend.pos = "topright") + ylab("Blocks") +
-    scale_fill_discrete(labels = c("Label", "No Label")) +
-    geom_violin() +
-    geom_boxplot(alpha = 0, outlier.alpha = 1, width = .15)
-  ggsave("../results/adults_2f/BlocksPerParticipant.pdf", plot = behaviour.blocks_per_part.plot,
-         width = 3.5, height = 2.9)
+  ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
+  blocks_per_part.raw_predictions <- last(blocks_per_part.brms.models) %>%
+    predict(summary = F) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:nrow(.))
+  blocks_per_part.predicted <- blocks_per_part %>%
+    mutate(RowNames = 1:nrow(.)) %>%
+    select(Condition, RowNames) %>%
+    inner_join(blocks_per_part.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = Predicted, -c(Condition))
+  blocks_per_part.predicted.hpdi.97 <- blocks_per_part.predicted %>%
+    select(-Sample) %>%
+    split(list(.$Condition)) %>%
+    lapply(function(df){
+      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
+      df.summary <- df %>%
+        group_by(Condition) %>%
+        summarise(Mean = mean(df$Predicted)) %>%
+        mutate(lb = hpdi[1,"lower"],
+               ub = hpdi[1,"upper"])
+      return(df.summary)
+    }) %>%
+    bind_rows()
+  blocks_per_part.predicted.hpdi.89 <- blocks_per_part.predicted %>%
+    select(-Sample) %>%
+    split(list(.$Condition)) %>%
+    lapply(function(df){
+      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
+      df.summary <- df %>%
+        group_by(Condition) %>%
+        summarise(Mean = mean(df$Predicted)) %>%
+        mutate(lb = hpdi[1,"lower"],
+               ub = hpdi[1,"upper"])
+      return(df.summary)
+    }) %>%
+    bind_rows()
+  blocks_per_part.predicted.hpdi.67 <- blocks_per_part.predicted %>%
+    select(-Sample) %>%
+    split(list(.$Condition)) %>%
+    lapply(function(df){
+      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
+      df.summary <- df %>%
+        group_by(Condition) %>%
+        summarise(Mean = mean(df$Predicted)) %>%
+        mutate(lb = hpdi[1,"lower"],
+               ub = hpdi[1,"upper"])
+      return(df.summary)
+    }) %>%
+    bind_rows()
+  ## Plot raincloud + predicted mean&HPDIs per FstLst
+  blocks_per_part.plot <- ggplot(blocks_per_part,
+                                        aes(x = Condition, y = NBlocks,
+                                            colour = Condition,
+                                            fill = Condition)) +
+    theme_bw() + ylab("Number of Blocks to Learning") +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() +
+    geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
+    geom_point(position = position_jitter(width = .15, height = .05),
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
+    geom_pointrange(data = blocks_per_part.predicted.hpdi.67,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = 1.5, size = 1.5,
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
+    geom_pointrange(data = blocks_per_part.predicted.hpdi.89,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = .5, size = 1,
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
+    geom_pointrange(data = blocks_per_part.predicted.hpdi.97,
+                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    colour = brewer.pal(3, "Dark2")[[3]],
+                    fatten = .5, size = .5,
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ## Save plot
+  ggsave(paste0(save_path, "NBlocks_data.pdf"),
+         blocks_per_part.plot,
+         width = 4, height = 3, dpi = 600)
 }
 # BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*RT) ===================================================
 if(run_behavioural){
