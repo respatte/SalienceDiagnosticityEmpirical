@@ -552,7 +552,7 @@ blocks_per_part <- behaviour %>%
   select(c(Participant, Condition, NBlocks)) %>%
   unique()
 # Test NBlocks ~ Condition
-run_model <- T
+run_model <- F
 if(run_model){
   t <- proc.time()
   ## STB stats
@@ -594,7 +594,7 @@ if(run_model){
   blocks_per_part.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
   blocks_per_part.raw_predictions <- last(blocks_per_part.brms.models) %>%
