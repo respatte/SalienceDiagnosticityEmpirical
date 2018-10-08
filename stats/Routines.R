@@ -189,9 +189,7 @@ LT_data.to_eyetrackingR <- function(df, participants, AOIs){
   }
   # Set starting time of all trials to 0
   df %<>% group_by(Participant, TrialId) %>%
-    mutate(TimeStamp = TimeStamp - min(TimeStamp),
-           PrePost = case_when(TimeStamp <= LabelOnset ~ "Pre Label Onset",
-                               TimeStamp >= LabelOnset+360 ~ "Post Label Onset"))
+    mutate(TimeStamp = TimeStamp - min(TimeStamp))
   # Additional useful variable depending on participants
   if(grepl("adults_[23]f", participants)){
     df %<>% subset(CurrentObject == "Stimulus") %>%
@@ -199,6 +197,10 @@ LT_data.to_eyetrackingR <- function(df, participants, AOIs){
       summarise(FeedbackOnset = max(TimeStamp)) %>%
       inner_join(df, .) %>%
       mutate(TimeStamp = TimeStamp - FeedbackOnset)
+  }else{
+    df <- df %>%
+      mutate(PrePost = case_when(TimeStamp <= LabelOnset ~ "Pre Label Onset",
+                                 TimeStamp >= LabelOnset+360 ~ "Post Label Onset"))
   }
   return(df)
 }
