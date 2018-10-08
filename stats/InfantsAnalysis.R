@@ -1024,7 +1024,7 @@ if(generate_plots){
   ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
          prop_target.plot,
-         width = 5.5, height = 2.5)
+         width = 4, height = 2.5)
 }
 
 # WORD LEARNING TEST ANALYSIS: PROP TARGET TIME COURSE FOR LABEL CONDITION  ========================
