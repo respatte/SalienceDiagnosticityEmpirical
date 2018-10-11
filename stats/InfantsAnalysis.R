@@ -1031,10 +1031,11 @@ if(generate_plots){
 save_path <- "../results/infants/WordLearning/TimeCourse_"
 # Data preparation
 prop_target.time_course <- LT.test.wl %>%
-  subset_by_window(window_start_col = "LabelOnset",
-                   window_end_col = "TrialEnd") %>%
+  subset_by_window(window_start_col = "LabelOnset", remove = F) %>%
+  mutate(TrialEnd = TrialEnd - LabelOnset) %>%
+  subset_by_window(window_end_col = "TrialEnd", rezero = F) %>%
   mutate(Chance = F) %>%
-  make_time_sequence_data(time_bin_size = 50,
+  make_time_sequence_data(time_bin_size = 100,
                           aois = "Target",
                           predictor_columns=c("Chance"),
                           summarize_by = "Participant")
@@ -1046,7 +1047,7 @@ prop_target.time_course.chance_test <- rbind(prop_target.time_course,
                                              prop_target.time_course.chance) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- F
+run_model <- T
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -1074,7 +1075,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   prop_target.time_course.plot <- ggplot(prop_target.time_course,
                                          aes(x = Time, y=Prop)) +
