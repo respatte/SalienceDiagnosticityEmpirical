@@ -194,6 +194,9 @@ LT.test.ctr <- LT.gaze_offset.data.corrected %>%
 ## Word learning tests
 LT.test.wl <- LT.gaze_offset.data.corrected %>%
   subset(Phase == "Test - Word Learning") %>%
+  mutate_at("PrePost", parse_factor,
+            levels = c("Pre Label Onset", "Post Label Onset"),
+            include_na = F) %>%
   make_eyetrackingr_data(participant_column = "Participant",
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
@@ -458,7 +461,7 @@ prop_tail.pre_post.fstlst <- LT.fam %>%
                                             "CategoryName")) %>%
   drop_na(ArcSin)
 # Testing Prop ~ FstLst*PrePost*Condition
-run_model <- T # Running the models takes around 8 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 8 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -535,7 +538,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
   pre_post.raw_predictions <- last(pre_post.per_fstlst.brms.models) %>%
@@ -877,10 +880,10 @@ save_path <- "../results/infants/WordLearning/TrialAverage_"
 # Prepare dataset
 prop_target <- LT.test.wl %>%
   subset(Condition == "Label") %>%
-  subset_by_window(window_start_col = "LabelOnset",
-                   window_end_col = "TrialEnd") %>%
+  subset_by_window(window_end_col = "TrialEnd") %>%
   make_time_window_data(aois = "Target",
-                        predictor_columns = "CategoryName") %>%
+                        predictor_columns = c("PrePost",
+                                              "CategoryName")) %>%
   drop_na(ArcSin) %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5))) # Value centered on chance looking, useful for test
 ## Check for amount of data available, and word-learning score
@@ -892,34 +895,31 @@ prop_target.participants <- prop_target %>%
             nCorrect = sum((SamplesInAOI/SamplesTotal) > .5),
             Perfect = nTrials == nCorrect)
 # Testing in general
-run_model <- F # Running the models takes around 2 minutes on a 4.40GHz 12-core
+run_model <- T # Running the models takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
-  prop_target.lmer.model <- lmer(ChanceArcsin ~ 1 + (1 | Participant),
+  prop_target.lmer.model <- lmer(ChanceArcsin ~ PrePost + (1 + PrePost | Participant),
                                     data = prop_target)
-  prop_target.lmer.null <- lmer(ChanceArcsin ~ 0 + (1 | Participant),
-                                   data = prop_target)
-  prop_target.lmer.anova <- anova(prop_target.lmer.null,
-                                     prop_target.lmer.model)
+  prop_target.lmer.anova <- anova(prop_target.lmer.model)
   ## Run brms
-  prop_target.brms.model <- brm(ChanceArcsin ~ 1 + (1 | Participant),
-                                   data = prop_target,
-                                   chains = 4, cores = 4, iter = 2000,
-                                   prior = set_prior("uniform(-.8,.8)",
-                                                     class = "Intercept"),
-                                   control = list(adapt_delta = .999,
-                                                  max_treedepth = 20),
-                                   save_all_pars = T)
-  prop_target.brms.null <- brm(ChanceArcsin ~ 0 + (1 | Participant),
-                                   data = prop_target,
-                                   chains = 4, cores = 4, iter = 2000,
-                                   control = list(adapt_delta = .999,
-                                                  max_treedepth = 20),
-                                  save_all_pars = T)
-  prop_target.brms.models <- list(prop_target.brms.null, prop_target.brms.model)
-  prop_target.brms.bayes_factor <- bayes_factor(prop_target.brms.model,
-                                                prop_target.brms.null)
+  ### Set priors for models other than intercept-only
+  priors.prop_target <- list(set_prior("uniform(-.8,.8)",
+                                       class = "Intercept"),
+                             c(set_prior("uniform(-.8,.8)",
+                                         class = "Intercept"),
+                               set_prior("normal(0,.5)", class = "b")))
+  ### Set all nested formulas for model comparisons
+  formulas.prop_target <- list(ChanceArcsin ~ 1 + (1 | Participant),
+                               ChanceArcsin ~ PrePost + (1 + PrePost | Participant))
+  ### Get brms results
+  prop_target.brms.results <- bayes_factor.brm_fixef(formulas.prop_target,
+                                                     prop_target,
+                                                     priors.prop_target,
+                                                     control = list(adapt_delta = .9999,
+                                                                    max_treedepth = 20))
+  prop_target.brms.models <- prop_target.brms.results[[1]]
+  prop_target.brms.bayes_factor <- prop_target.brms.results[[2]]
   prop_target.time <- proc.time() - t
   ## Save all the results
   saveRDS(prop_target.lmer.model, paste0(save_path, "lmerModel.rds"))
