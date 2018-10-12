@@ -880,7 +880,8 @@ save_path <- "../results/infants/WordLearning/TrialAverage_"
 # Prepare dataset
 prop_target <- LT.test.wl %>%
   subset(Condition == "Label") %>%
-  subset_by_window(window_end_col = "TrialEnd") %>%
+  subset_by_window(window_end_col = "TrialEnd", rezero = F) %>%
+  drop_na(PrePost) %>%
   make_time_window_data(aois = "Target",
                         predictor_columns = c("PrePost",
                                               "CategoryName")) %>%
@@ -895,7 +896,7 @@ prop_target.participants <- prop_target %>%
             nCorrect = sum((SamplesInAOI/SamplesTotal) > .5),
             Perfect = nTrials == nCorrect)
 # Testing in general
-run_model <- T # Running the models takes around 2 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -954,77 +955,104 @@ if(generate_plots){
     mutate(RowNames = 1:nrow(.))
   prop_target.predicted <- prop_target %>%
     mutate(RowNames = 1:nrow(.)) %>%
-    select(RowNames, AOI) %>%
+    select(PrePost, RowNames) %>%
     inner_join(prop_target.raw_predictions) %>%
     select(-RowNames) %>%
-    gather(key = Sample, value = Predicted, -AOI)
+    gather(key = Sample, value = Predicted, -c(PrePost))
   prop_target.predicted.hpdi.97 <- prop_target.predicted %>%
     select(-Sample) %>%
-    (function(df){
-      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
+    split(list(.$PrePost)) %>%
+    lapply(function(df){
+      hpdi <- if(length(df$Predicted)>1){
+        as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
+      }else{
+        matrix(ncol = 2, dimnames = list(NULL, c("lower", "upper"))) # When no cases
+      }
       df.summary <- df %>%
+        group_by(PrePost) %>%
         summarise(Mean = mean(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
-    })
+    }) %>%
+    bind_rows()
   prop_target.predicted.hpdi.89 <- prop_target.predicted %>%
     select(-Sample) %>%
-    (function(df){
-      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
+    split(list(.$PrePost)) %>%
+    lapply(function(df){
+      hpdi <- if(length(df$Predicted)>1){
+        as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
+      }else{
+        matrix(ncol = 2, dimnames = list(NULL, c("lower", "upper"))) # When no cases
+      }
       df.summary <- df %>%
+        group_by(PrePost) %>%
         summarise(Mean = mean(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
-    })
+    }) %>%
+    bind_rows()
   prop_target.predicted.hpdi.67 <- prop_target.predicted %>%
     select(-Sample) %>%
-    (function(df){
-      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
+    split(list(.$PrePost)) %>%
+    lapply(function(df){
+      hpdi <- if(length(df$Predicted)>1){
+        as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
+      }else{
+        matrix(ncol = 2, dimnames = list(NULL, c("lower", "upper"))) # When no cases
+      }
       df.summary <- df %>%
+        group_by(PrePost) %>%
         summarise(Mean = mean(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
-    })
+    }) %>%
+    bind_rows()
   ## Plot raincloud + predicted mean&sd per FstLst
   prop_target.plot <- ggplot(prop_target,
-                         aes(x = AOI, y = Prop,
-                             colour = AOI,
-                             fill = AOI)) +
+                         aes(x = PrePost, y = Prop,
+                             colour = PrePost,
+                             fill = PrePost)) +
     theme_bw() + ylab("Looking to Target (Prop)") +
-    theme(axis.title.y = element_blank(),
+    geom_hline(yintercept = .5, colour = "black", linetype = 2) +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.text.y = element_blank()) +
-    geom_hline(yintercept = .5, colour = "black", linetype = 2) +
-    coord_flip() + guides(fill = F, colour = F) +
+    scale_x_discrete(limits = c("Post Label Onset", "Pre Label Onset")) + coord_flip() +
     geom_flat_violin(position = position_nudge(x = .2),
-                     colour = "black", alpha = .5, width = .5) +
+                     colour = "black", alpha = .5, width = .7) +
     geom_point(position = position_jitter(width = .15),
-               size = 1, alpha = .6) +
-    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
     geom_pointrange(data = prop_target.predicted.hpdi.67,
-                    aes(y = Mean, ymin = lb, ymax = ub),
+                    aes(x = PrePost, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = prop_target.predicted.hpdi.89,
-                    aes(y = Mean, ymin = lb, ymax = ub),
+                    aes(x = PrePost, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     geom_pointrange(data = prop_target.predicted.hpdi.97,
-                    aes(y = Mean, ymin = lb, ymax = ub),
+                    aes(x = PrePost, y = Mean, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
-                    position = position_nudge(x = -.23)) +
+                    position = position_nudge(x = -.23),
+                    show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
          prop_target.plot,
-         width = 4, height = 2.5)
+         width = 4, height = 3.5)
 }
 
 # WORD LEARNING TEST ANALYSIS: PROP TARGET TIME COURSE FOR LABEL CONDITION  ========================
@@ -1047,7 +1075,7 @@ prop_target.time_course.chance_test <- rbind(prop_target.time_course,
                                              prop_target.time_course.chance) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T
+run_model <- F
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -1075,7 +1103,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   prop_target.time_course.plot <- ggplot(prop_target.time_course,
                                          aes(x = Time, y=Prop)) +
