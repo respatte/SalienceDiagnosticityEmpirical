@@ -129,7 +129,7 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                   grepl("_S1", MediaName) ~ 3050,
                                   grepl("_S2", MediaName) ~ 3400,
                                   grepl("WLG", MediaName) ~ 2300,
-                                  grepl("WLS", MediaName) ~ 2050),
+                                  grepl("WLS", MediaName) ~ 550),
            TrialEnd = LabelOnset + 3000,
            Stimulus = ifelse(Phase == "Familiarisation",
                              sapply(strsplit(as.character(MediaName), "_"), "[", 2),
