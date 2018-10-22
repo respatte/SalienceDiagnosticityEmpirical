@@ -656,7 +656,7 @@ new_old.participants <- new_old %>%
   group_by(Condition, nTrials) %>%
   summarise(Participants = n_distinct(Participant))
 # Testing Prop ~ ContrastType*Condition
-run_model <- F # Running the models takes around 5 minutes on a 4.40GHz 12-core
+run_model <- T # Running the models takes around 5 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -693,9 +693,17 @@ if(run_model){
                                          no_intercept = 1)
   new_old.brms.models <- brms.results[[1]]
   new_old.brms.bayes_factors <- brms.results[[2]]
-  new_old.brms.emmeans <- emmeans(last(new_old.brms.models), ~ ContrastType | Condition,
+  new_old.brms.emmeans.model <- brm(ChanceArcsin ~ ContrastType + Condition +
+                                      ContrastType:Condition +
+                                      (1 | Participant),
+                                    data = new_old,
+                                    prior = last(priors.new_old),
+                                    family = gaussian(),
+                                    chains = 4, cores = 4, iter = 2000,
+                                    sample_prior = "yes")
+  new_old.brms.emmeans <- emmeans(new_old.brms.emmeans.model, ~ ContrastType | Condition,
                                   options = list(level = .89))
-  new_old.brms.emmeans.bayes_factor <- hypothesis(last(new_old.brms.models),
+  new_old.brms.emmeans.bayes_factor <- hypothesis(new_old.brms.emmeans.model,
                                                   c("Intercept > 0",                 # No Label Head
                                                     "Intercept + ContrastTypeTail > 0", # NL Tail
                                                     "Intercept + ConditionLabel > 0",   # Label Head
@@ -733,7 +741,7 @@ if(run_model){
   new_old.brms.emmeans.bayes_factors <- readRDS(paste0(save_path, "brmsEMmeansBF.rds"))
 }
 # Plot jitter + mean&se
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Get brm predicted values
   new_old.raw_predictions <- last(new_old.brms.models) %>%
@@ -896,7 +904,7 @@ prop_target.participants <- prop_target %>%
             nCorrect = sum((SamplesInAOI/SamplesTotal) > .5),
             Perfect = nTrials == nCorrect)
 # Testing in general
-run_model <- T # Running the models takes around 2 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -944,7 +952,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   prop_target.raw_predictions <- last(prop_target.brms.models) %>%
@@ -1075,7 +1083,7 @@ prop_target.time_course.chance_test <- rbind(prop_target.time_course,
                                              prop_target.time_course.chance) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T
+run_model <- F
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -1103,7 +1111,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   prop_target.time_course.plot <- ggplot(prop_target.time_course,
                                          aes(x = Time, y=Prop)) +
