@@ -10,7 +10,7 @@ library(tidyverse)
 H_naught.test <- function(N){
   # Generate random data
   # n=42 * 2trials from real data, mean to 0, sd=.5 from real data
-  new_old.sims <- replicate(100,
+  new_old.sims <- replicate(25,
                             list(tibble(ChanceArcsin = rnorm(N*2, 0, .5),
                                         Participant = rep(1:N, each = 2),
                                         Condition = factor(rep(c("Label", "No Label"),
@@ -43,8 +43,9 @@ H_naught.test <- function(N){
                              ContrastType:Condition +
                              (1 | Participant),
                            data = df.list, prior = p, family = gaussian(),
-                           chains = 4, cores = 4, iter = 2000,
-                           save_all_pars = T, combine = F)
+                           chains = 4, cores = 4, iter = 20000, warmup = 2000,
+                           control = list(adapt_delta = .99, max_treedepth = 20),
+                           save_all_pars = T, combine = F, sample_prior = "yes")
     bf.list <- lapply(m.list,
                       function(m){
                         bf <- hypothesis(m,
@@ -94,10 +95,16 @@ H_naught.test <- function(N){
     geom_jitter(width = .1, height = 0, alpha = .2) +
     theme(legend.position = "top")
   return(list(BayesianEvidence = new_old.sims.bayesian.evid,
-              BayesianPlot = new_old.sims.bayesian.plot,
-              SampleTheoryEvidence = new_old.sims.stb.evid,
-              SampleTheoryPlot = new_old.sims.stb.plot))
+              #BayesianPlot = new_old.sims.bayesian.plot,
+              SampleTheoryEvidence = new_old.sims.stb.evid))
+              #SampleTheoryPlot = new_old.sims.stb.plot))
 }
 
+#new_old.sims.results.42 <- H_naught.test(N = 42)
+#new_old.sims.results.200 <- H_naught.test(N = 200)
 new_old.sims.results.42 <- H_naught.test(N = 42)
-new_old.sims.results.200 <- H_naught.test(N = 200)
+l <- names(new_old.sims.results.42)
+for(i in 1:39){
+  tmp <- H_naught.test(N = 42)
+  new_old.sims.results.42 <- Map(bind_rows, new_old.sims.results.42[l], tmp)
+}
