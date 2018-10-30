@@ -3,7 +3,7 @@ import csv
 
 def main():
     # Attention gatherers
-    AGs = ["AG1", "AG2", "AG3", "AG4", "AG5"]
+    AGs = ["AG1", "AG2", "AG3", "AG4", "AG5", "AG6", "AG7"]
     # Category names
     tail_cat = ["A", "B"]
     head_cat = ["1", "2"]
@@ -11,7 +11,7 @@ def main():
     header_cb = ["Participant"] + ["Fam"+str(i) for i in range(8)] + ["AG"]
     header_cb += ["Fam"+str(i) for i in range(8,16)] + ["AG"]
     header_cb += ["Fam"+str(i) for i in range(16,24)] + ["AG"]
-    header_cb += ["Ctr0", "AG", "Ctr1", "AG", "Ctr2", "AG", "WL0", "AG", "WL1"]
+    header_cb += ["Ctr0", "AG", "Ctr1", "AG", "Ctr2", "AG", "WL0", "AG", "WL1", "AG", "WL2", "AG", "WL3"]
     header_pi = ["Participant", "First fam stim", "Name first fam stim",
                  "First contrast", "Side new HC", "Side new TC", "Side new tail RC",
                  "First label WL", "Side A1", "Side A2"]
@@ -62,7 +62,7 @@ def main():
                             row_cb.append(AGs[2 + i//4])
                         row_cb.append(rd.choice(dirs)+fam_stims[first_stim][conditions[condition][name_first_stim]][i//6][order1[i%6]])
                         row_cb.append(rd.choice(dirs)+fam_stims[first_stim-1][conditions[condition][name_first_stim-1]][i//6][order2[i%6]])
-                    row_pi.append([tail_cat[first_stim], conditions[condition][name_first_stim]])
+                    row_pi.extend([tail_cat[first_stim], conditions[condition][name_first_stim]])
                     rows_cb.append(row_cb)
                     rows_pi.append(row_pi)
     # Contrast tests
@@ -96,14 +96,20 @@ def main():
     A2_sides = ["L","R"]
     # Word learning tests counterbalancing
     p = 0
-    while p < 48:
+    while p < 24:
         for first_label in (0,1):
             for A1_side in (0,1):
                 for A2_side in (0,1):
                     p += 1
-                    rows_cb[p] += [AGs[3], "WL"+labels[first_label]+"_A1"+A1_sides[A1_side]+"_B2"+A1_sides[A1_side-1],
-                                   AGs[4], "WL"+labels[first_label-1]+"_A2"+A2_sides[A2_side]+"_B1"+A2_sides[A2_side-1]]
-                    rows_pi[p] += [labels[first_label], A1_sides[A1_side], A2_sides[A2_side]]
+                    tmp_row_cb = [AGs[3], "WL"+labels[first_label]+"_A1"+A1_sides[A1_side]+"_B2"+A1_sides[A1_side-1],
+                                  AGs[4], "WL"+labels[first_label-1]+"_A2"+A2_sides[A2_side]+"_B1"+A2_sides[A2_side-1],
+                                  AGs[5], "WL"+labels[first_label]+"_A1"+A1_sides[A1_side-1]+"_B2"+A1_sides[A1_side],
+                                  AGs[6], "WL"+labels[first_label-1]+"_A2"+A2_sides[A2_side-1]+"_B1"+A2_sides[A2_side]]
+                    tmp_row_pi = [labels[first_label], A1_sides[A1_side], A2_sides[A2_side], A1_sides[A1_side-1], A2_sides[A2_side-1]]
+                    rows_cb[p] += tmp_row_cb
+                    rows_cb[-p] += tmp_row_cb
+                    rows_pi[p] += tmp_row_pi
+                    rows_pi[-p] += tmp_row_pi
     
     with open('Counterbalancing.tsv', 'w') as cb, open('ParticipantInfo.csv', 'w') as pi:
         cb = csv.writer(cb, delimiter='\t')
