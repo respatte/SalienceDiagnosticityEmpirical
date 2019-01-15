@@ -113,7 +113,8 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
     unique() %>%
     inner_join(participant_info) %>%
     left_join(sequence_info) %>%
-    mutate(Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
+    mutate(Participant = substr(Participant, 2, 4),
+           Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
                              grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
                              grepl("[HRT]C_", MediaName) ~ "Test - Contrast"),
            FamPart = case_when(TrialId <= 8 ~ 0,

@@ -18,6 +18,9 @@ d <- LT_data.gather("infants")
 # Unload snow packages so that parallel works for brms
 detach("package:doSNOW")
 detach("package:snow")
+# Remove participants from label condition with wrong setup
+d[[4]] <- d[[4]] %>%
+  subset(!(Condition == "Label" & as.numeric(as.character(Participant)) < 72))
 # Check for counterbalancing, gender balancing, and age balancing
 pres_seq <- d[[4]] %>%
   group_by(PresentationSequence, Participant) %>%
