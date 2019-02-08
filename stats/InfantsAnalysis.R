@@ -30,7 +30,7 @@ pres_seq <- d[[4]] %>%
 # remove: P03, P53, P55
 # keep:   P51, P06, P08
 d[[4]] <- d[[4]] %>%
-  subset(!(Participant %in% c("P03","P53","P55"))) %>%
+  subset(!(Participant %in% c("03","53","55"))) %>%
   droplevels()
 gender <- d[[4]] %>%
   group_by(Gender, Condition) %>%
@@ -79,34 +79,43 @@ if(generate_plots){
 }
 ## Apply linear correction to gaze data by participant when necessary
 LT.gaze_offset.data.correction <- d[[4]] %>%
-  mutate(CursorX = case_when(Participant == "P01" ~ CursorX - 60,
-                             Participant == "P07" ~ CursorX - 80,
-                             Participant == "P08" ~ CursorX + 80,
-                             Participant == "P26" ~ CursorX - 80,
-                             Participant == "P31" ~ CursorX + 30,
-                             Participant == "P42" ~ CursorX - 30,
-                             Participant == "P51" ~ CursorX + 60,
-                             Participant == "P56" ~ CursorX + 30,
-                             Participant == "P60" ~ CursorX - 100,
-                             Participant == "P61" ~ CursorX - 80,
+  mutate(CursorX = case_when(Participant == "01" ~ CursorX - 60,
+                             Participant == "07" ~ CursorX - 80,
+                             Participant == "08" ~ CursorX + 80,
+                             Participant == "26" ~ CursorX - 80,
+                             Participant == "31" ~ CursorX + 30,
+                             Participant == "42" ~ CursorX - 30,
+                             Participant == "51" ~ CursorX + 60,
+                             Participant == "56" ~ CursorX + 30,
+                             Participant == "60" ~ CursorX - 100,
+                             Participant == "61" ~ CursorX - 80,
+                             Participant == "72" ~ CursorX + 50,
+                             Participant == "74" ~ CursorX + 150,
+                             Participant == "88" ~ CursorX -30,
+                             Participant == "100" ~ CursorX -50,
                              T ~ as.double(CursorX)),
-         CursorY = case_when(Participant == "P07" ~ CursorY + 100,
-                             Participant == "P08" ~ CursorY - 50,
-                             Participant == "P14" ~ CursorY - 80,
-                             Participant == "P15" ~ CursorY - 150,
-                             Participant == "P31" ~ CursorY - 100,
-                             Participant == "P36" ~ CursorY - 50,
-                             Participant == "P37" ~ CursorY - 50,
-                             Participant == "P42" ~ CursorY - 50,
-                             Participant == "P47" ~ CursorY - 50,
-                             Participant == "P52" ~ CursorY - 50,
-                             Participant == "P59" ~ CursorY - 150,
-                             Participant == "P60" ~ CursorY - 150,
-                             Participant == "P61" ~ CursorY - 100,
-                             Participant == "P64" ~ CursorY - 100,
-                             Participant == "P65" ~ CursorY - 50,
-                             Participant == "P66" ~ CursorY - 50,
-                             Participant == "P67" ~ CursorY - 100,
+         CursorY = case_when(Participant == "07" ~ CursorY + 100,
+                             Participant == "08" ~ CursorY - 50,
+                             Participant == "14" ~ CursorY - 80,
+                             Participant == "15" ~ CursorY - 150,
+                             Participant == "31" ~ CursorY - 100,
+                             Participant == "36" ~ CursorY - 50,
+                             Participant == "37" ~ CursorY - 50,
+                             Participant == "42" ~ CursorY - 50,
+                             Participant == "47" ~ CursorY - 50,
+                             Participant == "52" ~ CursorY - 50,
+                             Participant == "59" ~ CursorY - 150,
+                             Participant == "60" ~ CursorY - 150,
+                             Participant == "61" ~ CursorY - 100,
+                             Participant == "64" ~ CursorY - 100,
+                             Participant == "65" ~ CursorY - 50,
+                             Participant == "66" ~ CursorY - 50,
+                             Participant == "67" ~ CursorY - 100,
+                             Participant == "72" ~ CursorY -30,
+                             Participant == "74" ~ CursorY -30,
+                             Participant == "90" ~ CursorY -50,
+                             Participant == "92" ~ CursorY -30,
+                             Participant == "100" ~ CursorY -50,
                              T ~ as.double(CursorY))) %>%
   select(-c(Head, Tail, NewTail, OldTail, NewHead, OldHead, Centre, Target, Distractor))
   # Removing AOIs as they need updating
@@ -120,8 +129,6 @@ if(generate_plots){
                      xmin = c(390,1920-390-450), xmax = c(390+450,1920-390),
                      ymin = c(299,299), ymax = c(299+450,299+450))
   LT.gaze_offset.data.post <- LT.gaze_offset.data.correction %>%
-    subset(CursorX != d[[4]]$CursorX | CursorY != d[[4]]$CursorY) %>%
-    # Only generate graphs with corrected gaze values
     subset(Phase == "Familiarisation") %>%
     droplevels()
   for(participant in levels(LT.gaze_offset.data.post$Participant)){
