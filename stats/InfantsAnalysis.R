@@ -45,7 +45,7 @@ age_gender_condition <- age %>%
             u = max(Age))
 # Checking gaze-data offset (checking on Familiarisation only for simplicity)
 ## Saving heatmaps per participant pre-correction
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
                      xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
@@ -120,7 +120,7 @@ LT.gaze_offset.data.correction <- d[[4]] %>%
   select(-c(Head, Tail, NewTail, OldTail, NewHead, OldHead, Centre, Target, Distractor))
   # Removing AOIs as they need updating
 ## Saving heatmaps per participant post-correction
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
                      xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
@@ -226,7 +226,7 @@ prop_tail.fstlst <- LT.fam %>%
                                             "CategoryName")) %>%
   drop_na(ArcSin)
 # Testing Prop ~ FstLst*Condition
-run_model <- T # Running the models takes around 4 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 4 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -285,7 +285,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
   prop_tail.raw_predictions <- last(prop_tail.per_fstlst.brms.models) %>%
@@ -394,7 +394,7 @@ prop_tail.time_course <- LT.fam %>%
                                               "FstLst"),
                           summarize_by = "Participant")
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T # Running the model takes around 50 seconds on a 4.40GHz 12-core
+run_model <- F # Running the model takes around 50 seconds on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -426,7 +426,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   prop_tail.time_course.plot.clusters <- prop_tail.time_cluster %>%
     {lapply(seq_along(.),
@@ -471,7 +471,7 @@ prop_tail.pre_post.fstlst <- LT.fam %>%
                                             "CategoryName")) %>%
   drop_na(ArcSin)
 # Testing Prop ~ FstLst*PrePost*Condition
-run_model <- T # Running the models takes around 8 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 8 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -548,7 +548,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
   pre_post.raw_predictions <- last(pre_post.per_fstlst.brms.models) %>%
@@ -666,7 +666,7 @@ new_old.participants <- new_old %>%
   group_by(Condition, nTrials) %>%
   summarise(Participants = n_distinct(Participant))
 # Testing Prop ~ ContrastType*Condition
-run_model <- T # Running the models takes around 5 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 5 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -751,7 +751,7 @@ if(run_model){
   new_old.brms.emmeans.bayes_factors <- readRDS(paste0(save_path, "brmsEMmeansBF.rds"))
 }
 # Plot jitter + mean&se
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   new_old.raw_predictions <- last(new_old.brms.models) %>%
@@ -876,7 +876,7 @@ LT.new_old.time_course <- LT.test.ctr %>%
 #### NOT ENOuGH DATA
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   LT.new_old.time_course.plot <- ggplot(LT.new_old.time_course,
                                         aes(x = Time, y=Prop,
@@ -914,7 +914,7 @@ prop_target.participants <- prop_target %>%
             nCorrect = sum((SamplesInAOI/SamplesTotal) > .5),
             Perfect = nTrials == nCorrect)
 # Testing in general
-run_model <- T # Running the models takes around 2 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 2 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -962,7 +962,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   prop_target.raw_predictions <- last(prop_target.brms.models) %>%
@@ -1093,7 +1093,7 @@ prop_target.time_course.chance_test <- rbind(prop_target.time_course,
                                              prop_target.time_course.chance) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T
+run_model <- F
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -1121,7 +1121,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   prop_target.time_course.plot <- ggplot(prop_target.time_course,
                                          aes(x = Time, y=Prop)) +
@@ -1147,7 +1147,7 @@ fam_switches.fstlst <- LT.fam %>%
             Condition = first(Condition)) %>%
   ungroup()
 # Testing Switches ~ Condition*FstLst
-run_model <- T # Running the models takes around 5 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 5 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run (g)lmer
@@ -1201,7 +1201,7 @@ if(run_model){
 }
 
 # Plotting boxplots
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   fam_switches.raw_predictions <- last(fam_switches.per_fstlst.brms.models) %>%
@@ -1327,7 +1327,7 @@ first_tail.fstlst <- first_look %>%
   mutate(logFirstAOILook = log(FirstAOILook))
 
 # Testing (First)AOI ~ Condition*FstLst
-run_model <- T # Running the models takes around 5 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 5 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run (g)lmer
@@ -1377,7 +1377,7 @@ if(run_model){
   first_aoi.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FirstAOI_brmsBF.rds"))
 }
 # Testing FirstAOI(Tail)Look ~ Condition*FstLst
-run_model <- T # Running the models takes around 4 minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around 4 minutes on a 4.40GHz 12-core
 if(run_model){
   t <- proc.time()
   ## Run lmer
@@ -1429,7 +1429,7 @@ if(run_model){
 }
 
 # Plotting
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## First AOI (boxplot)
   ### Get data for plot
