@@ -3,7 +3,7 @@ library(brms)
 library(tidyverse)
 
 # BRM FIXEF BAYES FACTOR
-# Function computing all nested models in formulas nd computing Bayes factors for pairs of models
+# Function computing all nested models in formulas and computing Bayes factors for pairs of models
 # Formulas must be given with no-intercept formulas first, then intercept-only formulas, and
 # finally other formulas.
 # no_intercept is the number of formulas with no intercept (default = 0)
@@ -43,4 +43,18 @@ bayes_factor.brm_fixef <- function(formulas, df, priors,
                           })
   ## Return both lists as a list
   return(list("models" = models, "BF" = bayes_factors))
+}
+
+# BRM FIXEF BAYES FACTOR
+# Returning estimates and HPDIs for the fixed effects from a brms model,
+# for the given prob (default 0.89)
+estimates.brm_fixef <- function(model, prob = 0.89){
+  points <- model %>%
+    summary() %>%
+    {round(.$fixed[,1:2], digits = 2)}
+  intervals <- model %>%
+    as.mcmc(combine_chains = T, pars = "b_") %>%
+    HPDinterval(prob = prob) %>%
+    round(digits = 2)
+  return(list("Points" = points, "Intervals" = intervals))
 }
