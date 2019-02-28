@@ -5,6 +5,7 @@ library(lmerTest)
 library(emmeans)
 library(brms)
 library(coda)
+library(modeest)
 library(tidyverse)
 library(RColorBrewer)
 
@@ -45,7 +46,7 @@ age_gender_condition <- age %>%
             u = max(Age))
 # Checking gaze-data offset (checking on Familiarisation only for simplicity)
 ## Saving heatmaps per participant pre-correction
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
                      xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
@@ -120,7 +121,7 @@ LT.gaze_offset.data.correction <- d[[4]] %>%
   select(-c(Head, Tail, NewTail, OldTail, NewHead, OldHead, Centre, Target, Distractor))
   # Removing AOIs as they need updating
 ## Saving heatmaps per participant post-correction
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
                      xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
@@ -285,7 +286,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
   prop_tail.raw_predictions <- last(prop_tail.per_fstlst.brms.models) %>%
@@ -307,7 +308,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
       df.summary <- df %>%
         group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -320,7 +321,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
       df.summary <- df %>%
         group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -333,7 +334,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
       df.summary <- df %>%
         group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -357,19 +358,19 @@ if(generate_plots){
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
     geom_pointrange(data = prop_tail.predicted.hpdi.67,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = prop_tail.predicted.hpdi.89,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = prop_tail.predicted.hpdi.97,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
                     position = position_nudge(x = -.23),
@@ -426,7 +427,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   prop_tail.time_course.plot.clusters <- prop_tail.time_cluster %>%
     {lapply(seq_along(.),
@@ -548,7 +549,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
   pre_post.raw_predictions <- last(pre_post.per_fstlst.brms.models) %>%
@@ -574,7 +575,7 @@ if(generate_plots){
       }
       df.summary <- df %>%
         group_by(FstLst, PrePost, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -591,7 +592,7 @@ if(generate_plots){
       }
       df.summary <- df %>%
         group_by(FstLst, PrePost, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -608,7 +609,7 @@ if(generate_plots){
       }
       df.summary <- df %>%
         group_by(FstLst, PrePost, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -627,17 +628,17 @@ if(generate_plots){
                size = 1, alpha = .6) +
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black") +
     geom_pointrange(data = pre_post.predicted.hpdi.67,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
                     position = position_nudge(x = -.23)) +
     geom_pointrange(data = pre_post.predicted.hpdi.89,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
                     position = position_nudge(x = -.23)) +
     geom_pointrange(data = pre_post.predicted.hpdi.97,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
                     position = position_nudge(x = -.23)) +
@@ -751,7 +752,7 @@ if(run_model){
   new_old.brms.emmeans.bayes_factors <- readRDS(paste0(save_path, "brmsEMmeansBF.rds"))
 }
 # Plot jitter + mean&se
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Get brm predicted values
   new_old.raw_predictions <- last(new_old.brms.models) %>%
@@ -777,7 +778,7 @@ if(generate_plots){
       }
       df.summary <- df %>%
         group_by(ContrastType, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -794,7 +795,7 @@ if(generate_plots){
       }
       df.summary <- df %>%
         group_by(ContrastType, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -811,7 +812,7 @@ if(generate_plots){
       }
       df.summary <- df %>%
         group_by(ContrastType, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -837,19 +838,19 @@ if(generate_plots){
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
     geom_pointrange(data = new_old.predicted.hpdi.67,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = new_old.predicted.hpdi.89,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = new_old.predicted.hpdi.97,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
                     position = position_nudge(x = -.23),
@@ -876,7 +877,7 @@ LT.new_old.time_course <- LT.test.ctr %>%
 #### NOT ENOuGH DATA
 
 # PLOT
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   LT.new_old.time_course.plot <- ggplot(LT.new_old.time_course,
                                         aes(x = Time, y=Prop,
@@ -962,7 +963,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Get brm predicted values
   prop_target.raw_predictions <- last(prop_target.brms.models) %>%
@@ -988,7 +989,7 @@ if(generate_plots){
       }
       df.summary <- df %>%
         group_by(PrePost) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -1005,7 +1006,7 @@ if(generate_plots){
       }
       df.summary <- df %>%
         group_by(PrePost) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -1022,7 +1023,7 @@ if(generate_plots){
       }
       df.summary <- df %>%
         group_by(PrePost) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -1121,7 +1122,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   prop_target.time_course.plot <- ggplot(prop_target.time_course,
                                          aes(x = Time, y=Prop)) +
@@ -1201,7 +1202,7 @@ if(run_model){
 }
 
 # Plotting boxplots
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Get brm predicted values
   fam_switches.raw_predictions <- last(fam_switches.per_fstlst.brms.models) %>%
@@ -1222,7 +1223,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
       df.summary <- df %>%
         group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -1235,7 +1236,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
       df.summary <- df %>%
         group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -1248,7 +1249,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
       df.summary <- df %>%
         group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -1273,19 +1274,19 @@ if(generate_plots){
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
     geom_pointrange(data = fam_switches.predicted.hpdi.67,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = fam_switches.predicted.hpdi.89,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = fam_switches.predicted.hpdi.97,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
                     position = position_nudge(x = -.23),
@@ -1429,13 +1430,13 @@ if(run_model){
 }
 
 # Plotting
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## First AOI (boxplot)
   ### Get data for plot
   first_aoi.fstlst.to_plot <- first_aoi.fstlst %>%
     drop_na(FstLst) %>%
-    group_by(Participant, FstLst, AOI) %>%
+    group_by(FstLst, AOI) %>%
     summarise(N = n(),
               Condition = first(Condition)) %>%
     ungroup()
@@ -1447,16 +1448,15 @@ if(generate_plots){
     mutate(RowNames = 1:nrow(.))
   first_aoi.predicted <- first_aoi.fstlst %>%
     mutate(RowNames = 1:nrow(.)) %>%
-    select(Participant, FstLst, Condition, RowNames) %>%
+    select(FstLst, Condition, RowNames) %>%
     inner_join(first_aoi.raw_predictions) %>%
     select(-RowNames) %>%
-    gather(key = Sample, value = AOI, -c(FstLst, Condition, Participant)) %>%
+    gather(key = Sample, value = AOI, -c(FstLst, Condition)) %>%
     mutate(AOI = ifelse(AOI == 0, "Head", "Tail"),
            AOI = parse_factor(AOI, levels = NULL))
   first_aoi.predicted.hpdi.97 <- first_aoi.predicted %>%
-    group_by(FstLst, Participant, Sample, AOI) %>%
-    summarise(N = n(),
-              Condition = first(Condition)) %>%
+    group_by(FstLst, Condition, Sample, AOI) %>%
+    summarise(N = n()) %>%
     ungroup() %>%
     select(-Sample) %>%
     split(list(.$FstLst, .$Condition, .$AOI)) %>%
@@ -1464,16 +1464,15 @@ if(generate_plots){
       hpdi <- as.mcmc(df$N) %>% HPDinterval(prob = 0.97)
       df.summary <- df %>%
         group_by(FstLst, Condition, AOI) %>%
-        summarise(Mean = mean(df$N)) %>%
+        summarise(Mode = first(mlv(df$N))) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
     }) %>%
     bind_rows()
   first_aoi.predicted.hpdi.89 <- first_aoi.predicted %>%
-    group_by(FstLst, Participant, Sample, AOI) %>%
-    summarise(N = n(),
-              Condition = first(Condition)) %>%
+    group_by(FstLst, Condition, Sample, AOI) %>%
+    summarise(N = n()) %>%
     ungroup() %>%
     select(-Sample) %>%
     split(list(.$FstLst, .$Condition, .$AOI)) %>%
@@ -1481,16 +1480,15 @@ if(generate_plots){
       hpdi <- as.mcmc(df$N) %>% HPDinterval(prob = 0.89)
       df.summary <- df %>%
         group_by(FstLst, Condition, AOI) %>%
-        summarise(Mean = mean(df$N)) %>%
+        summarise(Mode = first(mlv(df$N))) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
     }) %>%
     bind_rows()
   first_aoi.predicted.hpdi.67 <- first_aoi.predicted %>%
-    group_by(FstLst, Participant, Sample, AOI) %>%
-    summarise(N = n(),
-              Condition = first(Condition)) %>%
+    group_by(FstLst, Condition, Sample, AOI) %>%
+    summarise(N = n()) %>%
     ungroup() %>%
     select(-Sample) %>%
     split(list(.$FstLst, .$Condition, .$AOI)) %>%
@@ -1498,7 +1496,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$N) %>% HPDinterval(prob = 0.67)
       df.summary <- df %>%
         group_by(FstLst, Condition, AOI) %>%
-        summarise(Mean = mean(df$N)) %>%
+        summarise(Mode = first(mlv(df$N))) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = hpdi[1,"upper"])
       return(df.summary)
@@ -1524,21 +1522,21 @@ if(generate_plots){
                  show.legend = F) +
     geom_pointrange(data = first_aoi.predicted.hpdi.67,
                     aes(x = Condition,
-                        y = Mean, ymin = lb, ymax = ub),
+                        y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = first_aoi.predicted.hpdi.89,
                     aes(x = Condition,
-                        y = Mean, ymin = lb, ymax = ub),
+                        y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = first_aoi.predicted.hpdi.97,
                     aes(x = Condition,
-                        y = Mean, ymin = lb, ymax = ub),
+                        y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
                     position = position_nudge(x = -.23),
@@ -1570,7 +1568,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
       df.summary <- df %>%
         group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = min(hpdi[1,"upper"], 5000)) # Correct for abnormaly large estimations
       return(df.summary)
@@ -1583,7 +1581,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
       df.summary <- df %>%
         group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = min(hpdi[1,"upper"], 5000)) # Correct for abnormaly large estimations
       return(df.summary)
@@ -1596,7 +1594,7 @@ if(generate_plots){
       hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
       df.summary <- df %>%
         group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
+        summarise(Mode = mlv(df$Predicted)) %>%
         mutate(lb = hpdi[1,"lower"],
                ub = min(hpdi[1,"upper"], 5000)) # Correct for abnormaly large estimations
       return(df.summary)
@@ -1621,19 +1619,19 @@ if(generate_plots){
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
     geom_pointrange(data = first_tail.predicted.hpdi.67,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = first_tail.predicted.hpdi.89,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = first_tail.predicted.hpdi.97,
-                    aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
                     position = position_nudge(x = -.23),

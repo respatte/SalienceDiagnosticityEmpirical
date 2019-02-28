@@ -108,12 +108,14 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
     ungroup() %>%
     drop_na(MediaName, TrackLoss) %>%
     mutate(TrialId = as.numeric(as.factor(TrialId)),  # Fixing TrialId to ignore attention gatherers
-           TrialNum = TrialId - 1) %>%                # Useful for models
+           TrialNum = TrialId - 1,                    # Useful for models
+           TrialId = as.character(TrialId)) %>%
     select(-c(ValidityLeft, ValidityRight, StudioEventIndex)) %>%
     unique() %>%
     inner_join(participant_info) %>%
     left_join(sequence_info) %>%
     mutate(Participant = substr(Participant, 2, 4),
+           PresentationSequence = as.character(PresentationSequence),
            Phase = case_when(grepl("Flip|Reg", MediaName) ~ "Familiarisation",
                              grepl("WL[GS]_", MediaName) ~ "Test - Word Learning",
                              grepl("[HRT]C_", MediaName) ~ "Test - Contrast"),
@@ -160,8 +162,8 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
                                                        substr(MediaName,7,7),
                                                        substr(MediaName,11,11)))))) %>%
     mutate_at(c("Participant", "PresentationSequence", "MediaName", "TrialId",
-                "Gender", "CategoryName", "Condition", "Phase", "Stimulus",
-                "ContrastType"),
+                "Gender", "CategoryName", "Condition", "Phase", "Stimulus", "ContrastType"
+                ),
               parse_factor, levels = NULL, include_na = F)
   return(df)
 }
