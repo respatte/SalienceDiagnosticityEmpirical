@@ -752,7 +752,7 @@ if(run_model){
   new_old.brms.emmeans.bayes_factors <- readRDS(paste0(save_path, "brmsEMmeansBF.rds"))
 }
 # Plot jitter + mean&se
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   new_old.raw_predictions <- last(new_old.brms.models) %>%
@@ -966,7 +966,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   ## Get brm predicted values
   prop_target.raw_predictions <- last(prop_target.brms.models) %>%
@@ -1052,19 +1052,19 @@ if(generate_plots){
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
     geom_pointrange(data = prop_target.predicted.hpdi.67,
-                    aes(x = PrePost, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = PrePost, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = 1.5, size = 1.5,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = prop_target.predicted.hpdi.89,
-                    aes(x = PrePost, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = PrePost, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = 1,
                     position = position_nudge(x = -.23),
                     show.legend = F) +
     geom_pointrange(data = prop_target.predicted.hpdi.97,
-                    aes(x = PrePost, y = Mean, ymin = lb, ymax = ub),
+                    aes(x = PrePost, y = Mode, ymin = lb, ymax = ub),
                     colour = brewer.pal(3, "Dark2")[[3]],
                     fatten = .5, size = .5,
                     position = position_nudge(x = -.23),
