@@ -46,7 +46,7 @@ age_gender_condition <- age %>%
             u = max(Age))
 # Checking gaze-data offset (checking on Familiarisation only for simplicity)
 ## Saving heatmaps per participant pre-correction
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
                      xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
@@ -121,7 +121,7 @@ LT.gaze_offset.data.correction <- d[[4]] %>%
   select(-c(Head, Tail, NewTail, OldTail, NewHead, OldHead, Centre, Target, Distractor))
   # Removing AOIs as they need updating
 ## Saving heatmaps per participant post-correction
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
                      xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
@@ -286,7 +286,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
   prop_tail.raw_predictions <- last(prop_tail.per_fstlst.brms.models) %>%
@@ -427,7 +427,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   prop_tail.time_course.plot.clusters <- prop_tail.time_cluster %>%
     {lapply(seq_along(.),
@@ -549,7 +549,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se + lines
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
   pre_post.raw_predictions <- last(pre_post.per_fstlst.brms.models) %>%
@@ -783,7 +783,8 @@ if(generate_plots){
                ub = hpdi[1,"upper"])
       return(df.summary)
     }) %>%
-    bind_rows()
+    bind_rows() %>%
+    drop_na()
   new_old.predicted.hpdi.89 <- new_old.predicted %>%
     select(-Sample) %>%
     split(list(.$ContrastType, .$Condition)) %>%
@@ -800,7 +801,8 @@ if(generate_plots){
                ub = hpdi[1,"upper"])
       return(df.summary)
     }) %>%
-    bind_rows()
+    bind_rows() %>%
+    drop_na()
   new_old.predicted.hpdi.67 <- new_old.predicted %>%
     select(-Sample) %>%
     split(list(.$ContrastType, .$Condition)) %>%
@@ -817,7 +819,8 @@ if(generate_plots){
                ub = hpdi[1,"upper"])
       return(df.summary)
     }) %>%
-    bind_rows()
+    bind_rows() %>%
+    drop_na()
   ## Plot raincloud + predicted mean&sd per FstLst
   new_old.plot <- ggplot(new_old,
                          aes(x = Condition, y = Prop,
@@ -877,7 +880,7 @@ LT.new_old.time_course <- LT.test.ctr %>%
 #### NOT ENOuGH DATA
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   LT.new_old.time_course.plot <- ggplot(LT.new_old.time_course,
                                         aes(x = Time, y=Prop,
@@ -963,7 +966,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   prop_target.raw_predictions <- last(prop_target.brms.models) %>%
@@ -1122,7 +1125,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   prop_target.time_course.plot <- ggplot(prop_target.time_course,
                                          aes(x = Time, y=Prop)) +
@@ -1202,7 +1205,7 @@ if(run_model){
 }
 
 # Plotting boxplots
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   fam_switches.raw_predictions <- last(fam_switches.per_fstlst.brms.models) %>%
@@ -1430,7 +1433,7 @@ if(run_model){
 }
 
 # Plotting
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## First AOI (boxplot)
   ### Get data for plot
