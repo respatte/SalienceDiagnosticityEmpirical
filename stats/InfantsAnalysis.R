@@ -205,6 +205,7 @@ LT.test.ctr <- LT.gaze_offset.data.corrected %>%
 ## Word learning tests
 LT.test.wl <- LT.gaze_offset.data.corrected %>%
   subset(Phase == "Test - Word Learning") %>%
+  droplevels() %>%
   mutate_at("PrePost", parse_factor,
             levels = c("Pre Label Onset", "Post Label Onset"),
             include_na = F) %>%
@@ -1087,14 +1088,15 @@ prop_target.time_course <- LT.test.wl %>%
   mutate(Chance = F) %>%
   make_time_sequence_data(time_bin_size = 100,
                           aois = "Target",
-                          predictor_columns=c("Chance"),
-                          summarize_by = "Participant")
+                          predictor_columns=c("Chance", "Stimulus"),
+                          summarize_by = c("Participant"))
 prop_target.time_course.chance <- prop_target.time_course %>%
   mutate(Chance = T,
          Participant = paste0("Chance", Participant),
          Prop = .5)
 prop_target.time_course.chance_test <- rbind(prop_target.time_course,
                                              prop_target.time_course.chance) %>%
+  mutate(Chance = as.character(Chance)) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 run_model <- F
@@ -1106,15 +1108,19 @@ if(run_model){
                    df = num_sub-1)
   ## Determine clusters
   prop_target.time_cluster <- prop_target.time_course.chance_test %>%
-    make_time_cluster_data(predictor_column = "Chance",
-                           aoi = "Target",
-                           test = "t.test",
-                           threshold = threshold_t)
+    split(.$Stimulus) %>%
+    lapply(make_time_cluster_data,
+           predictor_column = "Chance",
+           treatment_level = "TRUE",
+           aoi = "Target",
+           test = "t.test",
+           threshold = threshold_t)
   ## Run analysis
   prop_target.time_cluster.analysis <- prop_target.time_cluster %>%
-    analyze_time_clusters(within_subj = F,
-                          parallel = T)
-  bcbp.time <- proc.time() - t
+    lapply(analyze_time_clusters,
+           within_subj = F,
+           parallel = T)
+  prop_target.time_course.time <- proc.time() - t
   ## Save clusters and analysis
   saveRDS(prop_target.time_cluster, paste0(save_path, "bcbpClusters.rds"))
   saveRDS(prop_target.time_cluster.analysis, paste0(save_path, "bcbpAnalysis.rds"))
@@ -1125,18 +1131,33 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
+  prop_target.time_course.plot.clusters <- prop_target.time_cluster %>%
+  {lapply(seq_along(.),
+          function(i){
+            df <- attr(prop_target.time_cluster[[i]], "eyetrackingR")$clusters %>%
+              mutate(Stimulus = if(i == 1){"WLG"}else{"WLS"})
+          })} %>%
+    bind_rows()
   prop_target.time_course.plot <- ggplot(prop_target.time_course,
-                                         aes(x = Time, y=Prop)) +
+                                         aes(x = Time, y=Prop,
+                                             colour=Stimulus,
+                                             fill=Stimulus)) +
     xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
-    theme(legend.position = "top") + ylim(0,1) +
+    theme(legend.position = "top") + ylim(0,1) + facet_grid(.~Stimulus) +
     stat_summary(fun.y='mean', geom='line', linetype = '61') +
     stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+    geom_rect(data = prop_target.time_course.plot.clusters,
+              inherit.aes = F,
+              aes(xmin = StartTime, xmax = EndTime,
+                  ymin = 0, ymax = 1),
+              alpha = 0.5,
+              fill = brewer.pal(3, "Dark2")[[3]]) +
     geom_hline(yintercept = .5)
   ggsave(paste0(save_path, "data.pdf"),
          plot = prop_target.time_course.plot,
-         width = 3.5, height = 2.5)
+         width = 5.5, height = 2.5)
 }
 
 # FAMILIARISATION: NUMBER OF SWITCHES ==============================================================
