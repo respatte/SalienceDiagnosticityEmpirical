@@ -677,8 +677,7 @@ if(run_model){
                                 data = new_old)
   new_old.lmer.anova <- anova(new_old.lmer.model, type = 1)
   new_old.lmer.emmeans <- emmeans(new_old.lmer.model, ~ ContrastType | Condition,
-                                  options = list(infer = c(T, T), null = 0,
-                                                 level = .89))
+                                  options = list(infer = c(T, T), null = 0))
   ## Run brm
   ### Set priors for models other than intercept-only
   priors.new_old <- list(set_prior("uniform(-.8,.8)",
@@ -967,7 +966,7 @@ if(run_model){
 }
 
 # Plot jitter + mean&se
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   prop_target.raw_predictions <- last(prop_target.brms.models) %>%
@@ -1131,7 +1130,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   prop_target.time_course.plot.clusters <- prop_target.time_cluster %>%
   {lapply(seq_along(.),
