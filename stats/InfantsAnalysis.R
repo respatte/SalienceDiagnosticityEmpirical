@@ -677,7 +677,9 @@ if(run_model){
                                 data = new_old)
   new_old.lmer.anova <- anova(new_old.lmer.model, type = 1)
   new_old.lmer.emmeans <- emmeans(new_old.lmer.model, ~ ContrastType | Condition,
-                                  options = list(infer = c(T, T), null = 0))
+                                  options = list(infer = c(T, T),
+                                                 null = 0,
+                                                 adjust = "bonferroni"))
   ## Run brm
   ### Set priors for models other than intercept-only
   priors.new_old <- list(set_prior("uniform(-.8,.8)",
