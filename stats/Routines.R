@@ -125,6 +125,7 @@ LT_data.import.infants <- function(res.repo="../results/infants/data/", file.nam
            ContrastType = case_when(grepl("HC_", MediaName) ~ "Head",
                                     grepl("RC_", MediaName) ~ "Relative",
                                     grepl("TC_", MediaName) ~ "Tail"),
+           PhraseOnset = case_when(grepl("WL[GS]", MediaName) ~ 1500),
            LabelOnset = case_when(grepl("_NL1", MediaName) ~ 2940,
                                   grepl("_NL2", MediaName) ~ 3240,
                                   grepl("_G1", MediaName) ~ 3300,
