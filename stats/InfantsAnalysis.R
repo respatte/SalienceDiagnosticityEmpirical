@@ -1084,8 +1084,8 @@ save_path <- "../results/infants/WordLearning/TimeCourse_"
 # Data preparation
 ## For overall analysis
 prop_target.time_course <- LT.test.wl %>%
-  subset_by_window(window_start_col = "LabelOnset", remove = F) %>%
-  mutate(TrialEnd = TrialEnd - LabelOnset) %>%
+  subset_by_window(window_start_col = "PhraseOnset", remove = F) %>%
+  mutate(TrialEnd = TrialEnd - PhraseOnset) %>%
   subset_by_window(window_end_col = "TrialEnd", rezero = F) %>%
   mutate(Chance = F) %>%
   make_time_sequence_data(time_bin_size = 100,
@@ -1119,7 +1119,7 @@ prop_target.time_course.by_label.chance_test <- rbind(prop_target.time_course.by
   mutate(Chance = as.character(Chance)) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- F
+run_model <- T
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -1165,7 +1165,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   # Plot overall
   prop_target.time_course.plot.clusters <- prop_target.time_cluster.analysis$clusters %>%
@@ -1174,7 +1174,7 @@ if(generate_plots){
                                          aes(x = Time, y=Prop,
                                              colour = Chance,
                                              fill = Chance)) +
-    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
+    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") + theme_bw() +
     theme(legend.position = "none") + ylim(0,1) +
     stat_summary(fun.y='mean', geom='line', linetype = '61') +
     stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
