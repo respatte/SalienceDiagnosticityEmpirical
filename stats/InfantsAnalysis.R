@@ -358,24 +358,24 @@ if(generate_plots){
                show.legend = F) +
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
-    geom_pointrange(data = prop_tail.predicted.hpdi.67,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = prop_tail.predicted.hpdi.89,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = 1,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = prop_tail.predicted.hpdi.97,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = .5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
+    # geom_pointrange(data = prop_tail.predicted.hpdi.67,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = 1.5, size = 1.5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = prop_tail.predicted.hpdi.89,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = 1,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = prop_tail.predicted.hpdi.97,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = .5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ## Save plot
@@ -842,24 +842,24 @@ if(generate_plots){
                show.legend = F) +
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
-    geom_pointrange(data = new_old.predicted.hpdi.67,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = new_old.predicted.hpdi.89,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = 1,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = new_old.predicted.hpdi.97,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = .5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
+    # geom_pointrange(data = new_old.predicted.hpdi.67,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = 1.5, size = 1.5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = new_old.predicted.hpdi.89,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = 1,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = new_old.predicted.hpdi.97,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = .5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ## Save plot
@@ -1119,7 +1119,7 @@ prop_target.time_course.by_label.chance_test <- rbind(prop_target.time_course.by
   mutate(Chance = as.character(Chance)) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T
+run_model <- F
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -1165,7 +1165,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   # Plot overall
   prop_target.time_course.plot.clusters <- prop_target.time_cluster.analysis$clusters %>%
@@ -1354,24 +1354,24 @@ if(generate_plots){
                show.legend = F) +
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
-    geom_pointrange(data = fam_switches.predicted.hpdi.67,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = fam_switches.predicted.hpdi.89,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = 1,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = fam_switches.predicted.hpdi.97,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = .5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
+    # geom_pointrange(data = fam_switches.predicted.hpdi.67,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = 1.5, size = 1.5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = fam_switches.predicted.hpdi.89,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = 1,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = fam_switches.predicted.hpdi.97,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = .5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ## Save plot
@@ -1601,27 +1601,27 @@ if(generate_plots){
                show.legend = F) +
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
-    geom_pointrange(data = first_aoi.predicted.hpdi.67,
-                    aes(x = Condition,
-                        y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = first_aoi.predicted.hpdi.89,
-                    aes(x = Condition,
-                        y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = 1,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = first_aoi.predicted.hpdi.97,
-                    aes(x = Condition,
-                        y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = .5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
+    # geom_pointrange(data = first_aoi.predicted.hpdi.67,
+    #                 aes(x = Condition,
+    #                     y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = 1.5, size = 1.5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = first_aoi.predicted.hpdi.89,
+    #                 aes(x = Condition,
+    #                     y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = 1,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = first_aoi.predicted.hpdi.97,
+    #                 aes(x = Condition,
+    #                     y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = .5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ### Save plot
@@ -1699,24 +1699,24 @@ if(generate_plots){
                show.legend = F) +
     geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
                  show.legend = F) +
-    geom_pointrange(data = first_tail.predicted.hpdi.67,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = 1.5, size = 1.5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = first_tail.predicted.hpdi.89,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = 1,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
-    geom_pointrange(data = first_tail.predicted.hpdi.97,
-                    aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-                    colour = brewer.pal(3, "Dark2")[[3]],
-                    fatten = .5, size = .5,
-                    position = position_nudge(x = -.23),
-                    show.legend = F) +
+    # geom_pointrange(data = first_tail.predicted.hpdi.67,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = 1.5, size = 1.5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = first_tail.predicted.hpdi.89,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = 1,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    # geom_pointrange(data = first_tail.predicted.hpdi.97,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = .5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ### Save plot
