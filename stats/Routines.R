@@ -56,8 +56,10 @@ LT_data.import.adults <- function(participants="adults_2f"){
     ungroup() %>%
     mutate(FstLst = case_when(Block == 1 ~ "First Block",
                               Block == NBlocks ~ "Last Block")) %>%
-    mutate_at(c("Participant", "Phase", "Condition", "CategoryName", "FstLst",
-                "CRESP","RESP","ACC","CurrentObject","Stimulus","StimLabel", "Gender"),
+    mutate_at(c("Participant"), as.character) %>%
+    mutate_at(c("Participant", "Phase", "Condition", "CategoryName",
+                "CRESP","RESP","CurrentObject","Stimulus","StimLabel", "Gender"
+                ),
               parse_factor, levels = NULL, include_na = F) %>%
     select(-one_of("TimestampMicrosec","TimestampSec"))
   if(participants == "adults_3f"){
