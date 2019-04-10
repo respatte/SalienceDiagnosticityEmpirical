@@ -698,20 +698,30 @@ behaviour.training <- behaviour %>%
   subset(Phase == "Familiarisation")
 behaviour.test <- behaviour %>%
   subset(Phase == "Test")
-# Run binomial glmer
-## During training
-ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*zLogRT +
-                                            (1 + zLogRT | Participant) +
-                                            (1 | Stimulus) +
-                                            (1 | StimLabel),
-                                          family = binomial,
-                                          control = glmerControl(optimizer = "bobyqa"),
-                                          data = behaviour.training)
-## At test
-ACC_by_diag_by_RT.test.glmer <- glmer(ACC ~ Condition +
-                                        (1 | Participant),
-                                      family = binomial,
-                                      data = behaviour.test)
+# Test ACC ~ Condition * RT
+run_model <- T
+if(run_model){
+  ## Run binomial glmer
+  ### During training
+  ACC_by_cond_by_RT_by_block.training.glmer <- glmer(ACC ~ Condition*zLogRT*Block +
+                                                       (1 + zLogRT + Block | Participant) +
+                                                       (1 | Stimulus) +
+                                                       (1 | StimLabel),
+                                                     family = binomial,
+                                                     control = glmerControl(optimizer = "bobyqa"),
+                                                     data = behaviour.training)
+  ### At test
+  ACC_by_cond_by_RT_by_block.test.glmer <- glmer(ACC ~ Condition*zLogRT +
+                                                   (1 + zLogRT | Participant),
+                                                 family = binomial,
+                                                 data = behaviour.test)
+  ## Save results
+  saveRDS(ACC_by_cond_by_RT_by_block.training.glmer, paste0(save_path, "Training.rds"))
+  saveRDS(ACC_by_cond_by_RT_by_block.test.glmer, paste0(save_path, "Test.rds"))
+}else{
+  ACC_by_cond_by_RT_by_block.training.glmer <- readRDS(paste0(save_path, "Training.rds"))
+  ACC_by_cond_by_RT_by_block.test.glmer <- readRDS(paste0(save_path, "Test.rds"))
+}
 # Prepare and plot data
 ## During training
 ACC_by_diag_by_RT.training <- behaviour.training %>%
