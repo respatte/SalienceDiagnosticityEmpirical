@@ -467,7 +467,9 @@ if(generate_plots){
                                                   aes(x = Time, y=Prop,
                                                       colour=Condition,
                                                       fill=Condition)) +
-    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") + theme(legend.pos = "top") +
+    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") + theme_bw() +
+    theme(legend.pos = "top",
+          axis.text.x = element_text(angle=45, vjust=1, hjust = 1)) +
     facet_grid(.~FstLst) + ylim(0,1) +
     scale_x_continuous(breaks = c(-1000, 0, 1000, 2000, 3000)) +
     scale_color_brewer(palette = "Dark2") +
@@ -478,7 +480,7 @@ if(generate_plots){
     geom_hline(yintercept = .5)
   ggsave(paste0(save_path, "FstLst_data.pdf"),
          plot = prop_tail.time_course.per_fstlst.plot,
-         width = 7, height = 3, dpi = 600)
+         width = 5.5, height = 3, dpi = 600)
 }
 
 # TRAINING LT ANALYSIS: AOI SWITCHES ===============================================================
@@ -523,7 +525,7 @@ if(run_model){
                                          family = poisson())
                                          # iter = 4000,
                                          # controls = list(adapt_delta = .95))
-  
+
   fam_switches.per_fstlst.brms.models <- brms.results[[1]]
   fam_switches.per_fstlst.brms.bayes_factors <- brms.results[[2]]
   fam_switches.time <- proc.time() - t
@@ -690,56 +692,54 @@ if(generate_plots){
          width = 4, height = 3, dpi = 600)
 }
 # BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*RT) ===================================================
-run_behavioural <- F
-if(run_behavioural){
-  # Get datasets for training and test
-  behaviour.training <- behaviour %>%
-    subset(Phase == "Familiarisation")
-  behaviour.test <- behaviour %>%
-    subset(Phase == "Test")
-  # Run binomial glmer
-  ## During training
-  ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*zLogRT +
-                                              (1 + zLogRT | Participant) +
-                                              (1 | Stimulus) +
-                                              (1 | StimLabel),
-                                            family = binomial,
-                                            control = glmerControl(optimizer = "bobyqa"),
-                                            data = behaviour.training)
-  ## At test
-  ACC_by_diag_by_RT.test.glmer <- glmer(ACC ~ Condition +
-                                          (1 | Participant),
-                                        family = binomial,
-                                        data = behaviour.test)
-  # Prepare and plot data
-  ## During training
-  ACC_by_diag_by_RT.training <- behaviour.training %>%
-    group_by(Participant, Condition) %>%
-    summarise(Accuracy = sum(ACC == 1)/n())
-  ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
-                                            aes(x = Condition,
-                                                y = Accuracy,
-                                                fill = Condition)) +
-    ylim(0,1) + theme_apa(legend.pos = "bottomright") +
-    scale_fill_discrete(labels = c("Label", "No Label")) +
-    geom_violin() +
-    geom_boxplot(alpha = 0, outlier.alpha = 1,
-                 width = .15, position = position_dodge(.9))
-  ggsave("../results/adults_2f/ACCbyRTbyBlock_training.pdf", plot = ACC_by_diag_by_RT.training.plot,
-         width = 3.5, height = 2.7)
-  ## At test
-  ACC_by_diag_by_RT.test <- behaviour.test %>%
-    group_by(Participant, Condition) %>%
-    summarise(Accuracy = sum(ACC == 1)/n())
-  ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
-                                        aes(x = Condition,
-                                            y = Accuracy,
-                                            fill = Condition)) +
-    ylim(0,1) + theme_apa(legend.pos = "bottomright") +
-    scale_x_discrete(labels = c("Label", "No Label")) +
-    geom_violin() +
-    geom_boxplot(alpha = 0, outlier.alpha = 1,
-                 width = .15, position = position_dodge(.9))
-  ggsave("../results/adults_2f/ACCbyRT_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
-         width = 3.5, height = 2.7)
-}
+save_path <- "../results/adults_2f/ACC/"
+# Get datasets for training and test
+behaviour.training <- behaviour %>%
+  subset(Phase == "Familiarisation")
+behaviour.test <- behaviour %>%
+  subset(Phase == "Test")
+# Run binomial glmer
+## During training
+ACC_by_diag_by_RT.training.glmer <- glmer(ACC ~ Condition*zLogRT +
+                                            (1 + zLogRT | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
+                                          family = binomial,
+                                          control = glmerControl(optimizer = "bobyqa"),
+                                          data = behaviour.training)
+## At test
+ACC_by_diag_by_RT.test.glmer <- glmer(ACC ~ Condition +
+                                        (1 | Participant),
+                                      family = binomial,
+                                      data = behaviour.test)
+# Prepare and plot data
+## During training
+ACC_by_diag_by_RT.training <- behaviour.training %>%
+  group_by(Participant, Condition) %>%
+  summarise(Accuracy = sum(ACC == 1)/n())
+ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
+                                          aes(x = Condition,
+                                              y = Accuracy,
+                                              fill = Condition)) +
+  ylim(0,1) + theme_apa(legend.pos = "bottomright") +
+  scale_fill_discrete(labels = c("Label", "No Label")) +
+  geom_violin() +
+  geom_boxplot(alpha = 0, outlier.alpha = 1,
+               width = .15, position = position_dodge(.9))
+ggsave("../results/adults_2f/ACCbyRTbyBlock_training.pdf", plot = ACC_by_diag_by_RT.training.plot,
+       width = 3.5, height = 2.7)
+## At test
+ACC_by_diag_by_RT.test <- behaviour.test %>%
+  group_by(Participant, Condition) %>%
+  summarise(Accuracy = sum(ACC == 1)/n())
+ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
+                                      aes(x = Condition,
+                                          y = Accuracy,
+                                          fill = Condition)) +
+  ylim(0,1) + theme_apa(legend.pos = "bottomright") +
+  scale_x_discrete(labels = c("Label", "No Label")) +
+  geom_violin() +
+  geom_boxplot(alpha = 0, outlier.alpha = 1,
+               width = .15, position = position_dodge(.9))
+ggsave("../results/adults_2f/ACCbyRT_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
+       width = 3.5, height = 2.7)S
