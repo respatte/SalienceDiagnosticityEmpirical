@@ -14,207 +14,207 @@ source("StatTools.R")
 source("geom_flat_violin.R")
 
 # GATHER DATA ======================================================================================
-# Load data and run general checks
-d <- LT_data.gather("infants")
-# Unload snow packages so that parallel works for brms
-detach("package:doSNOW")
-detach("package:snow")
-# Remove participants from label condition with wrong setup
-d[[4]] <- d[[4]] %>%
-  subset(!(Condition == "Label" & as.numeric(as.character(Participant)) < 72))
-# Check for counterbalancing, gender balancing, and age balancing
-pres_seq <- d[[4]] %>%
-  group_by(PresentationSequence, Participant) %>%
-  summarise(T = sum(TrackLoss)/n())
-# Keep only one participant when multiple infants saw the same presentation sequence.
-# Current choice: improve gender balance in total and between conditions.
-# remove: P03, P53, P55
-# keep:   P51, P06, P08
-d[[4]] <- d[[4]] %>%
-  subset(!(Participant %in% c("03","53","55"))) %>%
-  droplevels()
-gender <- d[[4]] %>%
-  group_by(Gender, Condition) %>%
-  summarise(N = n_distinct(Participant))
-age <- d[[4]] %>%
-  group_by(Participant, Condition, Gender) %>%
-  summarise(Age = first(Age))
-age_gender_condition <- age %>%
-  group_by(Condition, Gender) %>%
-  summarise(mu = mean(Age),
-            l = min(Age),
-            u = max(Age))
-# Checking gaze-data offset (checking on Familiarisation only for simplicity)
-## Saving heatmaps per participant pre-correction
-generate_plots <- F
-if(generate_plots){
-  head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
-                     xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
-                     ymin = c(197,197), ymax = c(197+450,197+450))
-  tail_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
-                     xmin = c(390,1920-390-450), xmax = c(390+450,1920-390),
-                     ymin = c(299,299), ymax = c(299+450,299+450))
-  LT.gaze_offset.data.pre <- d[[4]] %>%
-    subset(Phase == "Familiarisation")
-  for(participant in levels(LT.gaze_offset.data.pre$Participant)){
-    LT.gaze_offset.plot.pre <- LT.gaze_offset.data.pre %>%
-      subset(Participant == participant) %>%
-      ggplot(aes(x=CursorX, y=CursorY)) +
-      xlim(c(0, 1920)) + scale_y_reverse(limits = c(1080, 0)) +
-      facet_grid(AOI_type~.) +
-      geom_bin2d(binwidth = c(20,20)) +
-      geom_rect(data = head_fam,
-                inherit.aes = F,
-                aes(xmin = xmin, xmax = xmax,
-                    ymin = ymin, ymax = ymax),
-                fill = NA, colour = "red") +
-      geom_rect(data = tail_fam,
-                inherit.aes = F,
-                aes(xmin = xmin, xmax = xmax,
-                    ymin = ymin, ymax = ymax),
-                fill = NA, colour = "red")
-    ggsave(paste0("../results/infants/cleaning/GazeOffsets/PreCorrection/",participant,".png"),
-           plot = LT.gaze_offset.plot.pre,
-           width = 3.5, height = 2.9)
-  }
-}
-## Apply linear correction to gaze data by participant when necessary
-LT.gaze_offset.data.correction <- d[[4]] %>%
-  mutate(CursorX = case_when(Participant == "01" ~ CursorX - 60,
-                             Participant == "07" ~ CursorX - 80,
-                             Participant == "08" ~ CursorX + 80,
-                             Participant == "26" ~ CursorX - 80,
-                             Participant == "31" ~ CursorX + 30,
-                             Participant == "42" ~ CursorX - 30,
-                             Participant == "51" ~ CursorX + 60,
-                             Participant == "56" ~ CursorX + 30,
-                             Participant == "60" ~ CursorX - 100,
-                             Participant == "61" ~ CursorX - 80,
-                             Participant == "72" ~ CursorX + 50,
-                             Participant == "74" ~ CursorX + 150,
-                             Participant == "88" ~ CursorX -30,
-                             Participant == "100" ~ CursorX -50,
-                             T ~ as.double(CursorX)),
-         CursorY = case_when(Participant == "07" ~ CursorY + 100,
-                             Participant == "08" ~ CursorY - 50,
-                             Participant == "14" ~ CursorY - 80,
-                             Participant == "15" ~ CursorY - 150,
-                             Participant == "31" ~ CursorY - 100,
-                             Participant == "36" ~ CursorY - 50,
-                             Participant == "37" ~ CursorY - 50,
-                             Participant == "42" ~ CursorY - 50,
-                             Participant == "47" ~ CursorY - 50,
-                             Participant == "52" ~ CursorY - 50,
-                             Participant == "59" ~ CursorY - 150,
-                             Participant == "60" ~ CursorY - 150,
-                             Participant == "61" ~ CursorY - 100,
-                             Participant == "64" ~ CursorY - 100,
-                             Participant == "65" ~ CursorY - 50,
-                             Participant == "66" ~ CursorY - 50,
-                             Participant == "67" ~ CursorY - 100,
-                             Participant == "72" ~ CursorY -30,
-                             Participant == "74" ~ CursorY -30,
-                             Participant == "90" ~ CursorY -50,
-                             Participant == "92" ~ CursorY -30,
-                             Participant == "100" ~ CursorY -50,
-                             T ~ as.double(CursorY))) %>%
-  select(-c(Head, Tail, NewTail, OldTail, NewHead, OldHead, Centre, Target, Distractor))
-  # Removing AOIs as they need updating
-## Saving heatmaps per participant post-correction
-generate_plots <- F
-if(generate_plots){
-  head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
-                     xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
-                     ymin = c(197,197), ymax = c(197+450,197+450))
-  tail_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
-                     xmin = c(390,1920-390-450), xmax = c(390+450,1920-390),
-                     ymin = c(299,299), ymax = c(299+450,299+450))
-  LT.gaze_offset.data.post <- LT.gaze_offset.data.correction %>%
-    subset(Phase == "Familiarisation") %>%
+  # Load data and run general checks
+  d <- LT_data.gather("infants")
+  # Unload snow packages so that parallel works for brms
+  detach("package:doSNOW")
+  detach("package:snow")
+  # Remove participants from label condition with wrong setup
+  d[[4]] <- d[[4]] %>%
+    subset(!(Condition == "Label" & as.numeric(as.character(Participant)) < 72))
+  # Check for counterbalancing, gender balancing, and age balancing
+  pres_seq <- d[[4]] %>%
+    group_by(PresentationSequence, Participant) %>%
+    summarise(T = sum(TrackLoss)/n())
+  # Keep only one participant when multiple infants saw the same presentation sequence.
+  # Current choice: improve gender balance in total and between conditions.
+  # remove: P03, P53, P55
+  # keep:   P51, P06, P08
+  d[[4]] <- d[[4]] %>%
+    subset(!(Participant %in% c("03","53","55"))) %>%
     droplevels()
-  for(participant in levels(LT.gaze_offset.data.post$Participant)){
-    LT.gaze_offset.plot.post <- LT.gaze_offset.data.post %>%
-      subset(Participant == participant) %>%
-      ggplot(aes(x=CursorX, y=CursorY)) +
-      xlim(c(0, 1920)) + scale_y_reverse(limits = c(1080, 0)) +
-      facet_grid(AOI_type~.) +
-      geom_bin2d(binwidth = c(20,20)) +
-      geom_rect(data = head_fam,
-                inherit.aes = F,
-                aes(xmin = xmin, xmax = xmax,
-                    ymin = ymin, ymax = ymax),
-                fill = NA, colour = "red") +
-      geom_rect(data = tail_fam,
-                inherit.aes = F,
-                aes(xmin = xmin, xmax = xmax,
-                    ymin = ymin, ymax = ymax),
-                fill = NA, colour = "red")
-    ggsave(paste0("../results/infants/cleaning/GazeOffsets/PostCorrection/",participant,".png"),
-           plot = LT.gaze_offset.plot.post,
-           width = 3.5, height = 2.9)
+  gender <- d[[4]] %>%
+    group_by(Gender, Condition) %>%
+    summarise(N = n_distinct(Participant))
+  age <- d[[4]] %>%
+    group_by(Participant, Condition, Gender) %>%
+    summarise(Age = first(Age))
+  age_gender_condition <- age %>%
+    group_by(Condition, Gender) %>%
+    summarise(mu = mean(Age),
+              l = min(Age),
+              u = max(Age))
+  # Checking gaze-data offset (checking on Familiarisation only for simplicity)
+  ## Saving heatmaps per participant pre-correction
+  generate_plots <- F
+  if(generate_plots){
+    head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
+                       xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
+                       ymin = c(197,197), ymax = c(197+450,197+450))
+    tail_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
+                       xmin = c(390,1920-390-450), xmax = c(390+450,1920-390),
+                       ymin = c(299,299), ymax = c(299+450,299+450))
+    LT.gaze_offset.data.pre <- d[[4]] %>%
+      subset(Phase == "Familiarisation")
+    for(participant in levels(LT.gaze_offset.data.pre$Participant)){
+      LT.gaze_offset.plot.pre <- LT.gaze_offset.data.pre %>%
+        subset(Participant == participant) %>%
+        ggplot(aes(x=CursorX, y=CursorY)) +
+        xlim(c(0, 1920)) + scale_y_reverse(limits = c(1080, 0)) +
+        facet_grid(AOI_type~.) +
+        geom_bin2d(binwidth = c(20,20)) +
+        geom_rect(data = head_fam,
+                  inherit.aes = F,
+                  aes(xmin = xmin, xmax = xmax,
+                      ymin = ymin, ymax = ymax),
+                  fill = NA, colour = "red") +
+        geom_rect(data = tail_fam,
+                  inherit.aes = F,
+                  aes(xmin = xmin, xmax = xmax,
+                      ymin = ymin, ymax = ymax),
+                  fill = NA, colour = "red")
+      ggsave(paste0("../results/infants/cleaning/GazeOffsets/PreCorrection/",participant,".png"),
+             plot = LT.gaze_offset.plot.pre,
+             width = 3.5, height = 2.9)
+    }
   }
-}
-## Updating AOI hits
-infants.AOIs <- grep("infants", names(AOIs))
-LT.gaze_offset.data.corrected <- LT.gaze_offset.data.correction
-for(AOI in names(AOIs[infants.AOIs])){
-  AOI.name <- sub("infants\\.", "", AOI)
-  LT.gaze_offset.data.corrected <- LT.gaze_offset.data.corrected %>%
-    left_join(AOIs[[AOI]]) %>%
-    mutate(!!AOI.name := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom) %>%
-    select(-c(Left, Right, Top, Bottom))
-}
-# Creating general datasets for analysis (separating phases, general window sub-setting)
-## Familiarisation
-LT.fam <- LT.gaze_offset.data.corrected %>%
-  subset(Phase == "Familiarisation") %>%
-  mutate_at("PrePost", parse_factor,
-            levels = c("Pre Label Onset", "Post Label Onset"),
-            include_na = F) %>%
-  group_by(Participant) %>%
-  mutate(First = min(TrialNum, na.rm = T),
-         Last = max(TrialNum, na.rm = T),
-         FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
-                            TrialNum >= Last - 2 ~ "Last Trials")) %>%
-  # Useful to compare beginning-end of experiment per infant
-  select(-c(First, Last)) %>%
-  make_eyetrackingr_data(participant_column = "Participant",
-                         trial_column = "TrialId",
-                         time_column = "TimeStamp",
-                         trackloss_column = "TrackLoss",
-                         aoi_columns = c("Head","Tail"),
-                         treat_non_aoi_looks_as_missing = T) %>%
-  subset_by_window(window_start_time = 1500,        # Start after stimulus moving in,
-                   window_end_col = "TrialEnd") %>% # and end 3000ms after LabelOnset
-  mutate(LabelOnset = LabelOnset - 1500) # Update LabelOnset after window sub-setting
-## Contrast tests
-LT.test.ctr <- LT.gaze_offset.data.corrected %>%
-  subset(Phase == "Test - Contrast") %>%
-  mutate(NewFeature = ifelse(ContrastType == "Relative" | (is.na(NewTail) & is.na(NewHead)),
-                             NA, (NewTail | NewHead) %in% T),
-         OldFeature = ifelse(ContrastType == "Relative" | (is.na(OldTail) & is.na(NewTail)),
-                             NA, (OldTail | OldHead) %in% T)) %>%
-  make_eyetrackingr_data(participant_column = "Participant",
-                         trial_column = "TrialId",
-                         time_column = "TimeStamp",
-                         trackloss_column = "TrackLoss",
-                         aoi_columns = c("NewHead","OldHead","NewTail","OldTail",
-                                         "NewFeature", "OldFeature"),
-                         # Ignore looks twoards the `centre' AOI`
-                         treat_non_aoi_looks_as_missing = T)
-## Word learning tests
-LT.test.wl <- LT.gaze_offset.data.corrected %>%
-  subset(Phase == "Test - Word Learning") %>%
-  droplevels() %>%
-  mutate_at("PrePost", parse_factor,
-            levels = c("Pre Label Onset", "Post Label Onset"),
-            include_na = F) %>%
-  make_eyetrackingr_data(participant_column = "Participant",
-                         trial_column = "TrialId",
-                         time_column = "TimeStamp",
-                         trackloss_column = "TrackLoss",
-                         aoi_columns = c("Target","Distractor"),
-                         treat_non_aoi_looks_as_missing = T)
+  ## Apply linear correction to gaze data by participant when necessary
+  LT.gaze_offset.data.correction <- d[[4]] %>%
+    mutate(CursorX = case_when(Participant == "01" ~ CursorX - 60,
+                               Participant == "07" ~ CursorX - 80,
+                               Participant == "08" ~ CursorX + 80,
+                               Participant == "26" ~ CursorX - 80,
+                               Participant == "31" ~ CursorX + 30,
+                               Participant == "42" ~ CursorX - 30,
+                               Participant == "51" ~ CursorX + 60,
+                               Participant == "56" ~ CursorX + 30,
+                               Participant == "60" ~ CursorX - 100,
+                               Participant == "61" ~ CursorX - 80,
+                               Participant == "72" ~ CursorX + 50,
+                               Participant == "74" ~ CursorX + 150,
+                               Participant == "88" ~ CursorX -30,
+                               Participant == "100" ~ CursorX -50,
+                               T ~ as.double(CursorX)),
+           CursorY = case_when(Participant == "07" ~ CursorY + 100,
+                               Participant == "08" ~ CursorY - 50,
+                               Participant == "14" ~ CursorY - 80,
+                               Participant == "15" ~ CursorY - 150,
+                               Participant == "31" ~ CursorY - 100,
+                               Participant == "36" ~ CursorY - 50,
+                               Participant == "37" ~ CursorY - 50,
+                               Participant == "42" ~ CursorY - 50,
+                               Participant == "47" ~ CursorY - 50,
+                               Participant == "52" ~ CursorY - 50,
+                               Participant == "59" ~ CursorY - 150,
+                               Participant == "60" ~ CursorY - 150,
+                               Participant == "61" ~ CursorY - 100,
+                               Participant == "64" ~ CursorY - 100,
+                               Participant == "65" ~ CursorY - 50,
+                               Participant == "66" ~ CursorY - 50,
+                               Participant == "67" ~ CursorY - 100,
+                               Participant == "72" ~ CursorY -30,
+                               Participant == "74" ~ CursorY -30,
+                               Participant == "90" ~ CursorY -50,
+                               Participant == "92" ~ CursorY -30,
+                               Participant == "100" ~ CursorY -50,
+                               T ~ as.double(CursorY))) %>%
+    select(-c(Head, Tail, NewTail, OldTail, NewHead, OldHead, Centre, Target, Distractor))
+    # Removing AOIs as they need updating
+  ## Saving heatmaps per participant post-correction
+  generate_plots <- F
+  if(generate_plots){
+    head_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
+                       xmin = c(1031,1920-1031-450), xmax = c(1031+450,1920-1031),
+                       ymin = c(197,197), ymax = c(197+450,197+450))
+    tail_fam <- tibble(AOI_type = factor(c("Reg", "Flip")),
+                       xmin = c(390,1920-390-450), xmax = c(390+450,1920-390),
+                       ymin = c(299,299), ymax = c(299+450,299+450))
+    LT.gaze_offset.data.post <- LT.gaze_offset.data.correction %>%
+      subset(Phase == "Familiarisation") %>%
+      droplevels()
+    for(participant in levels(LT.gaze_offset.data.post$Participant)){
+      LT.gaze_offset.plot.post <- LT.gaze_offset.data.post %>%
+        subset(Participant == participant) %>%
+        ggplot(aes(x=CursorX, y=CursorY)) +
+        xlim(c(0, 1920)) + scale_y_reverse(limits = c(1080, 0)) +
+        facet_grid(AOI_type~.) +
+        geom_bin2d(binwidth = c(20,20)) +
+        geom_rect(data = head_fam,
+                  inherit.aes = F,
+                  aes(xmin = xmin, xmax = xmax,
+                      ymin = ymin, ymax = ymax),
+                  fill = NA, colour = "red") +
+        geom_rect(data = tail_fam,
+                  inherit.aes = F,
+                  aes(xmin = xmin, xmax = xmax,
+                      ymin = ymin, ymax = ymax),
+                  fill = NA, colour = "red")
+      ggsave(paste0("../results/infants/cleaning/GazeOffsets/PostCorrection/",participant,".png"),
+             plot = LT.gaze_offset.plot.post,
+             width = 3.5, height = 2.9)
+    }
+  }
+  ## Updating AOI hits
+  infants.AOIs <- grep("infants", names(AOIs))
+  LT.gaze_offset.data.corrected <- LT.gaze_offset.data.correction
+  for(AOI in names(AOIs[infants.AOIs])){
+    AOI.name <- sub("infants\\.", "", AOI)
+    LT.gaze_offset.data.corrected <- LT.gaze_offset.data.corrected %>%
+      left_join(AOIs[[AOI]]) %>%
+      mutate(!!AOI.name := CursorX>Left & CursorX<Right & CursorY>Top & CursorY<Bottom) %>%
+      select(-c(Left, Right, Top, Bottom))
+  }
+  # Creating general datasets for analysis (separating phases, general window sub-setting)
+  ## Familiarisation
+  LT.fam <- LT.gaze_offset.data.corrected %>%
+    subset(Phase == "Familiarisation") %>%
+    mutate_at("PrePost", parse_factor,
+              levels = c("Pre Label Onset", "Post Label Onset"),
+              include_na = F) %>%
+    group_by(Participant) %>%
+    mutate(First = min(TrialNum, na.rm = T),
+           Last = max(TrialNum, na.rm = T),
+           FstLst = case_when(TrialNum <= First + 2 ~ "First Trials",
+                              TrialNum >= Last - 2 ~ "Last Trials")) %>%
+    # Useful to compare beginning-end of experiment per infant
+    select(-c(First, Last)) %>%
+    make_eyetrackingr_data(participant_column = "Participant",
+                           trial_column = "TrialId",
+                           time_column = "TimeStamp",
+                           trackloss_column = "TrackLoss",
+                           aoi_columns = c("Head","Tail"),
+                           treat_non_aoi_looks_as_missing = T) %>%
+    subset_by_window(window_start_time = 1500,        # Start after stimulus moving in,
+                     window_end_col = "TrialEnd") %>% # and end 3000ms after LabelOnset
+    mutate(LabelOnset = LabelOnset - 1500) # Update LabelOnset after window sub-setting
+  ## Contrast tests
+  LT.test.ctr <- LT.gaze_offset.data.corrected %>%
+    subset(Phase == "Test - Contrast") %>%
+    mutate(NewFeature = ifelse(ContrastType == "Relative" | (is.na(NewTail) & is.na(NewHead)),
+                               NA, (NewTail | NewHead) %in% T),
+           OldFeature = ifelse(ContrastType == "Relative" | (is.na(OldTail) & is.na(NewTail)),
+                               NA, (OldTail | OldHead) %in% T)) %>%
+    make_eyetrackingr_data(participant_column = "Participant",
+                           trial_column = "TrialId",
+                           time_column = "TimeStamp",
+                           trackloss_column = "TrackLoss",
+                           aoi_columns = c("NewHead","OldHead","NewTail","OldTail",
+                                           "NewFeature", "OldFeature"),
+                           # Ignore looks twoards the `centre' AOI`
+                           treat_non_aoi_looks_as_missing = T)
+  ## Word learning tests
+  LT.test.wl <- LT.gaze_offset.data.corrected %>%
+    subset(Phase == "Test - Word Learning") %>%
+    droplevels() %>%
+    mutate_at("PrePost", parse_factor,
+              levels = c("Pre Label Onset", "Post Label Onset"),
+              include_na = F) %>%
+    make_eyetrackingr_data(participant_column = "Participant",
+                           trial_column = "TrialId",
+                           time_column = "TimeStamp",
+                           trackloss_column = "TrackLoss",
+                           aoi_columns = c("Target","Distractor"),
+                           treat_non_aoi_looks_as_missing = T)
 # FAMILIARISATION ANALYSIS: PROP TAIL LOOKING BY TRIAL/BLOCK/FSTLST ================================
 save_path <- "../results/infants/PropTail/TrialAverage_"
 # Prepare dataset
