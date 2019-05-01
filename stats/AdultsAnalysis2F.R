@@ -695,16 +695,17 @@ if(generate_plots){
 save_path <- "../results/adults_2f/ACC/"
 # Get datasets for training and test
 behaviour.training <- behaviour %>%
-  subset(Phase == "Familiarisation")
+  subset(Phase == "Familiarisation") %>%
+  mutate(BlockZero = Block - 1) # Useful for models
 behaviour.test <- behaviour %>%
   subset(Phase == "Test")
 # Test ACC ~ Condition * RT
-run_model <- F
+run_model <- T
 if(run_model){
   ## Run binomial glmer
   ### During training
-  ACC_by_cond_by_RT_by_block.training.glmer <- glmer(ACC ~ Condition*zLogRT*Block +
-                                                       (1 + zLogRT + Block | Participant) +
+  ACC_by_cond_by_RT_by_block.training.glmer <- glmer(ACC ~ Condition*zLogRT*BlockZero +
+                                                       (1 + zLogRT + BlockZero | Participant) +
                                                        (1 | Stimulus) +
                                                        (1 | StimLabel),
                                                      family = binomial,
