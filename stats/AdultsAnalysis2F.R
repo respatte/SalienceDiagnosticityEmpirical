@@ -699,7 +699,7 @@ behaviour.training <- behaviour %>%
 behaviour.test <- behaviour %>%
   subset(Phase == "Test")
 # Test ACC ~ Condition * RT
-run_model <- T
+run_model <- F
 if(run_model){
   ## Run binomial glmer
   ### During training
@@ -722,34 +722,50 @@ if(run_model){
   ACC_by_cond_by_RT_by_block.training.glmer <- readRDS(paste0(save_path, "Training.rds"))
   ACC_by_cond_by_RT_by_block.test.glmer <- readRDS(paste0(save_path, "Test.rds"))
 }
-# Prepare and plot data
-## During training
-ACC_by_diag_by_RT.training <- behaviour.training %>%
-  group_by(Participant, Condition) %>%
-  summarise(Accuracy = sum(ACC == 1)/n())
-ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
-                                          aes(x = Condition,
-                                              y = Accuracy,
-                                              fill = Condition)) +
-  ylim(0,1) + theme_apa(legend.pos = "bottomright") +
-  scale_fill_discrete(labels = c("Label", "No Label")) +
-  geom_violin() +
-  geom_boxplot(alpha = 0, outlier.alpha = 1,
-               width = .15, position = position_dodge(.9))
-ggsave("../results/adults_2f/ACCbyRTbyBlock_training.pdf", plot = ACC_by_diag_by_RT.training.plot,
-       width = 3.5, height = 2.7)
-## At test
-ACC_by_diag_by_RT.test <- behaviour.test %>%
-  group_by(Participant, Condition) %>%
-  summarise(Accuracy = sum(ACC == 1)/n())
-ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
-                                      aes(x = Condition,
-                                          y = Accuracy,
-                                          fill = Condition)) +
-  ylim(0,1) + theme_apa(legend.pos = "bottomright") +
-  scale_x_discrete(labels = c("Label", "No Label")) +
-  geom_violin() +
-  geom_boxplot(alpha = 0, outlier.alpha = 1,
-               width = .15, position = position_dodge(.9))
-ggsave("../results/adults_2f/ACCbyRT_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
-       width = 3.5, height = 2.7)S
+
+generate_plots <- T
+if(generate_plots){
+  # Prepare and plot data
+  ## During training
+  ACC_by_diag_by_RT.training <- behaviour.training %>%
+    drop_na(FstLst) %>%
+    group_by(Participant, Condition, FstLst) %>%
+    summarise(Accuracy = sum(ACC == 1)/n())
+  ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
+                                            aes(x = Condition,
+                                                y = Accuracy,
+                                                colour = Condition,
+                                                fill = Condition)) +
+    ylim(0,1) + theme_bw() +
+    theme(legend.pos = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() + facet_grid(.~FstLst) +
+    #scale_fill_discrete(labels = c("Label", "No Label")) +
+    geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
+    geom_point(position = position_jitter(width = .15),
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ggsave(paste0(save_path, "RTbyFstLst_data.pdf"), plot = ACC_by_diag_by_RT.training.plot,
+         width = 5.5, height = 3)
+  ## At test
+  # ACC_by_diag_by_RT.test <- behaviour.test %>%
+  #   group_by(Participant, Condition) %>%
+  #   summarise(Accuracy = sum(ACC == 1)/n())
+  # ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
+  #                                       aes(x = Condition,
+  #                                           y = Accuracy,
+  #                                           fill = Condition)) +
+  #   ylim(0,1) + theme_apa(legend.pos = "bottomright") +
+  #   scale_x_discrete(labels = c("Label", "No Label")) +
+  #   geom_violin() +
+  #   geom_boxplot(alpha = 0, outlier.alpha = 1,
+  #                width = .15, position = position_dodge(.9))
+  # ggsave("../results/adults_2f/ACCbyRT_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
+  #        width = 3.5, height = 2.7)
+}
