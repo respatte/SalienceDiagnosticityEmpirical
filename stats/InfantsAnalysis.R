@@ -907,12 +907,12 @@ if(generate_plots){
 save_path <- "../results/infants/WordLearning/TrialAverage_"
 # Prepare dataset
 ## Get tail contrast preference score
-tail_pref <- new_old %>%
+tail_pref_num <- new_old %>%
   subset(Condition == "Label" & ContrastType == "Tail") %>%
   select(Participant, TailPref = ChanceArcsin)
-## Get tail contrast preference score
+## Set tail contrast preference score
 prop_target <- LT.test.wl %>%
-  left_join(tail_pref) %>%
+  left_join(tail_pref_num) %>%
   subset_by_window(window_end_col = "TrialEnd", rezero = F) %>%
   drop_na(PrePost) %>%
   make_time_window_data(aois = "Target",
@@ -921,7 +921,7 @@ prop_target <- LT.test.wl %>%
                                               "TailPref")) %>%
   drop_na(ArcSin) %>%
   mutate(ChanceArcsin = ArcSin - asin(sqrt(.5))) # Value centered on chance looking, useful for test
-         
+
 ## Check for amount of data available, and word-learning score
 prop_target.participants <- prop_target %>%
   group_by(Participant) %>%
@@ -1093,8 +1093,15 @@ if(generate_plots){
 # WORD LEARNING TEST ANALYSIS: PROP TARGET TIME COURSE FOR LABEL CONDITION  ========================
 save_path <- "../results/infants/WordLearning/TimeCourse_"
 # Data preparation
+## Get tail contrast preference score
+tail_pref_cat <- new_old %>%
+  subset(Condition == "Label" & ContrastType == "Tail") %>%
+  select(Participant, TailPref = ChanceArcsin) %>%
+  mutate(TailPref = case_when(TailPref < -.35 ~ "Old",
+                              TailPref > .35 ~ "New"))
 ## For overall analysis
 prop_target.time_course <- LT.test.wl %>%
+  left_join(tail_pref_cat) %>%
   subset_by_window(window_start_col = "PhraseOnset", remove = F) %>%
   mutate(TrialEnd = TrialEnd - PhraseOnset) %>%
   subset_by_window(window_end_col = "TrialEnd", rezero = F) %>%
