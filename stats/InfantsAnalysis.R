@@ -1101,7 +1101,6 @@ tail_pref_cat <- new_old %>%
                               TailPref > .35 ~ "New"))
 ## For overall analysis
 prop_target.time_course <- LT.test.wl %>%
-  left_join(tail_pref_cat) %>%
   subset_by_window(window_start_col = "PhraseOnset", remove = F) %>%
   mutate(TrialEnd = TrialEnd - PhraseOnset) %>%
   subset_by_window(window_end_col = "TrialEnd", rezero = F) %>%
@@ -1136,6 +1135,26 @@ prop_target.time_course.by_label.chance_test <- rbind(prop_target.time_course.by
                                                       prop_target.time_course.by_label.chance) %>%
   mutate(Chance = as.character(Chance)) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
+## For analysis by tail_pref
+prop_target.time_course.by_tail_pref <- LT.test.wl %>%
+  left_join(tail_pref_cat) %>%
+  subset_by_window(window_start_col = "LabelOnset", remove = F) %>%
+  mutate(TrialEnd = TrialEnd - LabelOnset) %>%
+  subset_by_window(window_end_col = "TrialEnd", rezero = F) %>%
+  mutate(Chance = F) %>%
+  make_time_sequence_data(time_bin_size = 100,
+                          aois = "Target",
+                          predictor_columns=c("Chance", "TailPref"),
+                          summarize_by = c("Participant")) %>%
+  drop_na(TailPref)
+prop_target.time_course.by_tail_pref.chance <- prop_target.time_course.by_tail_pref %>%
+  mutate(Chance = T,
+         Participant = paste0("Chance", Participant),
+         Prop = .5)
+prop_target.time_course.by_tail_pref.chance_test <- rbind(prop_target.time_course.by_tail_pref,
+                                                          prop_target.time_course.by_tail_pref.chance) %>%
+  mutate(Chance = as.character(Chance)) %>%
+  mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
 run_model <- T
 if(run_model){
@@ -1144,7 +1163,7 @@ if(run_model){
   num_sub = length(unique((prop_target.time_course.chance_test$Participant)))
   threshold_t = qt(p = 1 - .05/2,
                    df = num_sub-1)
-  ## Determine clusters overall and by label
+  ## Determine clusters overall, by label, and by tail_pref
   prop_target.time_cluster <- prop_target.time_course.chance_test %>%
     make_time_cluster_data(predictor_column = "Chance",
                            treatment_level = "TRUE",
@@ -1159,11 +1178,23 @@ if(run_model){
            aoi = "Target",
            test = "t.test",
            threshold = threshold_t)
-  ## Run analysis overall and by label
+  prop_target.time_cluster.by_tail_pref <- prop_target.time_course.by_tail_pref.chance_test %>%
+    split(.$TailPref) %>%
+    lapply(make_time_cluster_data,
+           predictor_column = "Chance",
+           treatment_level = "TRUE",
+           aoi = "Target",
+           test = "t.test",
+           threshold = threshold_t)
+  ## Run analysis overall, by label, and by tail_pref
   prop_target.time_cluster.analysis <- prop_target.time_cluster %>%
     analyze_time_clusters(within_subj = F,
                           parallel = T)
   prop_target.time_cluster.by_label.analysis <- prop_target.time_cluster.by_label %>%
+    lapply(analyze_time_clusters,
+           within_subj = F,
+           parallel = T)
+  prop_target.time_cluster.by_tail_pref.analysis <- prop_target.time_cluster.by_tail_pref %>%
     lapply(analyze_time_clusters,
            within_subj = F,
            parallel = T)
@@ -1173,6 +1204,9 @@ if(run_model){
   saveRDS(prop_target.time_cluster.analysis, paste0(save_path, "bcbpAnalysis.rds"))
   saveRDS(prop_target.time_cluster.by_label, paste0(save_path, "bcbpClusters_byLabel.rds"))
   saveRDS(prop_target.time_cluster.by_label.analysis, paste0(save_path, "bcbpAnalysis_byLabel.rds"))
+  saveRDS(prop_target.time_cluster.by_tail_pref, paste0(save_path, "bcbpClusters_byTailPref.rds"))
+  saveRDS(prop_target.time_cluster.by_tail_pref.analysis,
+          paste0(save_path, "bcbpAnalysis_byTailPref.rds"))
 }else{
   ## Read the results
   prop_target.time_cluster <- readRDS(paste0(save_path, "bcbpClusters.rds"))
@@ -1180,6 +1214,9 @@ if(run_model){
   prop_target.time_cluster.by_label <- readRDS(paste0(save_path, "bcbpClusters_byLabel.rds"))
   prop_target.time_cluster.by_label.analysis <- readRDS(paste0(save_path,
                                                                "bcbpAnalysis_byLabel.rds"))
+  prop_target.time_cluster.by_tail_pref <- readRDS(paste0(save_path, "bcbpClusters_byTailPref.rds"))
+  prop_target.time_cluster.by_tail_pref.analysis <- readRDS(paste0(save_path,
+                                                                   "bcbpAnalysis_byTailPref.rds"))
 }
 
 # PLOT
@@ -1215,10 +1252,10 @@ if(generate_plots){
           })} %>%
     bind_rows() %>%
     subset(Probability < .05)
-  prop_target.time_course.plot <- ggplot(prop_target.time_course.by_label,
-                                         aes(x = Time, y=Prop,
-                                             colour=Stimulus,
-                                             fill=Stimulus)) +
+  prop_target.time_course.by_label.plot <- ggplot(prop_target.time_course.by_label,
+                                                  aes(x = Time, y=Prop,
+                                                      colour=Stimulus,
+                                                      fill=Stimulus)) +
     xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
     theme(legend.position = "top") + ylim(0,1) + facet_grid(.~Stimulus) +
     stat_summary(fun.y='mean', geom='line', linetype = '61') +
@@ -1231,7 +1268,35 @@ if(generate_plots){
               fill = brewer.pal(3, "Dark2")[[3]]) +
     geom_hline(yintercept = .5)
   ggsave(paste0(save_path, "byLabel_data.pdf"),
-         plot = prop_target.time_course.plot,
+         plot = prop_target.time_course.by_label.plot,
+         width = 5.5, height = 2.5)
+  # Plot by tail_pref
+  prop_target.time_course.plot.clusters.by_tail_pref <- prop_target.time_cluster.by_tail_pref.analysis %>%
+  {lapply(seq_along(.),
+          function(i){
+            df <- prop_target.time_cluster.by_tail_pref.analysis[[i]]$clusters %>%
+              mutate(TailPref = if(i == 1){"New Tail"}else{"Old Tail"})
+          })} %>%
+    bind_rows() %>%
+    subset(Probability < .05)
+  prop_target.time_course.by_tail_pref.plot <- ggplot(prop_target.time_course.by_tail_pref,
+                                                      aes(x = Time, y=Prop,
+                                                          colour=TailPref,
+                                                          fill=TailPref)) +
+    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") +
+    theme(legend.position = "top") + ylim(0,1) + facet_grid(.~TailPref) +
+    stat_summary(fun.y='mean', geom='line', linetype = '61') +
+    stat_summary(fun.data=mean_se, geom='ribbon', alpha= .25, colour=NA) +
+    # NO SIGNIFICANT CLUSTERS TO PRINT IN prop_target.time_course.plot.clusters.by_tail_pref
+    # geom_rect(data = prop_target.time_course.plot.clusters.by_tail_pref,
+    #           inherit.aes = F,
+    #           aes(xmin = StartTime, xmax = EndTime,
+    #               ymin = 0, ymax = 1),
+    #           alpha = 0.5,
+    #           fill = brewer.pal(3, "Dark2")[[3]]) +
+    geom_hline(yintercept = .5)
+  ggsave(paste0(save_path, "byTailPref_data.pdf"),
+         plot = prop_target.time_course.by_tail_pref.plot,
          width = 5.5, height = 2.5)
 }
 
