@@ -1138,6 +1138,7 @@ prop_target.time_course.by_label.chance_test <- rbind(prop_target.time_course.by
 ## For analysis by tail_pref
 prop_target.time_course.by_tail_pref <- LT.test.wl %>%
   left_join(tail_pref_cat) %>%
+  mutate_at("Participant", parse_factor, levels = NULL) %>%
   subset_by_window(window_start_col = "LabelOnset", remove = F) %>%
   mutate(TrialEnd = TrialEnd - LabelOnset) %>%
   subset_by_window(window_end_col = "TrialEnd", rezero = F) %>%
@@ -1146,7 +1147,7 @@ prop_target.time_course.by_tail_pref <- LT.test.wl %>%
                           aois = "Target",
                           predictor_columns=c("Chance", "TailPref"),
                           summarize_by = c("Participant")) %>%
-  drop_na(TailPref)
+  drop_na()
 prop_target.time_course.by_tail_pref.chance <- prop_target.time_course.by_tail_pref %>%
   mutate(Chance = T,
          Participant = paste0("Chance", Participant),
@@ -1156,7 +1157,7 @@ prop_target.time_course.by_tail_pref.chance_test <- rbind(prop_target.time_cours
   mutate(Chance = as.character(Chance)) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T
+run_model <- F
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -1220,7 +1221,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   # Plot overall
   prop_target.time_course.plot.clusters <- prop_target.time_cluster.analysis$clusters %>%
