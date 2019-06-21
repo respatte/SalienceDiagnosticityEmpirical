@@ -1152,8 +1152,8 @@ prop_target.time_course.by_tail_pref.chance <- prop_target.time_course.by_tail_p
   mutate(Chance = T,
          Participant = paste0("Chance", Participant),
          Prop = .5)
-prop_target.time_course.by_tail_pref.chance_test <- rbind(prop_target.time_course.by_tail_pref,
-                                                          prop_target.time_course.by_tail_pref.chance) %>%
+prop_target.time_course.by_tail_pref.chance_test <- prop_target.time_course.by_tail_pref %>%
+  rbind(prop_target.time_course.by_tail_pref.chance) %>%
   mutate(Chance = as.character(Chance)) %>%
   mutate_at("Chance", parse_factor, levels = NULL)
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
