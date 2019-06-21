@@ -13,9 +13,11 @@ library(tidyverse)
 bayes_factor.brm_fixef <- function(formulas, df, priors,
                                    no_intercept = 0, intercept_only = 1,
                                    controls = NULL, iter = 2000, family = gaussian()){
+  n_models <- length(formulas)
   ## Run all Bayesian models
   models <- lapply(seq_along(formulas),
                    function(i){
+                     print(paste0("Starting run for model ", i, " of ", n_models))
                      brm(formulas[[i]],
                          data = df,
                          prior = if(i <= no_intercept){
@@ -35,7 +37,6 @@ bayes_factor.brm_fixef <- function(formulas, df, priors,
                          save_all_pars = T)
                    })
   ## Compute all Bayes fators
-  n_models <- length(formulas)
   bayes_factors <- lapply(2:n_models,
                           function(i){
                             bayes_factor(models[[i]],
