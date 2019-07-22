@@ -1221,7 +1221,7 @@ if(run_model){
 }
 
 # PLOT
-generate_plots <- F
+generate_plots <- T
 if(generate_plots){
   # Plot overall
   prop_target.time_course.plot.clusters <- prop_target.time_cluster.analysis$clusters %>%
@@ -1240,6 +1240,8 @@ if(generate_plots){
                   ymin = 0, ymax = 1),
               alpha = 0.5,
               fill = brewer.pal(3, "Dark2")[[3]]) +
+    geom_vline(xintercept = c(1050, 1300), colour = "black",
+               linetype = "62", alpha = .5) +
     geom_hline(yintercept = .5)
   ggsave(paste0(save_path, "data.pdf"),
          plot = prop_target.time_course.plot,
@@ -1602,110 +1604,20 @@ if(generate_plots){
   first_aoi.fstlst.to_plot <- first_aoi.fstlst %>%
     drop_na(FstLst) %>%
     group_by(FstLst, AOI, Participant, Condition) %>%
-    summarise(N = n()) %>%
+    summarise(nLooks = n()) %>%
+    group_by(FstLst, AOI, nLooks, Condition) %>%
+    summarise(nParts = n()) %>%
     ungroup()
-  ### Get brm predicted values ## CURRENTLY NOT WORKING PROPERLY
-  # first_aoi.raw_predictions <- last(first_aoi.per_fstlst.brms.models) %>%
-  #   predict(summary = F) %>%
-  #   t() %>%
-  #   as_tibble() %>%
-  #   mutate(RowNames = 1:nrow(.))
-  # first_aoi.predicted <- first_aoi.fstlst %>%
-  #   mutate(RowNames = 1:nrow(.)) %>%
-  #   select(FstLst, Condition, RowNames) %>%
-  #   inner_join(first_aoi.raw_predictions) %>%
-  #   select(-RowNames) %>%
-  #   gather(key = Sample, value = AOI, -c(FstLst, Condition)) %>%
-  #   mutate(AOI = ifelse(AOI == 0, "Head", "Tail"),
-  #          AOI = parse_factor(AOI, levels = NULL))
-  # first_aoi.predicted.hpdi.97 <- first_aoi.predicted %>%
-  #   group_by(FstLst, Condition, Sample, AOI) %>%
-  #   summarise(N = n()) %>%
-  #   ungroup() %>%
-  #   select(-Sample) %>%
-  #   split(list(.$FstLst, .$Condition, .$AOI)) %>%
-  #   lapply(function(df){
-  #     hpdi <- as.mcmc(df$N) %>% HPDinterval(prob = 0.97)
-  #     df.summary <- df %>%
-  #       group_by(FstLst, Condition, AOI) %>%
-  #       summarise(Mode = first(mlv(df$N))) %>%
-  #       mutate(lb = hpdi[1,"lower"],
-  #              ub = hpdi[1,"upper"])
-  #     return(df.summary)
-  #   }) %>%
-  #   bind_rows()
-  # first_aoi.predicted.hpdi.89 <- first_aoi.predicted %>%
-  #   group_by(FstLst, Condition, Sample, AOI) %>%
-  #   summarise(N = n()) %>%
-  #   ungroup() %>%
-  #   select(-Sample) %>%
-  #   split(list(.$FstLst, .$Condition, .$AOI)) %>%
-  #   lapply(function(df){
-  #     hpdi <- as.mcmc(df$N) %>% HPDinterval(prob = 0.89)
-  #     df.summary <- df %>%
-  #       group_by(FstLst, Condition, AOI) %>%
-  #       summarise(Mode = first(mlv(df$N))) %>%
-  #       mutate(lb = hpdi[1,"lower"],
-  #              ub = hpdi[1,"upper"])
-  #     return(df.summary)
-  #   }) %>%
-  #   bind_rows()
-  # first_aoi.predicted.hpdi.67 <- first_aoi.predicted %>%
-  #   group_by(FstLst, Condition, Sample, AOI) %>%
-  #   summarise(N = n()) %>%
-  #   ungroup() %>%
-  #   select(-Sample) %>%
-  #   split(list(.$FstLst, .$Condition, .$AOI)) %>%
-  #   lapply(function(df){
-  #     hpdi <- as.mcmc(df$N) %>% HPDinterval(prob = 0.67)
-  #     df.summary <- df %>%
-  #       group_by(FstLst, Condition, AOI) %>%
-  #       summarise(Mode = first(mlv(df$N))) %>%
-  #       mutate(lb = hpdi[1,"lower"],
-  #              ub = hpdi[1,"upper"])
-  #     return(df.summary)
-  #   }) %>%
-  #   bind_rows()
-  ### Plot raincloud + predicted mean&sd per FstLst
+  ### Plot histogram per FstLst
   first_aoi.per_fstlst.plot <- ggplot(first_aoi.fstlst.to_plot,
-                                      aes(x = Condition, y = N,
+                                      aes(x = nLooks, y = nParts,
                                           colour = Condition,
                                           fill = Condition)) +
-    theme_bw() + ylab("Number of first look to AOI") +
-    theme(legend.position = "top",
-          axis.title.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          axis.text.y = element_blank()) +
-    scale_y_continuous(breaks = c(0, 1, 2, 3)) +
-    coord_flip() + facet_grid(AOI~FstLst) +
-    geom_flat_violin(position = position_nudge(x = .2),
-                     colour = "black", alpha = .5, width = .7) +
-    geom_point(position = position_jitter(width = 0.15, height = 0.05),
-               size = 1, alpha = .6,
-               show.legend = F) +
-    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
-                 show.legend = F) +
-    # geom_pointrange(data = first_aoi.predicted.hpdi.67,
-    #                 aes(x = Condition,
-    #                     y = Mode, ymin = lb, ymax = ub),
-    #                 colour = brewer.pal(3, "Dark2")[[3]],
-    #                 fatten = 1.5, size = 1.5,
-    #                 position = position_nudge(x = -.23),
-    #                 show.legend = F) +
-    # geom_pointrange(data = first_aoi.predicted.hpdi.89,
-    #                 aes(x = Condition,
-    #                     y = Mode, ymin = lb, ymax = ub),
-    #                 colour = brewer.pal(3, "Dark2")[[3]],
-    #                 fatten = .5, size = 1,
-    #                 position = position_nudge(x = -.23),
-    #                 show.legend = F) +
-    # geom_pointrange(data = first_aoi.predicted.hpdi.97,
-    #                 aes(x = Condition,
-    #                     y = Mode, ymin = lb, ymax = ub),
-    #                 colour = brewer.pal(3, "Dark2")[[3]],
-    #                 fatten = .5, size = .5,
-    #                 position = position_nudge(x = -.23),
-    #                 show.legend = F) +
+    theme_bw() + xlab("Number of first looks to AOI") + ylab("Number of participants") +
+    theme(legend.position = "top") +
+    scale_x_continuous(breaks = c(0, 1, 2, 3)) +
+    facet_grid(AOI~FstLst) +
+    geom_col(width = .8, alpha = .7, position = position_dodge(width = .8), colour = "black") +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ### Save plot
