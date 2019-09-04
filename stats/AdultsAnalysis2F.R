@@ -7,6 +7,7 @@ library(coda)
 library(nortest)
 library(tidyverse)
 library(broom)
+library(ggeffects)
 library(eyetrackingR)
 library(RColorBrewer)
 
