@@ -44,6 +44,7 @@ prop_tail.per_fstlst <- LT.clean %>%
   make_time_window_data(aois=c("Tail","Feet","Head"),
                         predictor_columns=c("Condition",
                                             "FstLst",
+                                            "Diagnostic",
                                             "Stimulus",
                                             "StimLabel"))
 
@@ -52,8 +53,8 @@ run_model <- T # Running the models takes around XX minutes on a 4.40GHz 12-core
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   t <- proc.time()
-  prop_tail.per_fstlst.lmer.model <- lmer(ArcSin ~ FstLst*AOI*Condition +
-                                            (1 + AOI*FstLst | Participant) +
+  prop_tail.per_fstlst.lmer.model <- lmer(ArcSin ~ FstLst*AOI*Diagnostic*Condition +
+                                            (1 + AOI*FstLst*Diagnostic | Participant) +
                                             (1 + AOI | Stimulus) +
                                             (1 + AOI | StimLabel),
                                           data = prop_tail.per_fstlst)
@@ -363,7 +364,7 @@ if(run_model){
                                          family = poisson())
   # iter = 4000,
   # controls = list(adapt_delta = .95))
-  
+
   fam_switches.per_fstlst.brms.models <- brms.results[[1]]
   fam_switches.per_fstlst.brms.bayes_factors <- brms.results[[2]]
   fam_switches.time <- proc.time() - t

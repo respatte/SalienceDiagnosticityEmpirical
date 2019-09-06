@@ -1,6 +1,8 @@
 # LIBRARY IMPORTS ==================================================================================
 library(brms)
 library(tidyverse)
+library(future.apply)
+plan(multiprocess)
 
 # BRM FIXEF BAYES FACTOR
 # Function computing all nested models in formulas and computing Bayes factors for pairs of models
@@ -32,7 +34,7 @@ bayes_factor.brm_fixef <- function(formulas, df, priors,
                            }
                          },
                          family = family,
-                         chains = 4, cores = 4, iter = iter,
+                         iter = iter,
                          control = controls,
                          save_all_pars = T)
                    })
