@@ -23,9 +23,11 @@ detach("package:snow")
 # Get behavioural and LT data, excluding outliers in terms of
 # number of blocks before learning (graphically, from boxplot)
 behaviour <- d[[2]] %>%
+  mutate(Condition = relevel(Condition, ref = "No Label")) %>%
   subset((Condition == "Label" & NBlocks < 21) |
            (Condition == "No Label" & NBlocks < 10))
 LT.clean <- d[[4]] %>%
+  mutate(Condition = relevel(Condition, ref = "No Label")) %>%
   subset((Condition == "Label" & NBlocks < 21) |
            (Condition == "No Label" & NBlocks < 10)) %>%
   make_eyetrackingr_data(participant_column = "Participant",
@@ -33,8 +35,19 @@ LT.clean <- d[[4]] %>%
                          time_column = "TimeStamp",
                          trackloss_column = "TrackLoss",
                          aoi_columns = c("Head","Tail", "Feet"),
-                         treat_non_aoi_looks_as_missing = T) %>%
-  subset_by_window(window_start_time = -1000, rezero = F)
+                         treat_non_aoi_looks_as_missing = T)
+# Check for age and gender
+age <- behaviour %>%
+  group_by(Participant) %>%
+  summarise(Age = first(Age)) %>%
+  select(Age) %>%
+  summary()
+gender.behaviour <- behaviour %>%
+  group_by(Gender) %>%
+  summarise(n_distinct(Participant))
+gender.LT <- LT.clean %>%
+  group_by(Gender) %>%
+  summarise(n_distinct(Participant))
 
 # TRAINING LT ANALYSIS: PROP TAIL LOOKING BY PARTICIPANT ===========================================
 save_path <- "../results/adults_3f/PropTail/TrialAverage_"
@@ -48,15 +61,15 @@ prop_tail.per_fstlst <- LT.clean %>%
                                             "Stimulus",
                                             "StimLabel"))
 
-# Testing ArcSin ~ FstLst*AOI*Condition
+# Testing ArcSin ~ FstLst*AOI*Diagnostic*Condition
 run_model <- T # Running the models takes around XX minutes on a 4.40GHz 12-core
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   t <- proc.time()
   prop_tail.per_fstlst.lmer.model <- lmer(ArcSin ~ FstLst*AOI*Diagnostic*Condition +
-                                            (1 + AOI*FstLst*Diagnostic | Participant) +
-                                            (1 + AOI | Stimulus) +
-                                            (1 + AOI | StimLabel),
+                                            (1 + FstLst*AOI*Diagnostic | Participant) +
+                                            (1 | Stimulus) +
+                                            (1 | StimLabel),
                                           data = prop_tail.per_fstlst)
   prop_tail.per_fstlst.lmer.anova <- anova(prop_tail.per_fstlst.lmer.model, type = 1)
   ## Run brms (Bayesian)
@@ -77,33 +90,97 @@ if(run_model){
                                           (1 | StimLabel),
                                         ArcSin ~ 1 + FstLst + AOI +
                                           (1 + FstLst + AOI | Participant) +
-                                          (1 + AOI | Stimulus) +
-                                          (1 + AOI | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Condition +
-                                          (1 + FstLst + AOI | Participant) +
-                                          (1 + AOI | Stimulus) +
-                                          (1 + AOI | StimLabel),
-                                        ArcSin ~ 1 + FstLst + Condition +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic +
+                                          (1 + FstLst + AOI + Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          (1 + FstLst + AOI + Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
                                           FstLst:AOI +
-                                          (1 + FstLst*AOI | Participant) +
-                                          (1 + AOI | Stimulus) +
-                                          (1 + AOI | StimLabel),
-                                        ArcSin ~ 1 + FstLst + Condition +
-                                          FstLst:AOI + FstLst:Condition +
-                                          (1 + FstLst*AOI | Participant) +
-                                          (1 + AOI | Stimulus) +
-                                          (1 + AOI | StimLabel),
-                                        ArcSin ~ 1 + FstLst + Condition +
-                                          FstLst:AOI + FstLst:Condition + AOI:Condition +
-                                          (1 + FstLst*AOI | Participant) +
-                                          (1 + AOI | Stimulus) +
-                                          (1 + AOI | StimLabel),
-                                        ArcSin ~ 1 + FstLst + Condition +
-                                          FstLst:AOI + FstLst:Condition + AOI:Condition +
-                                          FstLst:AOI:Condition +
-                                          (1 + FstLst*AOI | Participant) +
-                                          (1 + AOI | Stimulus) +
-                                          (1 + AOI | StimLabel))
+                                          (1 + FstLst*AOI + Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic +
+                                          (1 + FstLst*AOI + FstLst*Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+                                          (1 + FstLst*AOI + FstLst*Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+                                          AOI:Diagnostic +
+                                          (1 + FstLst*AOI*Diagnostic -
+                                             FstLst:AOI:Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+                                          AOI:Diagnostic + AOI:Condition +
+                                          (1 + FstLst*AOI*Diagnostic -
+                                             FstLst:AOI:Condition | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+                                          AOI:Diagnostic + AOI:Condition +
+                                          Diagnostic:Condition +
+                                          (1 + FstLst*AOI*Diagnostic -
+                                             FstLst:AOI:Condition | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+                                          AOI:Diagnostic + AOI:Condition +
+                                          Diagnostic:Condition +
+                                          FstLst:AOI:Diagnostic +
+                                          (1 + FstLst*AOI*Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+                                          AOI:Diagnostic + AOI:Condition +
+                                          Diagnostic:Condition +
+                                          FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
+                                          (1 + FstLst*AOI*Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+                                          AOI:Diagnostic + AOI:Condition +
+                                          Diagnostic:Condition +
+                                          FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
+                                          FstLst:Diagnostic:Condition +
+                                          (1 + FstLst*AOI*Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+                                          AOI:Diagnostic + AOI:Condition +
+                                          Diagnostic:Condition +
+                                          FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
+                                          FstLst:Diagnostic:Condition + AOI:Diagnostic:Condition +
+                                          (1 + FstLst*AOI*Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel),
+                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+                                          AOI:Diagnostic + AOI:Condition +
+                                          Diagnostic:Condition +
+                                          FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
+                                          FstLst:Diagnostic:Condition + AOI:Diagnostic:Condition +
+                                          FstLst:AOI:Diagnostic:Condition +
+                                          (1 + FstLst*AOI*Diagnostic | Participant) +
+                                          (1 | Stimulus) +
+                                          (1 | StimLabel))
   ### Get brms results
   brms.results <- bayes_factor.brm_fixef(formulas.prop_tail.per_fstlst,
                                          prop_tail.per_fstlst,
