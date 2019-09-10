@@ -561,3 +561,228 @@ if(generate_plots){
          fam_switches.per_fstlst.plot,
          width = 5.5, height = 3)
 }
+
+# BEHAVIOURAL ANALYSIS: BLOCKS PER PARTICIPANTS ====================================================
+save_path <- "../results/adults_3f/nBlocks/"
+# Get number of blocks to learning per participant
+blocks_per_part <- behaviour %>%
+  select(c(Participant, Condition, NBlocks)) %>%
+  unique()
+# Test NBlocks ~ Condition
+run_model <- F
+if(run_model){
+  t <- proc.time()
+  ## STB stats
+  blocks_per_part.normality <- ad.test(blocks_per_part$NBlocks)
+  blocks_per_part.wilcox <- wilcox.test(NBlocks ~ Condition,
+                                        data = blocks_per_part)
+  ## brm
+  ### Set priors for models other than intercept-only
+  priors.blocks_per_part <- list(NULL,
+                                 set_prior("normal(0,.5)", class = "b"))
+  ### Set all nested formulas for model comparisons
+  formulas.blocks_per_part <- list(NBlocks ~ 1,
+                                   NBlocks ~ 1 + Condition)
+  ### Get brms results
+  brms.results <- bayes_factor.brm_fixef(formulas.blocks_per_part,
+                                         blocks_per_part,
+                                         priors.blocks_per_part,
+                                         family = poisson())
+  blocks_per_part.brms.models <- brms.results[[1]]
+  blocks_per_part.brms.bayes_factors <- brms.results[[2]]
+  blocks_per_part.time <- proc.time() - t
+  ## Save all the results
+  saveRDS(blocks_per_part.normality, paste0(save_path, "normality.rds"))
+  saveRDS(blocks_per_part.wilcox, paste0(save_path, "wilcox.rds"))
+  lapply(seq_along(blocks_per_part.brms.models),
+         function(i){
+           saveRDS(blocks_per_part.brms.models[[i]],
+                   paste0(save_path, "brmsModel", i, ".rds"))
+         })
+  saveRDS(blocks_per_part.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
+}else{
+  ## Read all the results
+  blocks_per_part.normality <- readRDS(paste0(save_path, "normality.rds"))
+  blocks_per_part.wilcox <- readRDS(paste0(save_path, "wilcox.rds"))
+  blocks_per_part.brms.models <- lapply(1:2,
+                                        function(i){
+                                          readRDS(paste0(save_path, "brmsModel", i, ".rds"))
+                                        })
+  blocks_per_part.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
+}
+
+generate_plots <- F
+if(generate_plots){
+  ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
+  blocks_per_part.raw_predictions <- last(blocks_per_part.brms.models) %>%
+    predict(summary = F) %>%
+    t() %>%
+    as_tibble() %>%
+    mutate(RowNames = 1:nrow(.))
+  blocks_per_part.predicted <- blocks_per_part %>%
+    mutate(RowNames = 1:nrow(.)) %>%
+    select(Condition, RowNames) %>%
+    inner_join(blocks_per_part.raw_predictions) %>%
+    select(-RowNames) %>%
+    gather(key = Sample, value = Predicted, -c(Condition))
+  blocks_per_part.predicted.hpdi.97 <- blocks_per_part.predicted %>%
+    select(-Sample) %>%
+    split(list(.$Condition)) %>%
+    lapply(function(df){
+      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
+      df.summary <- df %>%
+        group_by(Condition) %>%
+        summarise(Mean = mean(df$Predicted)) %>%
+        mutate(lb = hpdi[1,"lower"],
+               ub = hpdi[1,"upper"])
+      return(df.summary)
+    }) %>%
+    bind_rows()
+  blocks_per_part.predicted.hpdi.89 <- blocks_per_part.predicted %>%
+    select(-Sample) %>%
+    split(list(.$Condition)) %>%
+    lapply(function(df){
+      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
+      df.summary <- df %>%
+        group_by(Condition) %>%
+        summarise(Mean = mean(df$Predicted)) %>%
+        mutate(lb = hpdi[1,"lower"],
+               ub = hpdi[1,"upper"])
+      return(df.summary)
+    }) %>%
+    bind_rows()
+  blocks_per_part.predicted.hpdi.67 <- blocks_per_part.predicted %>%
+    select(-Sample) %>%
+    split(list(.$Condition)) %>%
+    lapply(function(df){
+      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
+      df.summary <- df %>%
+        group_by(Condition) %>%
+        summarise(Mean = mean(df$Predicted)) %>%
+        mutate(lb = hpdi[1,"lower"],
+               ub = hpdi[1,"upper"])
+      return(df.summary)
+    }) %>%
+    bind_rows()
+  ## Plot raincloud + predicted mean&HPDIs per FstLst
+  blocks_per_part.plot <- ggplot(blocks_per_part,
+                                 aes(x = Condition, y = NBlocks,
+                                     colour = Condition,
+                                     fill = Condition)) +
+    theme_bw() + ylab("Number of Blocks to Learning") +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() +
+    geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
+    geom_point(position = position_jitter(width = .15, height = .05),
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
+  # geom_pointrange(data = blocks_per_part.predicted.hpdi.67,
+  #                 aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+  #                 colour = brewer.pal(3, "Dark2")[[3]],
+  #                 fatten = 1.5, size = 1.5,
+  #                 position = position_nudge(x = -.23),
+  #                 show.legend = F) +
+  # geom_pointrange(data = blocks_per_part.predicted.hpdi.89,
+  #                 aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+  #                 colour = brewer.pal(3, "Dark2")[[3]],
+  #                 fatten = .5, size = 1,
+  #                 position = position_nudge(x = -.23),
+  #                 show.legend = F) +
+  # geom_pointrange(data = blocks_per_part.predicted.hpdi.97,
+  #                 aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+  #                 colour = brewer.pal(3, "Dark2")[[3]],
+  #                 fatten = .5, size = .5,
+  #                 position = position_nudge(x = -.23),
+  #                 show.legend = F) +
+  scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ## Save plot
+  ggsave(paste0(save_path, "NBlocks_data.pdf"),
+         blocks_per_part.plot,
+         width = 4, height = 3, dpi = 600)
+}
+
+# BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*RT) ===================================================
+save_path <- "../results/adults_3f/ACC/"
+# Get datasets for training and test
+behaviour.training <- behaviour %>%
+  subset(Phase == "Familiarisation") %>%
+  mutate(BlockZero = Block - 1) # Useful for models
+behaviour.test <- behaviour %>%
+  subset(Phase == "Test")
+# Test ACC ~ Condition * RT
+run_model <- T
+if(run_model){
+  ## Run binomial glmer
+  ### During training
+  ACC_by_cond_by_RT_by_block.training.glmer <- glmer(ACC ~ Condition*zLogRT*BlockZero +
+                                                       (1 + zLogRT + BlockZero | Participant) +
+                                                       (1 | Stimulus) +
+                                                       (1 | StimLabel),
+                                                     family = binomial,
+                                                     control = glmerControl(optimizer = "bobyqa"),
+                                                     data = behaviour.training)
+  ### At test
+  ACC_by_cond_by_RT_by_block.test.glmer <- glmer(ACC ~ Condition*zLogRT +
+                                                   (1 + zLogRT | Participant),
+                                                 family = binomial,
+                                                 data = behaviour.test)
+  ## Save results
+  saveRDS(ACC_by_cond_by_RT_by_block.training.glmer, paste0(save_path, "Training.rds"))
+  saveRDS(ACC_by_cond_by_RT_by_block.test.glmer, paste0(save_path, "Test.rds"))
+}else{
+  ACC_by_cond_by_RT_by_block.training.glmer <- readRDS(paste0(save_path, "Training.rds"))
+  ACC_by_cond_by_RT_by_block.test.glmer <- readRDS(paste0(save_path, "Test.rds"))
+}
+
+generate_plots <- T
+if(generate_plots){
+  # Prepare and plot data
+  ## During training
+  ACC_by_diag_by_RT.training <- behaviour.training %>%
+    drop_na(FstLst) %>%
+    group_by(Participant, Condition, FstLst) %>%
+    summarise(Accuracy = sum(ACC == 1)/n())
+  ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
+                                            aes(x = Condition,
+                                                y = Accuracy,
+                                                colour = Condition,
+                                                fill = Condition)) +
+    ylim(0,1) + theme_bw() +
+    theme(legend.pos = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() + facet_grid(.~FstLst) +
+    #scale_fill_discrete(labels = c("Label", "No Label")) +
+    geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
+    geom_point(position = position_jitter(width = .15),
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ggsave(paste0(save_path, "RTbyFstLst_data.pdf"), plot = ACC_by_diag_by_RT.training.plot,
+         width = 5.5, height = 3)
+  ## At test
+  # ACC_by_diag_by_RT.test <- behaviour.test %>%
+  #   group_by(Participant, Condition) %>%
+  #   summarise(Accuracy = sum(ACC == 1)/n())
+  # ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
+  #                                       aes(x = Condition,
+  #                                           y = Accuracy,
+  #                                           fill = Condition)) +
+  #   ylim(0,1) + theme_apa(legend.pos = "bottomright") +
+  #   scale_x_discrete(labels = c("Label", "No Label")) +
+  #   geom_violin() +
+  #   geom_boxplot(alpha = 0, outlier.alpha = 1,
+  #                width = .15, position = position_dodge(.9))
+  # ggsave("../results/adults_2f/ACCbyRT_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
+  #        width = 3.5, height = 2.7)
+}
