@@ -707,7 +707,7 @@ if(generate_plots){
          width = 4, height = 3, dpi = 600)
 }
 
-# BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*RT) ===================================================
+# BEHAVIOURAL ANALYSIS: ACCURACY ~ CONDITION*RT ====================================================
 save_path <- "../results/adults_3f/ACC/"
 # Get datasets for training and test
 behaviour.training <- behaviour %>%
@@ -745,49 +745,43 @@ if(run_model){
   ACC.test.glmer <- readRDS(paste0(save_path, "Test.rds"))
 }
 
+# Plot
 generate_plots <- T
 if(generate_plots){
-  # Prepare and plot data
-  ## During training
-  ACC_by_diag_by_RT.training <- behaviour.training %>%
-    drop_na(FstLst) %>%
-    group_by(Participant, Condition, FstLst) %>%
-    summarise(Accuracy = sum(ACC == 1)/n())
-  ACC_by_diag_by_RT.training.plot <- ggplot(ACC_by_diag_by_RT.training,
-                                            aes(x = Condition,
-                                                y = Accuracy,
-                                                colour = Condition,
-                                                fill = Condition)) +
-    ylim(0,1) + theme_bw() +
-    theme(legend.pos = "top",
-          axis.title.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          axis.text.y = element_blank()) +
-    coord_flip() + facet_grid(.~FstLst) +
-    #scale_fill_discrete(labels = c("Label", "No Label")) +
-    geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
-    geom_point(position = position_jitter(width = .15),
-               size = 1, alpha = .6,
-               show.legend = F) +
-    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
-                 show.legend = F) +
-    scale_color_brewer(palette = "Dark2") +
+  ## Plot marginal effects
+  ### Prepare data
+  ACC.training.marginal_effects <- ACC.training.glmer %>%
+    ggpredict(terms = c("BlockZero",
+                        "Condition",
+                        "Diagnostic",
+                        "zLogRT [-1, 0, 1]")) %>%
+    rename(BlockZero = x,
+           Condition = group,
+           Diagnostic= facet,
+           zLogRT = panel) %>%
+    mutate(BlockZero = BlockZero + 1,
+           zLogRT = as_factor(zLogRT))
+  ### Plot data
+  zLogRT_labels = c("-1" = "Slower (1SD)", "0" = "Average Speed", "1" = "Faster (1SD)")
+  ACC.training.marginal_effects.plot <- ACC.training.marginal_effects %>%
+    ggplot(aes(x = BlockZero,
+               y = predicted,
+               ymin = conf.low,
+               ymax = conf.high,
+               colour = Condition,
+               fill = Condition)) +
+    ylab("Accuracy") + xlab("Block") + theme_bw() +
+    facet_grid(rows = vars(Diagnostic),
+               cols = vars(zLogRT),
+               labeller = labeller(zLogRT = zLogRT_labels)) +
+    theme(legend.position = "top") + ylim(0,1) +
+    geom_line(size = .3) +
+    geom_ribbon(alpha = .5, colour = NA) +
+    scale_x_continuous(breaks = 1:10) +
+    scale_colour_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
-  ggsave(paste0(save_path, "RTbyFstLst_data.pdf"), plot = ACC_by_diag_by_RT.training.plot,
-         width = 5.5, height = 3)
-  ## At test
-  # ACC_by_diag_by_RT.test <- behaviour.test %>%
-  #   group_by(Participant, Condition) %>%
-  #   summarise(Accuracy = sum(ACC == 1)/n())
-  # ACC_by_diag_by_RT.test.plot <- ggplot(ACC_by_diag_by_RT.test,
-  #                                       aes(x = Condition,
-  #                                           y = Accuracy,
-  #                                           fill = Condition)) +
-  #   ylim(0,1) + theme_apa(legend.pos = "bottomright") +
-  #   scale_x_discrete(labels = c("Label", "No Label")) +
-  #   geom_violin() +
-  #   geom_boxplot(alpha = 0, outlier.alpha = 1,
-  #                width = .15, position = position_dodge(.9))
-  # ggsave("../results/adults_2f/ACCbyRT_test.pdf", plot = ACC_by_diag_by_RT.test.plot,
-  #        width = 3.5, height = 2.7)
+  ggsave(paste0(save_path, "Training_MarginalEffects.pdf"),
+         ACC.training.marginal_effects.plot,
+         width = 5, height = 5,
+         dpi = 600)
 }
