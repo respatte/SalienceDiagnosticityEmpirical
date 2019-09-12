@@ -10,6 +10,7 @@ library(broom)
 library(ggeffects)
 library(eyetrackingR)
 library(RColorBrewer)
+library(beepr)
 
 source("Routines.R")
 source("StatTools.R")
@@ -34,7 +35,7 @@ LT.clean <- d[[4]] %>%
                          trial_column = "TrialId",
                          time_column = "TimeStamp",
                          trackloss_column = "TrackLoss",
-                         aoi_columns = c("Head","Tail", "Feet"),
+                         aoi_columns = c("Head","Tail","Feet"),
                          treat_non_aoi_looks_as_missing = T)
 # Check for age and gender
 age <- behaviour %>%
@@ -59,7 +60,8 @@ prop_tail.per_fstlst <- LT.clean %>%
                                             "FstLst",
                                             "Diagnostic",
                                             "Stimulus",
-                                            "StimLabel"))
+                                            "StimLabel")) %>%
+  mutate(AOI = fct_relevel(AOI, "Head", "Feet", "Tail"))
 
 # Testing ArcSin ~ FstLst*AOI*Diagnostic*Condition
 run_model <- T # Running the models takes around XX minutes on a 4.40GHz 12-core
@@ -70,202 +72,204 @@ if(run_model){
                                             (1 + FstLst*AOI*Diagnostic | Participant) +
                                             (1 | Stimulus) +
                                             (1 | StimLabel),
-                                          data = prop_tail.per_fstlst)
+                                          data = prop_tail.per_fstlst,
+                                          control = lmerControl(optCtrl = list(maxfun = 50000)))
   prop_tail.per_fstlst.lmer.anova <- anova(prop_tail.per_fstlst.lmer.model, type = 1)
-  ## Run brms (Bayesian)
-  ### Set priors for models other than intercept-only
-  priors.prop_tail.per_fstlst <- list(set_prior("normal(.8,.5)",
-                                                class = "Intercept"),
-                                      c(set_prior("normal(.8,.5)",
-                                                  class = "Intercept"),
-                                        set_prior("normal(0,.5)", class = "b")))
-  ### Set all nested formulas for model comparisons
-  formulas.prop_tail.per_fstlst <- list(ArcSin ~ 1 +
-                                          (1 | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst +
-                                          (1 + FstLst | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI +
-                                          (1 + FstLst + AOI | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic +
-                                          (1 + FstLst + AOI + Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          (1 + FstLst + AOI + Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI +
-                                          (1 + FstLst*AOI + Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic +
-                                          (1 + FstLst*AOI + FstLst*Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
-                                          (1 + FstLst*AOI + FstLst*Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
-                                          AOI:Diagnostic +
-                                          (1 + FstLst*AOI*Diagnostic -
-                                             FstLst:AOI:Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
-                                          AOI:Diagnostic + AOI:Condition +
-                                          (1 + FstLst*AOI*Diagnostic -
-                                             FstLst:AOI:Condition | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
-                                          AOI:Diagnostic + AOI:Condition +
-                                          Diagnostic:Condition +
-                                          (1 + FstLst*AOI*Diagnostic -
-                                             FstLst:AOI:Condition | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
-                                          AOI:Diagnostic + AOI:Condition +
-                                          Diagnostic:Condition +
-                                          FstLst:AOI:Diagnostic +
-                                          (1 + FstLst*AOI*Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
-                                          AOI:Diagnostic + AOI:Condition +
-                                          Diagnostic:Condition +
-                                          FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
-                                          (1 + FstLst*AOI*Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
-                                          AOI:Diagnostic + AOI:Condition +
-                                          Diagnostic:Condition +
-                                          FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
-                                          FstLst:Diagnostic:Condition +
-                                          (1 + FstLst*AOI*Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
-                                          AOI:Diagnostic + AOI:Condition +
-                                          Diagnostic:Condition +
-                                          FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
-                                          FstLst:Diagnostic:Condition + AOI:Diagnostic:Condition +
-                                          (1 + FstLst*AOI*Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel),
-                                        ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
-                                          FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
-                                          AOI:Diagnostic + AOI:Condition +
-                                          Diagnostic:Condition +
-                                          FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
-                                          FstLst:Diagnostic:Condition + AOI:Diagnostic:Condition +
-                                          FstLst:AOI:Diagnostic:Condition +
-                                          (1 + FstLst*AOI*Diagnostic | Participant) +
-                                          (1 | Stimulus) +
-                                          (1 | StimLabel))
-  ### Get brms results
-  brms.results <- bayes_factor.brm_fixef(formulas.prop_tail.per_fstlst,
-                                         prop_tail.per_fstlst,
-                                         priors.prop_tail.per_fstlst,
-                                         controls = list(adapt_delta = 0.999999999999999,
-                                                         max_treedepth = 15))
-  prop_tail.per_fstlst.brms.models <- brms.results[[1]]
-  prop_tail.per_fstlst.brms.bayes_factors <- brms.results[[2]]
+  # ## Run brms (Bayesian)
+  # ### Set priors for models other than intercept-only
+  # priors.prop_tail.per_fstlst <- list(set_prior("normal(.8,.5)",
+  #                                               class = "Intercept"),
+  #                                     c(set_prior("normal(.8,.5)",
+  #                                                 class = "Intercept"),
+  #                                       set_prior("normal(0,.5)", class = "b")))
+  # ### Set all nested formulas for model comparisons
+  # formulas.prop_tail.per_fstlst <- list(ArcSin ~ 1 +
+  #                                         (1 | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst +
+  #                                         (1 + FstLst | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI +
+  #                                         (1 + FstLst + AOI | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic +
+  #                                         (1 + FstLst + AOI + Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         (1 + FstLst + AOI + Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI +
+  #                                         (1 + FstLst*AOI + Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic +
+  #                                         (1 + FstLst*AOI + FstLst*Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+  #                                         (1 + FstLst*AOI + FstLst*Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+  #                                         AOI:Diagnostic +
+  #                                         (1 + FstLst*AOI*Diagnostic -
+  #                                            FstLst:AOI:Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+  #                                         AOI:Diagnostic + AOI:Condition +
+  #                                         (1 + FstLst*AOI*Diagnostic -
+  #                                            FstLst:AOI:Condition | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+  #                                         AOI:Diagnostic + AOI:Condition +
+  #                                         Diagnostic:Condition +
+  #                                         (1 + FstLst*AOI*Diagnostic -
+  #                                            FstLst:AOI:Condition | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+  #                                         AOI:Diagnostic + AOI:Condition +
+  #                                         Diagnostic:Condition +
+  #                                         FstLst:AOI:Diagnostic +
+  #                                         (1 + FstLst*AOI*Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+  #                                         AOI:Diagnostic + AOI:Condition +
+  #                                         Diagnostic:Condition +
+  #                                         FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
+  #                                         (1 + FstLst*AOI*Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+  #                                         AOI:Diagnostic + AOI:Condition +
+  #                                         Diagnostic:Condition +
+  #                                         FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
+  #                                         FstLst:Diagnostic:Condition +
+  #                                         (1 + FstLst*AOI*Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+  #                                         AOI:Diagnostic + AOI:Condition +
+  #                                         Diagnostic:Condition +
+  #                                         FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
+  #                                         FstLst:Diagnostic:Condition + AOI:Diagnostic:Condition +
+  #                                         (1 + FstLst*AOI*Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel),
+  #                                       ArcSin ~ 1 + FstLst + AOI + Diagnostic + Condition +
+  #                                         FstLst:AOI + FstLst:Diagnostic + FstLst:Condition +
+  #                                         AOI:Diagnostic + AOI:Condition +
+  #                                         Diagnostic:Condition +
+  #                                         FstLst:AOI:Diagnostic + FstLst:AOI:Condition +
+  #                                         FstLst:Diagnostic:Condition + AOI:Diagnostic:Condition +
+  #                                         FstLst:AOI:Diagnostic:Condition +
+  #                                         (1 + FstLst*AOI*Diagnostic | Participant) +
+  #                                         (1 | Stimulus) +
+  #                                         (1 | StimLabel))
+  # ### Get brms results
+  # brms.results <- bayes_factor.brm_fixef(formulas.prop_tail.per_fstlst,
+  #                                        prop_tail.per_fstlst,
+  #                                        priors.prop_tail.per_fstlst,
+  #                                        controls = list(adapt_delta = 0.999999999999999,
+  #                                                        max_treedepth = 15))
+  # prop_tail.per_fstlst.brms.models <- brms.results[[1]]
+  # prop_tail.per_fstlst.brms.bayes_factors <- brms.results[[2]]
   prop_tail.time <- proc.time() - t
+  beep("mario")
   ## Save all the results
   saveRDS(prop_tail.per_fstlst.lmer.model, paste0(save_path, "FstLst_lmerModel.rds"))
   saveRDS(prop_tail.per_fstlst.lmer.anova, paste0(save_path, "FstLst_lmerAnova.rds"))
-  lapply(seq_along(prop_tail.per_fstlst.brms.models),
-         function(i){
-           saveRDS(prop_tail.per_fstlst.brms.models[[i]],
-                   paste0(save_path, "FstLst_brmsModel", i, ".rds"))
-         })
-  saveRDS(prop_tail.per_fstlst.brms.bayes_factors, paste0(save_path, "FstLst_brmsBF.rds"))
+  # lapply(seq_along(prop_tail.per_fstlst.brms.models),
+  #        function(i){
+  #          saveRDS(prop_tail.per_fstlst.brms.models[[i]],
+  #                  paste0(save_path, "FstLst_brmsModel", i, ".rds"))
+  #        })
+  # saveRDS(prop_tail.per_fstlst.brms.bayes_factors, paste0(save_path, "FstLst_brmsBF.rds"))
 }else{
   prop_tail.per_fstlst.lmer.model <- readRDS(paste0(save_path, "FstLst_lmerModel.rds"))
   prop_tail.per_fstlst.lmer.anova <- readRDS(paste0(save_path, "FstLst_lmerAnova.rds"))
-  prop_tail.per_fstlst.brms.models <- lapply(1:4,
-                                             function(i){
-                                               readRDS(paste0(save_path,
-                                                              "FstLst_brmsModel", i, ".rds"))
-                                             })
-  prop_tail.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FstLst_brmsBF.rds"))
+  # prop_tail.per_fstlst.brms.models <- lapply(1:4,
+  #                                            function(i){
+  #                                              readRDS(paste0(save_path,
+  #                                                             "FstLst_brmsModel", i, ".rds"))
+  #                                            })
+  # prop_tail.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "FstLst_brmsBF.rds"))
 }
 
 # PLOTTING
-generate_plots <- F
+generate_plots <- T
 ## Plot jitter + mean&se + lines
 if(generate_plots){
-  ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
-  prop_tail.raw_predictions <- last(prop_tail.per_fstlst.brms.models) %>%
-    predict(summary = F,
-            transform = function(x){sin(x)^2}) %>%
-    t() %>%
-    as_tibble() %>%
-    mutate(RowNames = 1:nrow(.))
-  prop_tail.predicted <- prop_tail.per_fstlst %>%
-    mutate(RowNames = 1:nrow(.)) %>%
-    select(FstLst, Condition, RowNames) %>%
-    inner_join(prop_tail.raw_predictions) %>%
-    select(-RowNames) %>%
-    gather(key = Sample, value = Predicted, -c(FstLst, Condition))
-  prop_tail.predicted.hpdi.97 <- prop_tail.predicted %>%
-    select(-Sample) %>%
-    split(list(.$FstLst, .$Condition)) %>%
-    lapply(function(df){
-      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
-      df.summary <- df %>%
-        group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
-        mutate(lb = hpdi[1,"lower"],
-               ub = hpdi[1,"upper"])
-      return(df.summary)
-    }) %>%
-    bind_rows()
-  prop_tail.predicted.hpdi.89 <- prop_tail.predicted %>%
-    select(-Sample) %>%
-    split(list(.$FstLst, .$Condition)) %>%
-    lapply(function(df){
-      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
-      df.summary <- df %>%
-        group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
-        mutate(lb = hpdi[1,"lower"],
-               ub = hpdi[1,"upper"])
-      return(df.summary)
-    }) %>%
-    bind_rows()
-  prop_tail.predicted.hpdi.67 <- prop_tail.predicted %>%
-    select(-Sample) %>%
-    split(list(.$FstLst, .$Condition)) %>%
-    lapply(function(df){
-      hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
-      df.summary <- df %>%
-        group_by(FstLst, Condition) %>%
-        summarise(Mean = mean(df$Predicted)) %>%
-        mutate(lb = hpdi[1,"lower"],
-               ub = hpdi[1,"upper"])
-      return(df.summary)
-    }) %>%
-    bind_rows()
+  # ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
+  # prop_tail.raw_predictions <- last(prop_tail.per_fstlst.brms.models) %>%
+  #   predict(summary = F,
+  #           transform = function(x){sin(x)^2}) %>%
+  #   t() %>%
+  #   as_tibble() %>%
+  #   mutate(RowNames = 1:nrow(.))
+  # prop_tail.predicted <- prop_tail.per_fstlst %>%
+  #   mutate(RowNames = 1:nrow(.)) %>%
+  #   select(FstLst, Condition, RowNames) %>%
+  #   inner_join(prop_tail.raw_predictions) %>%
+  #   select(-RowNames) %>%
+  #   gather(key = Sample, value = Predicted, -c(FstLst, Condition))
+  # prop_tail.predicted.hpdi.97 <- prop_tail.predicted %>%
+  #   select(-Sample) %>%
+  #   split(list(.$FstLst, .$Condition)) %>%
+  #   lapply(function(df){
+  #     hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.97)
+  #     df.summary <- df %>%
+  #       group_by(FstLst, Condition) %>%
+  #       summarise(Mean = mean(df$Predicted)) %>%
+  #       mutate(lb = hpdi[1,"lower"],
+  #              ub = hpdi[1,"upper"])
+  #     return(df.summary)
+  #   }) %>%
+  #   bind_rows()
+  # prop_tail.predicted.hpdi.89 <- prop_tail.predicted %>%
+  #   select(-Sample) %>%
+  #   split(list(.$FstLst, .$Condition)) %>%
+  #   lapply(function(df){
+  #     hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.89)
+  #     df.summary <- df %>%
+  #       group_by(FstLst, Condition) %>%
+  #       summarise(Mean = mean(df$Predicted)) %>%
+  #       mutate(lb = hpdi[1,"lower"],
+  #              ub = hpdi[1,"upper"])
+  #     return(df.summary)
+  #   }) %>%
+  #   bind_rows()
+  # prop_tail.predicted.hpdi.67 <- prop_tail.predicted %>%
+  #   select(-Sample) %>%
+  #   split(list(.$FstLst, .$Condition)) %>%
+  #   lapply(function(df){
+  #     hpdi <- as.mcmc(df$Predicted) %>% HPDinterval(prob = 0.67)
+  #     df.summary <- df %>%
+  #       group_by(FstLst, Condition) %>%
+  #       summarise(Mean = mean(df$Predicted)) %>%
+  #       mutate(lb = hpdi[1,"lower"],
+  #              ub = hpdi[1,"upper"])
+  #     return(df.summary)
+  #   }) %>%
+  #   bind_rows()
   ## Plot raincloud + predicted mean&HPDIs per FstLst
   prop_tail.per_fstlst.plot <- ggplot(prop_tail.per_fstlst,
                                       aes(x = Condition, y = Prop,
@@ -276,7 +280,9 @@ if(generate_plots){
           axis.title.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.text.y = element_blank()) +
-    coord_flip() + facet_grid(AOI~FstLst) +
+    coord_flip() +
+    facet_grid(rows=vars(AOI),
+               cols=vars(FstLst)) +
     geom_flat_violin(position = position_nudge(x = .2), colour = "black", alpha = .5) +
     geom_point(position = position_jitter(width = .15),
                size = 1, alpha = .6,
@@ -294,19 +300,19 @@ if(generate_plots){
     #                 colour = brewer.pal(3, "Dark2")[[3]],
     #                 fatten = .5, size = 1,
     #                 position = position_nudge(x = -.23),
-  #                 show.legend = F) +
-  # geom_pointrange(data = prop_tail.predicted.hpdi.97,
-  #                 aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
-  #                 colour = brewer.pal(3, "Dark2")[[3]],
-  #                 fatten = .5, size = .5,
-  #                 position = position_nudge(x = -.23),
-  #                 show.legend = F) +
-  scale_color_brewer(palette = "Dark2") +
+    #                 show.legend = F) +
+    # geom_pointrange(data = prop_tail.predicted.hpdi.97,
+    #                 aes(x = Condition, y = Mean, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = .5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ## Save plot
   ggsave(paste0(save_path, "FstLst_data.pdf"),
          prop_tail.per_fstlst.plot,
-         width = 5.5, height = 5.5, dpi = 600)
+         width = 5.5, height = 6, dpi = 600)
 }
 
 # TRAINING LT ANALYSIS: TAIL LOOKING TIME COURSE ===================================================
