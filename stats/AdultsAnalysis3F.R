@@ -416,6 +416,89 @@ if(generate_plots){
          width = 5.5, height = 5.5, dpi = 600)
 }
 
+# TRAINING LT ANALYSIS: FIRST LOOK (TIME) ==========================================================
+save_path <- "../results/adults_3f/FirstLook/Time_"
+# Prepare dataset
+first_look_time <- LT.clean %>%
+  mutate(FstLst = as_factor(FstLst)) %>%
+  drop_na(FstLst, Head, Feet, Tail) %>%
+  droplevels() %>%
+  mutate(AOI = case_when(Head ~ "Head",
+                         Feet ~ "Feet",
+                         Tail ~ "Tail"),
+         AOI = parse_factor(AOI,
+                            levels = c("Head",
+                                       "Feet",
+                                       "Tail"))) %>%
+  group_by(Participant, TrialId) %>%
+  mutate(TimeStamp = TimeStamp + FeedbackOnset,
+         TimeStamp = ifelse(TimeStamp < 150, NA, TimeStamp)) %>%
+  drop_na(TimeStamp) %>%
+  group_by(Participant, TrialId, AOI) %>%
+  summarise(FirstLook = first(TimeStamp),
+            Diagnostic = first(Diagnostic),
+            Condition = first(Condition),
+            FstLst = first(FstLst),
+            Stimulus = first(Stimulus),
+            StimLabel = first(StimLabel)) %>%
+  ungroup() %>%
+  drop_na(FirstLook) %>%
+  mutate(logFirstLook = log(FirstLook))
+
+# Testing for first look to AOIs
+run_model <- F
+if(run_model){
+  t <- proc.time()
+  ## Run STB model
+  first_look_time.lmer <- lmer(logFirstLook ~ FstLst*AOI*Diagnostic*Condition +
+                                 (1 + FstLst*AOI*Diagnostic | Participant) +
+                                 (1 | Stimulus) +
+                                 (1 | StimLabel),
+                               data = first_look_time)
+  first_look_time.anova <- anova(first_look_time.lmer, type = "I")
+  first_look_time.time <- proc.time() - t
+  beep("mario")
+  ## Save results
+  saveRDS(first_look_time.lmer, paste0(save_path, "lmer.rds"))
+  saveRDS(first_look_time.anova, paste0(save_path, "anova.rds"))
+}else{
+  ## Read results
+  first_look_time.lmer <- readRDS(paste0(save_path, "lmer.rds"))
+  first_look_time.anova <- readRDS(paste0(save_path, "anova.rds"))
+}
+
+# Plot data
+generate_plots <- T
+if(generate_plots){
+  ### Plot raincloud + predicted per AOI and FstLst
+  first_look_time.plot <- ggplot(first_look_time,
+                                 aes(x = Condition,
+                                     y = FirstLook,
+                                     colour = Condition,
+                                     fill = Condition)) +
+    theme_bw() + ylab("Time to first look (ms)") + ylim(0, 5000) +
+    theme(legend.position = "top",
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank()) +
+    coord_flip() +
+    facet_grid(rows = vars(AOI),
+               cols = vars(FstLst)) +
+    geom_flat_violin(position = position_nudge(x = .2),
+                     colour = "black", alpha = .5, width = .7) +
+    geom_point(position = position_jitter(width = 0.15, height = 0),
+               size = 1, alpha = .6,
+               show.legend = F) +
+    geom_boxplot(width = .1, alpha = .3, outlier.shape = NA, colour = "black",
+                 show.legend = F) +
+    scale_color_brewer(palette = "Dark2") +
+    scale_fill_brewer(palette = "Dark2")
+  ### Save plot
+  ggsave(paste0(save_path, "data.pdf"),
+         first_look_time.plot,
+         width = 5.5, height = 5.5)
+}
+
 # TRAINING LT ANALYSIS: AOI SWITCHES ===============================================================
 save_path <- "../results/adults_3f/FamSwitches/FstLst_"
 # Prepare dataset
