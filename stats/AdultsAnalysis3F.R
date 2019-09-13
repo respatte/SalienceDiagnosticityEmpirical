@@ -11,6 +11,9 @@ library(ggeffects)
 library(eyetrackingR)
 library(RColorBrewer)
 library(beepr)
+library(future)
+library(future.apply)
+plan(multiprocess)
 
 source("Routines.R")
 source("StatTools.R")
@@ -64,7 +67,7 @@ prop_tail.per_fstlst <- LT.clean %>%
   mutate(AOI = fct_relevel(AOI, "Head", "Feet", "Tail"))
 
 # Testing ArcSin ~ FstLst*AOI*Diagnostic*Condition
-run_model <- T # Running the models takes around XX minutes on a 4.40GHz 12-core
+run_model <- F # Running the models takes around XX minutes on a 4.40GHz 12-core
 if(run_model){
   ## Run lmer (Sampling Theory Based)
   t <- proc.time()
@@ -215,7 +218,7 @@ if(run_model){
 }
 
 # PLOTTING
-generate_plots <- T
+generate_plots <- F
 ## Plot jitter + mean&se + lines
 if(generate_plots){
   # ## Get brm predicted values (using three levels of HPDI to better appreciate data shape)
@@ -328,7 +331,7 @@ prop_tail.time_course.per_fstlst <- LT.clean %>%
                           summarize_by = "Participant")
 
 # BOOTSTRAPPED CLUSTER-BASED PERMUTATION ANALYSIS
-run_model <- T # Running the model takes around 2 minutes on a 4.40GHz 12-core
+run_model <- T # Running the model takes around 2 minutes on a 4.7GHz 8-core
 if(run_model){
   t <- proc.time()
   ## Determine threshold based on alpha = .05 two-tailed
@@ -338,7 +341,7 @@ if(run_model){
   ## Determine clusters
   prop_tail.time_cluster.per_fstlst <- prop_tail.time_course.per_fstlst %>%
     split(list(.$FstLst, .$AOI)) %>%
-    lapply(function(df){
+    future_lapply(function(df){
       return(make_time_cluster_data(df,
                                     predictor_column = "Condition",
                                     treatment_level = "No Label",
@@ -348,10 +351,10 @@ if(run_model){
     })
   ## Run the analysis
   prop_tail.time_cluster.per_fstlst.analysis <- prop_tail.time_cluster.per_fstlst %>%
-    lapply(analyze_time_clusters,
-           within_subj = F,
-           parallel = T)
+    future_lapply(analyze_time_clusters,
+                  within_subj = F)
   prop_tail.bcbp.time <- proc.time() - t
+  beep("mario")
   ## Save results
   saveRDS(prop_tail.time_cluster.per_fstlst, paste0(save_path, "FstLst_bcbpClusters.rds"))
   saveRDS(prop_tail.time_cluster.per_fstlst.analysis, paste0(save_path, "FstLst_bcbpAnalysis.rds"))
@@ -367,7 +370,7 @@ if(generate_plots){
   intercept <- tibble(Part = c(rep("First Block", 2), rep("Last Block", 2)),
                       x_int = c(0, 2000, 0, 2000))
   fstlst_by_aoi <- names(prop_tail.time_cluster.per_fstlst.analysis)
-  prop_tail.time_course.plot.clusters <-  fstlst_by_aoi %>%
+  prop_tail.time_course.plot.clusters <- fstlst_by_aoi %>%
     lapply(function(name){
       tmp <- strsplit(name, "\\.")[[1]]
       fstlst <- tmp[[1]]
@@ -377,15 +380,25 @@ if(generate_plots){
                AOI = aoi) %>%
         subset(Probability < .05)
     }) %>%
-    bind_rows()
-  prop_tail.time_course.per_fstlst.plot <- ggplot(prop_tail.time_course.per_fstlst,
-                                                  aes(x = Time, y=Prop,
-                                                      colour=Condition,
-                                                      fill=Condition)) +
-    xlab('Time in Trial') + ylab("Looking to Tail (Prop)") + theme_bw() +
+    bind_rows() %>%
+    mutate(FstLst = parse_factor(FstLst,
+                                 levels = c("First Block",
+                                            "Last Block")),
+           AOI = parse_factor(AOI,
+                              levels = c("Head",
+                                         "Feet",
+                                         "Tail")))
+  prop_tail.time_course.per_fstlst.plot <- prop_tail.time_course.per_fstlst %>%
+    mutate(AOI = fct_relevel(AOI, "Head", "Feet", "Tail")) %>%
+    ggplot(aes(x = Time,
+               y=Prop,
+               colour=Condition,
+               fill=Condition)) +
+    xlab('Time in Trial (ms)') + ylab("Looking to AOI (Prop)") + theme_bw() + ylim(0,1) +
     theme(legend.pos = "top",
           axis.text.x = element_text(angle=45, vjust=1, hjust = 1)) +
-    facet_grid(AOI~FstLst) + ylim(0,1) +
+    facet_grid(rows = vars(AOI),
+               cols = vars(FstLst)) +
     scale_x_continuous(breaks = c(-1000, 0, 1000, 2000, 3000)) +
     scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2") +
@@ -397,8 +410,7 @@ if(generate_plots){
               aes(xmin = StartTime, xmax = EndTime,
                   ymin = 0, ymax = 1),
               alpha = 0.5,
-              fill = brewer.pal(3, "Dark2")[[3]]) +
-    geom_hline(yintercept = 1/3)
+              fill = brewer.pal(3, "Dark2")[[3]])
   ggsave(paste0(save_path, "FstLst_data.pdf"),
          plot = prop_tail.time_course.per_fstlst.plot,
          width = 5.5, height = 5.5, dpi = 600)
