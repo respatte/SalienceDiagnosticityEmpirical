@@ -10,6 +10,7 @@ library(broom)
 library(ggeffects)
 library(eyetrackingR)
 library(RColorBrewer)
+library(scales)
 library(beepr)
 library(future)
 library(future.apply)
@@ -476,12 +477,12 @@ if(generate_plots){
                                      y = FirstLook,
                                      colour = Condition,
                                      fill = Condition)) +
-    theme_bw() + ylab("Time to first look (ms)") + ylim(0, 5000) +
+    theme_bw() + ylab("Time to first look (ms)") + #ylim(0, 5000) +
     theme(legend.position = "top",
           axis.title.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.text.y = element_blank()) +
-    coord_flip() +
+    coord_flip() + scale_y_continuous(trans = log10_trans()) +
     facet_grid(rows = vars(AOI),
                cols = vars(FstLst)) +
     geom_flat_violin(position = position_nudge(x = .2),
