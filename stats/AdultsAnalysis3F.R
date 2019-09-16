@@ -510,6 +510,7 @@ fam_switches.fstlst <- LT.clean %>%
                            na.rm = T), # Count switches per trial per participant
             # Keep columns for analysis (only one value per trial per participant)
             FstLst = first(FstLst),
+            Diagnostic = first(Diagnostic),
             Condition = first(Condition)) %>%
   ungroup()
 # Testing Switches ~ Condition*FstLst
@@ -517,57 +518,60 @@ run_model <- T # Running the models takes around XXX minutes on a 4.40GHz 12-cor
 if(run_model){
   t <- proc.time()
   ## Run (g)lmer
-  fam_switches.per_fstlst.glmer.model <- glmer(Switches ~ FstLst*Condition +
-                                                 (1 + FstLst | Participant),
-                                               data = fam_switches.fstlst,
-                                               family = poisson())
+  fam_switches.fstlst.glmer.model <- glmer(Switches ~ FstLst*Diagnostic*Condition +
+                                             (FstLst*Diagnostic | Participant),
+                                           data = fam_switches.fstlst,
+                                           control = glmerControl(optimizer = "bobyqa",
+                                                                  optCtrl = list(maxfun = 50000)),
+                                           family = poisson())
   # Current p-values from summary may not be the best. Do something else?
-  ## Run brms
-  ### Set priors for models other than intercept-only
-  priors.fam_switches.per_fstlst <- list(NULL,
-                                         set_prior("normal(0,.5)", class = "b"))
-  ### Set all nested formulas for model comparisons
-  formulas.fam_switches.per_fstlst <- list(Switches ~ 1 +
-                                             (1 | Participant),
-                                           Switches ~ FstLst +
-                                             (1 + FstLst | Participant),
-                                           Switches ~ FstLst + Condition +
-                                             (1 + FstLst | Participant),
-                                           Switches ~ FstLst + Condition +
-                                             FstLst:Condition +
-                                             (1 + FstLst | Participant))
-  ### Get brms results
-  brms.results <- bayes_factor.brm_fixef(formulas.fam_switches.per_fstlst,
-                                         fam_switches.fstlst,
-                                         priors.fam_switches.per_fstlst,
-                                         family = poisson())
-  # iter = 4000,
-  # controls = list(adapt_delta = .95))
-
-  fam_switches.per_fstlst.brms.models <- brms.results[[1]]
-  fam_switches.per_fstlst.brms.bayes_factors <- brms.results[[2]]
+  # ## Run brms
+  # ### Set priors for models other than intercept-only
+  # priors.fam_switches.per_fstlst <- list(NULL,
+  #                                        set_prior("normal(0,.5)", class = "b"))
+  # ### Set all nested formulas for model comparisons
+  # formulas.fam_switches.per_fstlst <- list(Switches ~ 1 +
+  #                                            (1 | Participant),
+  #                                          Switches ~ FstLst +
+  #                                            (1 + FstLst | Participant),
+  #                                          Switches ~ FstLst + Condition +
+  #                                            (1 + FstLst | Participant),
+  #                                          Switches ~ FstLst + Condition +
+  #                                            FstLst:Condition +
+  #                                            (1 + FstLst | Participant))
+  # ### Get brms results
+  # brms.results <- bayes_factor.brm_fixef(formulas.fam_switches.per_fstlst,
+  #                                        fam_switches.fstlst,
+  #                                        priors.fam_switches.per_fstlst,
+  #                                        family = poisson())
+  # # iter = 4000,
+  # # controls = list(adapt_delta = .95))
+  # 
+  # fam_switches.per_fstlst.brms.models <- brms.results[[1]]
+  # fam_switches.per_fstlst.brms.bayes_factors <- brms.results[[2]]
   fam_switches.time <- proc.time() - t
+  beep("mario")
   ## Save all the results
-  saveRDS(fam_switches.per_fstlst.glmer.model, paste0(save_path, "glmerModel.rds"))
-  lapply(seq_along(fam_switches.per_fstlst.brms.models),
-         function(i){
-           saveRDS(fam_switches.per_fstlst.brms.models[[i]],
-                   paste0(save_path, "brmsModel", i, ".rds"))
-         })
-  saveRDS(fam_switches.per_fstlst.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
+  saveRDS(fam_switches.fstlst.glmer.model, paste0(save_path, "glmerModel.rds"))
+  # lapply(seq_along(fam_switches.per_fstlst.brms.models),
+  #        function(i){
+  #          saveRDS(fam_switches.per_fstlst.brms.models[[i]],
+  #                  paste0(save_path, "brmsModel", i, ".rds"))
+  #        })
+  # saveRDS(fam_switches.per_fstlst.brms.bayes_factors, paste0(save_path, "brmsBF.rds"))
 }else{
   ## Read all the results
-  fam_switches.per_fstlst.glmer.model <- readRDS(paste0(save_path, "glmerModel.rds"))
-  fam_switches.per_fstlst.brms.models <- lapply(1:4,
-                                                function(i){
-                                                  readRDS(paste0(save_path,
-                                                                 "brmsModel", i, ".rds"))
-                                                })
-  fam_switches.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
+  fam_switches.fstlst.glmer.model <- readRDS(paste0(save_path, "glmerModel.rds"))
+  # fam_switches.per_fstlst.brms.models <- lapply(1:4,
+  #                                               function(i){
+  #                                                 readRDS(paste0(save_path,
+  #                                                                "brmsModel", i, ".rds"))
+  #                                               })
+  # fam_switches.per_fstlst.brms.bayes_factors <- readRDS(paste0(save_path, "brmsBF.rds"))
 }
 
 # Plotting boxplots
-generate_plots <- T
+generate_plots <- F
 if(generate_plots){
   ## Get brm predicted values
   # fam_switches.raw_predictions <- last(fam_switches.per_fstlst.brms.models) %>%
@@ -649,14 +653,14 @@ if(generate_plots){
     #                 colour = brewer.pal(3, "Dark2")[[3]],
     #                 fatten = .5, size = 1,
     #                 position = position_nudge(x = -.23),
-  #                 show.legend = F) +
-  # geom_pointrange(data = fam_switches.predicted.hpdi.97,
-  #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
-  #                 colour = brewer.pal(3, "Dark2")[[3]],
-  #                 fatten = .5, size = .5,
-  #                 position = position_nudge(x = -.23),
-  #                 show.legend = F) +
-  scale_color_brewer(palette = "Dark2") +
+    #                 show.legend = F) +
+    # geom_pointrange(data = fam_switches.predicted.hpdi.97,
+    #                 aes(x = Condition, y = Mode, ymin = lb, ymax = ub),
+    #                 colour = brewer.pal(3, "Dark2")[[3]],
+    #                 fatten = .5, size = .5,
+    #                 position = position_nudge(x = -.23),
+    #                 show.legend = F) +
+    scale_color_brewer(palette = "Dark2") +
     scale_fill_brewer(palette = "Dark2")
   ## Save plot
   ggsave(paste0(save_path, "data.pdf"),
